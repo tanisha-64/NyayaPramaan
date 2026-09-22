@@ -1,0 +1,290 @@
+@import "tailwindcss";
+
+@theme {
+  --color-obsidian: #050608;
+  --color-charcoal: #0E1017;
+  --color-surface: #141722;
+  --color-navy: #0B1120;
+  --color-ivory: #F8FAFC;
+  --color-gold: #C89B59;
+  --color-gold-light: #E5C07B;
+  --color-trust-blue: #3B82F6;
+  --color-trust-indigo: #6366F1;
+  --color-verified-green: #10B981;
+  --color-review-amber: #F59E0B;
+  --color-danger-rose: #EF4444;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+}
+
+:root {
+  --bg-main: #050608;
+  --bg-surface: #0D1017;
+  --bg-card: rgba(18, 22, 33, 0.75);
+  --bg-jelly: rgba(22, 27, 40, 0.65);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-highlight: rgba(255, 255, 255, 0.18);
+  --border-focus: rgba(99, 102, 241, 0.5);
+  --text-primary: #F8FAFC;
+  --text-secondary: rgba(248, 250, 252, 0.7);
+  --text-muted: rgba(248, 250, 252, 0.4);
+  --shadow-jelly: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  --shadow-bloom: 0 0 60px -15px rgba(99, 102, 241, 0.35);
+}
+
+[data-theme="light"], .light, html[data-theme="light"], html.light {
+  --bg-main: #F4F6FB;
+  --bg-surface: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-jelly: rgba(255, 255, 255, 0.88);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border-glass-highlight: rgba(0, 0, 0, 0.16);
+  --border-focus: rgba(79, 70, 229, 0.5);
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --color-ivory: #0F172A;
+  --color-obsidian: #F4F6FB;
+  --color-charcoal: #E2E8F0;
+  --shadow-jelly: 0 20px 40px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.95) inset;
+  --shadow-bloom: 0 0 50px -10px rgba(99, 102, 241, 0.12);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  overflow-x: hidden;
+}
+
+/* Glass Jelly UI Styling */
+.glass-jelly {
+  background: var(--bg-jelly);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-jelly);
+  border-radius: 1rem;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.glass-jelly-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-jelly-card:hover {
+  border-color: var(--border-glass-highlight);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.45);
+}
+
+/* Ambient Bloom Orbs */
+.bloom-orb-indigo {
+  position: absolute;
+  width: 380px;
+  height: 380px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+  animation: bloom-drift 12s ease-in-out infinite alternate;
+}
+
+.bloom-orb-amber {
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200, 155, 89, 0.2) 0%, rgba(245, 158, 11, 0.06) 50%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+  animation: bloom-drift-reverse 15s ease-in-out infinite alternate;
+}
+
+.bloom-orb-cyan {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, transparent 65%);
+  filter: blur(45px);
+  pointer-events: none;
+  z-index: 0;
+  animation: bloom-drift 18s ease-in-out infinite alternate;
+}
+
+/* Dynamic Float Animations */
+@keyframes text-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-text-float {
+  animation: text-float 4s ease-in-out infinite;
+}
+
+@keyframes bloom-drift {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(40px, -30px) scale(1.1);
+  }
+  100% {
+    transform: translate(-30px, 40px) scale(0.95);
+  }
+}
+
+@keyframes bloom-drift-reverse {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(-40px, 30px) scale(1.08);
+  }
+  100% {
+    transform: translate(30px, -40px) scale(0.92);
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Light Theme Overrides & Global Text Adaptations */
+html[data-theme="light"], html.light {
+  color-scheme: light;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb,
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.16);
+}
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* Background auto-adaptations in light mode */
+html[data-theme="light"] .bg-\[\#050608\],
+html.light .bg-\[\#050608\],
+html[data-theme="light"] .bg-\[\#0E1017\],
+html.light .bg-\[\#0E1017\],
+html[data-theme="light"] .bg-\[\#0C0E14\],
+html.light .bg-\[\#0C0E14\],
+html[data-theme="light"] .bg-\[\#07080D\],
+html.light .bg-\[\#07080D\] {
+  background-color: #F4F6FB !important;
+}
+
+html[data-theme="light"] .bg-\[\#050608\]\/80,
+html.light .bg-\[\#050608\]\/80,
+html[data-theme="light"] .bg-\[\#07080D\]\/80,
+html.light .bg-\[\#07080D\]\/80,
+html[data-theme="light"] .bg-\[\#07080D\]\/85,
+html.light .bg-\[\#07080D\]\/85,
+html[data-theme="light"] .bg-\[\#07080D\]\/90,
+html.light .bg-\[\#07080D\]\/90,
+html[data-theme="light"] .bg-\[\#07080D\]\/95,
+html.light .bg-\[\#07080D\]\/95 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Answer Card and Content Container in Light Theme */
+html[data-theme="light"] .answer-card-surface,
+html.light .answer-card-surface {
+  background: #FFFFFF !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
+}
+
+html[data-theme="light"] .text-slate-100,
+html.light .text-slate-100,
+html[data-theme="light"] .text-slate-200,
+html.light .text-slate-200 {
+  color: #1E293B !important;
+}
+
+html[data-theme="light"] .text-slate-300,
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .text-slate-400,
+html.light .text-slate-400 {
+  color: #64748B !important;
+}
+
+/* Preserve bright text for filled primary buttons and user speech bubbles */
+.bg-gradient-to-br.from-blue-600 *,
+.bg-gradient-to-br.from-blue-600,
+.bg-blue-600 *,
+.bg-blue-600,
+.bg-emerald-600 *,
+.bg-amber-600 * {
+  color: #FFFFFF !important;
+}
+
+/* Light mode border adaptations */
+html[data-theme="light"] .border-white\/\[0\.08\],
+html.light .border-white\/\[0\.08\],
+html[data-theme="light"] .border-white\/\[0\.06\],
+html.light .border-white\/\[0\.06\],
+html[data-theme="light"] .border-white\/10,
+html.light .border-white\/10,
+html[data-theme="light"] .border-white\/15,
+html.light .border-white\/15 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] .bg-white\/\[0\.04\],
+html.light .bg-white\/\[0\.04\],
+html[data-theme="light"] .bg-white\/\[0\.02\],
+html.light .bg-white\/\[0\.02\] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+html[data-theme="light"] .bg-white\/\[0\.06\],
+html.light .bg-white\/\[0\.06\] {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+}

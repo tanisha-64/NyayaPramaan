@@ -1,0 +1,21 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+pydantic
+requests
+litellm
+google-genai
+groq
+supabase
+redis
+pypdf
+ragas
+# langchain-core
+langfuse
+python-multipart
+ddgs
+feedparser
+newspaper3k
+lxml_html_clean
+pytesseract
+pdf2image

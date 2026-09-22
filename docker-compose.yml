@@ -1,0 +1,22 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - ./backend:/app/backend
+      - ./ai_core:/app/ai_core
+      - ./trust_log:/app/trust_log
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - ./frontend:/app

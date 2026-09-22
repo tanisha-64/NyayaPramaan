@@ -1,0 +1,639 @@
+'use client'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+import { useVoiceInput } from '@/hooks/useVoiceInput'
+import { uploadDocument, getCaseStatus, deleteDocument, UploadResponse } from '@/services/documentService'
+import { askQuestion, listSessions, getSessionMessages, renameSession, deleteSession, togglePin } from '@/services/chatService'
+import { AnswerCard } from '@/components/chat/AnswerCard'
+import { TypingIndicator } from '@/components/chat/TypingIndicator'
+import { ChatSidebar } from '@/components/chat/ChatSidebar'
+
+type Message = {
+  role: 'user' | 'assistant'
+  content: string
+  attachedFileNames?: string[]
+  conclusion?: string
+  usefulness?: string
+  sources?: any[]
+  qualityNote?: string
+  departmentSuggestion?: string | null
+}
+
+type DocState = {
+  caseId: string
+  fileName: string
+  status: 'processing' | 'ready' | 'failed' | 'cancelled'
+}
+
+type PendingUpload = {
+  fileName: string
+  controller: AbortController
+}
+
+const STARTER_PROMPTS = [
+  {
+    title: "Bharatiya Nyaya Sanhita (BNS)",
+    desc: "Compare Section 106 of BNS vs Section 304A IPC for medical negligence.",
+  },
+  {
+    title: "Bail & Criminal Procedure",
+    desc: "What are the mandatory grounds for regular bail under Section 437/439 CrPC?",
+  },
+  {
+    title: "Document Analysis",
+    desc: "Attach your case PDF (.pdf) to extract citations, timeline and key rulings.",
+  },
+]
+
+export default function PublicChat() {
+  const { user, loading: authLoading, signOut } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login?redirect=/public/chat')
+  }, [authLoading, user, router])
+
+  const [query, setQuery] = useState('')
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState(false)
+  const [isSessionLoading, setIsSessionLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
+  const [activeSession, setActiveSession] = useState<string | null>(null)
+  const [isTemporary, setIsTemporary] = useState(false)
+
+  // All documents attached to this conversation
+  const [documents, setDocuments] = useState<DocState[]>([])
+  const [pendingUploads, setPendingUploads] = useState<PendingUpload[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  const handleVoiceResult = useCallback((text: string) => {
+    setQuery((prev) => (prev ? `${prev} ${text}` : text))
+  }, [])
+
+  const { listening, toggleListening } = useVoiceInput(handleVoiceResult)
+
+  const refreshSessions = useCallback(async () => {
+    try {
+      const list = await listSessions()
+      setSessions(Array.isArray(list) ? list : [])
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (user) refreshSessions()
+  }, [user, refreshSessions])
+
+  // Scroll message container down cleanly only when messages update or loading
+  const scrollToBottom = useCallback(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (messages.length > 0 || loading) {
+      scrollToBottom()
+    }
+  }, [messages.length, loading, scrollToBottom])
+
+  // Poll status for any document still "processing"
+  useEffect(() => {
+    const processing = documents.filter((d) => d.status === 'processing')
+    if (!processing.length) return
+
+    const interval = setInterval(async () => {
+      for (const doc of processing) {
+        try {
+          const s = await getCaseStatus(doc.caseId)
+          if (s.status !== 'processing') {
+            setDocuments((prev) =>
+              prev.map((d) => (d.caseId === doc.caseId ? { ...d, status: s.status as any } : d))
+            )
+          }
+        } catch {
+          // ignore transient polling errors
+        }
+      }
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [documents])
+
+  function handleNewChat() {
+    setActiveSession(null)
+    setMessages([])
+    setSuggestions([])
+    setIsTemporary(false)
+    setDocuments([])
+    setPendingUploads([])
+    setIsSessionLoading(false)
+  }
+
+  function handleToggleTemporary() {
+    const next = !isTemporary
+    setIsTemporary(next)
+    if (next) {
+      setActiveSession(null)
+      setMessages([])
+      setSuggestions([])
+      setDocuments([])
+      setPendingUploads([])
+    }
+  }
+
+  async function handleSelectSession(id: string) {
+    if (activeSession === id && !isSessionLoading) return
+    setActiveSession(id)
+    setIsTemporary(false)
+    setPendingUploads([])
+    setIsSessionLoading(true)
+    try {
+      const { messages: msgs, documents: docs } = await getSessionMessages(id)
+      setMessages(
+        (msgs || []).map((m: any) => ({
+          role: m.role,
+          content: m.content,
+          sources: m.sources,
+        }))
+      )
+      setDocuments(
+        (docs || []).map((d: any) => ({
+          caseId: d.case_id,
+          fileName: d.filename,
+          status: 'ready',
+        }))
+      )
+      setSuggestions([])
+    } catch (err) {
+      console.error('Failed to load session messages:', err)
+    } finally {
+      setIsSessionLoading(false)
+    }
+  }
+
+  async function handleRename(id: string, title: string) {
+    if (!title.trim()) return
+    // Optimistic UI update
+    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: title.trim() } : s)))
+    try {
+      await renameSession(id, title.trim())
+    } catch (err) {
+      console.error('Rename failed:', err)
+    }
+    refreshSessions()
+  }
+
+  async function handleTogglePin(id: string, pinned: boolean) {
+    // Optimistic UI update
+    setSessions((prev) =>
+      prev
+        .map((s) => (s.id === id ? { ...s, pinned } : s))
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+    )
+    try {
+      await togglePin(id, pinned)
+    } catch (err) {
+      console.error('Toggle pin failed:', err)
+    }
+    refreshSessions()
+  }
+
+  async function handleDelete(id: string) {
+    // Optimistic UI update
+    setSessions((prev) => prev.filter((s) => s.id !== id))
+    if (activeSession === id) {
+      setActiveSession(null)
+      setMessages([])
+      setDocuments([])
+    }
+    try {
+      await deleteSession(id)
+    } catch (err) {
+      console.error('Delete session failed:', err)
+    }
+    refreshSessions()
+  }
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    for (const file of files) {
+      const controller = new AbortController()
+      setPendingUploads((prev) => [...prev, { fileName: file.name, controller }])
+
+      try {
+        const result: UploadResponse = await uploadDocument(file, controller.signal)
+        setPendingUploads((prev) => prev.filter((p) => p.fileName !== file.name))
+        setDocuments((prev) => [
+          ...prev,
+          { caseId: result.case_id, fileName: result.filename, status: 'processing' },
+        ])
+      } catch (err: any) {
+        setPendingUploads((prev) => prev.filter((p) => p.fileName !== file.name))
+        if (err?.name !== 'AbortError' && !controller.signal.aborted) {
+          const detailMsg = err?.message || 'Failed to process document.'
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: `⚠️ Upload Issue for "${file.name}": ${detailMsg}`,
+            },
+          ])
+        }
+      }
+    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function cancelPendingUpload(fileName: string) {
+    setPendingUploads((prev) => {
+      const target = prev.find((p) => p.fileName === fileName)
+      if (target) target.controller.abort()
+      return prev.filter((p) => p.fileName !== fileName)
+    })
+  }
+
+  async function removeDocument(caseId: string) {
+    try {
+      await deleteDocument(caseId)
+    } catch (e) {
+      console.error('Failed to delete document from backend:', e)
+    }
+    setDocuments((prev) => prev.filter((d) => d.caseId !== caseId))
+  }
+
+  const hasProcessingDocs = documents.some((d) => d.status === 'processing') || pendingUploads.length > 0
+  const readyDocIds = documents.map((d) => d.caseId)
+
+  async function sendQuery(text: string) {
+    if (!text.trim() || loading) return
+
+    const attachedNames = documents.length ? documents.map((d) => d.fileName) : undefined
+    setMessages((prev) => [...prev, { role: 'user', content: text, attachedFileNames: attachedNames }])
+    setQuery('')
+    setSuggestions([])
+    setLoading(true)
+
+    try {
+      const result = await askQuestion(text, readyDocIds, activeSession ?? undefined, isTemporary)
+      if (!isTemporary && result.session_id && result.session_id !== activeSession) {
+        setActiveSession(result.session_id)
+        refreshSessions()
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: result.answer,
+          conclusion: result.conclusion,
+          usefulness: result.usefulness,
+          sources: result.sources,
+          qualityNote: result.quality_note,
+          departmentSuggestion: result.department_suggestion,
+        },
+      ])
+      setSuggestions(result.suggestions || [])
+    } catch {
+      setMessages((prev) => [...prev, { role: 'assistant', content: 'Unable to complete research query. Please try again.' }])
+    }
+    setLoading(false)
+  }
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#050608] text-slate-400 font-sans text-sm">
+        <div className="flex items-center gap-3">
+          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse-dot" />
+          <span>Authenticating NyayaPramaan Workspace...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative flex h-screen w-full overflow-hidden bg-[#050608] text-slate-100 font-sans antialiased">
+      {/* Ambient background bloom orbs */}
+      <div className="bloom-orb-indigo top-[-60px] left-[20%] opacity-35" />
+      <div className="bloom-orb-amber bottom-[-80px] right-[15%] opacity-30" />
+
+      {/* Sleek Sidebar */}
+      <ChatSidebar
+        sessions={sessions}
+        activeId={activeSession}
+        onSelect={handleSelectSession}
+        onNew={handleNewChat}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        onTogglePin={handleTogglePin}
+        onLogout={signOut}
+      />
+
+      {/* Main Chat Workspace */}
+      <main className="relative flex flex-1 flex-col h-full overflow-hidden bg-transparent">
+        {/* Top Header Bar */}
+        <header className="flex-shrink-0 border-b border-white/[0.08] bg-[#07080D]/80 backdrop-blur-2xl z-20">
+          <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500/20 via-blue-500/15 to-transparent border border-white/10 text-sm shadow-inner">
+                ⚖️
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-sm font-semibold tracking-tight text-white">
+                    NyayaPramaan AI Research
+                  </h1>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse-dot" />
+                    Verified RAG
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Indian Statutes, Bare Acts & Case Law Intelligence
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleToggleTemporary}
+                title="Temporary sessions are never persisted"
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all cursor-pointer border ${
+                  isTemporary
+                    ? 'border-amber-500/40 bg-amber-500/15 text-amber-300 shadow-sm'
+                    : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                <span>{isTemporary ? '⏳ Temporary Active' : '⏳ Incognito'}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Scrollable Conversation Stream */}
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-6 md:px-6">
+          <div className="mx-auto max-w-3xl space-y-6">
+            {/* Previous chat loading transition */}
+            {isSessionLoading ? (
+              <div className="my-16 flex flex-col items-center justify-center text-center">
+                <div className="flex items-center gap-3 text-sm text-slate-400">
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse-dot" />
+                  <span>Loading conversation history...</span>
+                </div>
+              </div>
+            ) : messages.length === 0 ? (
+              /* Empty State Hero with dynamic float */
+              <div className="my-8 flex flex-col items-center justify-center text-center">
+                <div className="animate-text-float flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-blue-600/30 via-indigo-500/20 to-amber-500/15 border border-white/15 text-3xl shadow-2xl">
+                  ⚖️
+                </div>
+                <h2 className="mt-5 text-2xl font-medium tracking-tight text-white">
+                  Where evidence meets legal intelligence.
+                </h2>
+                <p className="mt-2 max-w-md text-xs text-slate-400 leading-relaxed">
+                  Every query is cross-checked against authoritative statutes and judgment chunks with transparent verification badges.
+                </p>
+
+                {/* Starter Prompts Grid with glass jelly styling */}
+                <div className="mt-8 grid w-full gap-3 sm:grid-cols-3 text-left">
+                  {STARTER_PROMPTS.map((p, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => sendQuery(p.desc)}
+                      className="glass-jelly-card group flex flex-col justify-between p-4 cursor-pointer text-left"
+                    >
+                      <div>
+                        <span className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
+                          {p.title}
+                        </span>
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
+                          {p.desc}
+                        </p>
+                      </div>
+                      <span className="mt-3 text-[10px] font-medium text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                        Explore topic →
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Messages Feed */}
+            {!isSessionLoading &&
+              messages.map((m, i) => (
+                <div
+                  key={i}
+                  className={`flex w-full flex-col ${
+                    m.role === 'user' ? 'items-end' : 'items-start'
+                  }`}
+                >
+                  {m.role === 'user' ? (
+                    <div className="flex flex-col items-end max-w-[85%]">
+                      {/* Attached file badges on user bubble */}
+                      {m.attachedFileNames && m.attachedFileNames.length > 0 && (
+                        <div className="mb-2 flex flex-wrap gap-1.5 justify-end">
+                          {m.attachedFileNames.map((name, j) => (
+                            <span
+                              key={j}
+                              className="flex items-center gap-1 rounded-lg bg-blue-500/20 border border-blue-500/35 px-2.5 py-1 text-[11px] font-medium text-blue-300"
+                            >
+                              <span>📄</span>
+                              <span className="truncate max-w-[200px]">{name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 px-4 py-3 text-sm text-white shadow-xl leading-relaxed border border-white/10">
+                        {m.content}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      <AnswerCard
+                        answer={m.content}
+                        conclusion={m.conclusion}
+                        usefulness={m.usefulness}
+                        sources={m.sources}
+                        qualityNote={m.qualityNote}
+                        departmentSuggestion={m.departmentSuggestion}
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+
+            {loading && (
+              <div className="flex items-start">
+                <TypingIndicator />
+              </div>
+            )}
+
+            {/* Suggestions Chips */}
+            {suggestions.length > 0 && !loading && (
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                  Follow-up Suggestions:
+                </span>
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendQuery(s)}
+                    className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-xs text-slate-200 hover:border-blue-400/40 hover:bg-blue-600/10 hover:text-white transition-all cursor-pointer shadow-xs"
+                  >
+                    <span>{s}</span>
+                    <span className="text-blue-400 text-[10px]">↗</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Floating Input Command Dock */}
+        <div className="flex-shrink-0 border-t border-white/[0.08] bg-[#07080D]/85 p-4 backdrop-blur-2xl">
+          <div className="mx-auto max-w-3xl">
+            {/* Attached & Processing Documents Chips */}
+            {(documents.length > 0 || pendingUploads.length > 0) && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                {pendingUploads.map((p) => (
+                  <div
+                    key={p.fileName}
+                    className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs text-amber-300 shadow-xs"
+                  >
+                    <span>📄</span>
+                    <span className="truncate max-w-[160px] font-medium">{p.fileName}</span>
+                    <span className="text-[10px] text-amber-400 animate-pulse font-semibold">Uploading...</span>
+                    <button
+                      onClick={() => cancelPendingUpload(p.fileName)}
+                      className="ml-1 text-xs text-white/60 hover:text-white cursor-pointer"
+                      title="Cancel upload"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+
+                {documents.map((doc) => (
+                  <div
+                    key={doc.caseId}
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs shadow-xs ${
+                      doc.status === 'processing'
+                        ? 'border-blue-500/35 bg-blue-500/15 text-blue-300'
+                        : doc.status === 'ready'
+                        ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300'
+                        : 'border-red-500/35 bg-red-500/15 text-red-300'
+                    }`}
+                  >
+                    <span>📄</span>
+                    <span className="truncate max-w-[160px] font-medium">{doc.fileName}</span>
+                    <span className="text-[10px] font-semibold">
+                      {doc.status === 'processing' ? (
+                        <span className="flex items-center gap-1 text-blue-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse-dot" />
+                          Indexing...
+                        </span>
+                      ) : doc.status === 'ready' ? (
+                        '✓ Ready'
+                      ) : (
+                        'Failed'
+                      )}
+                    </span>
+                    <button
+                      onClick={() => removeDocument(doc.caseId)}
+                      className="ml-1 text-xs text-white/50 hover:text-white cursor-pointer"
+                      title="Remove document"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input Jelly Box */}
+            <div className="glass-jelly relative flex items-end gap-2 p-2.5 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              <div className="flex items-center gap-1 pl-1 pb-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all cursor-pointer"
+                  title="Attach Case Document (.pdf)"
+                >
+                  📎
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={loading}
+                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all cursor-pointer ${
+                    listening
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+                      : 'text-slate-400 hover:bg-white/[0.08] hover:text-white'
+                  }`}
+                  title={listening ? 'Stop Microphone' : 'Start Voice Input'}
+                >
+                  {listening ? '🔴' : '🎤'}
+                </button>
+              </div>
+
+              <textarea
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (!loading && !hasProcessingDocs) sendQuery(query)
+                  }
+                }}
+                rows={1}
+                placeholder={
+                  hasProcessingDocs
+                    ? 'Processing attached document chunks...'
+                    : 'Ask about IPC, BNS, court precedents, or attached case files...'
+                }
+                disabled={loading}
+                className="max-h-32 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-slate-100 placeholder:text-slate-400 outline-none leading-relaxed"
+              />
+
+              <div className="pb-0.5 pr-0.5">
+                <button
+                  type="button"
+                  onClick={() => sendQuery(query)}
+                  disabled={loading || hasProcessingDocs || !query.trim()}
+                  className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[#B8925A] via-[#C89B59] to-[#D4A368] px-4 text-xs font-semibold text-slate-950 transition-all hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed shadow-md cursor-pointer"
+                >
+                  <span>Ask</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between px-1 text-[11px] text-slate-400">
+              <span>NyayaPramaan AI • Multi-document citations</span>
+              <span>Press Enter to send, Shift+Enter for new line</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  )
+}
