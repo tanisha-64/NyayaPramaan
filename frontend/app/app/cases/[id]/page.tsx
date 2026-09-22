@@ -18,7 +18,7 @@ export default function CaseWorkspacePage() {
   const [caseData, setCaseData] = useState<CaseDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'document' | 'notes' | 'brief'>('timeline')
-  
+
   // Notes State
   const [notes, setNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
@@ -93,9 +93,9 @@ export default function CaseWorkspacePage() {
   // Parse timeline if it's formatted text or bullet points
   const timelineEvents = caseData?.timeline
     ? caseData.timeline
-        .split('\n')
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
     : []
 
   if (authLoading || (loading && (role === 'professional' || role === 'admin'))) {
@@ -119,7 +119,7 @@ export default function CaseWorkspacePage() {
           </div>
           <h2 className="text-lg font-bold text-white">Professional Advocate Suite Only</h2>
           <p className="mt-2 text-xs leading-relaxed text-slate-400">
-            Your account ({user.email}) is registered as a <span className="text-blue-400 font-semibold">Citizen / Student</span>. 
+            Your account ({user.email}) is registered as a <span className="text-blue-400 font-semibold">Citizen / Student</span>.
             Detailed case files, procedural timelines, and Case Brief exports are exclusive to Advocate accounts.
           </p>
           <div className="mt-6 flex flex-col gap-3">
@@ -216,41 +216,37 @@ export default function CaseWorkspacePage() {
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveTab('timeline')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'timeline'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${activeTab === 'timeline'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]'
-                }`}
+                  }`}
               >
                 ⏳ Visual Timeline
               </button>
               <button
                 onClick={() => setActiveTab('document')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'document'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${activeTab === 'document'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]'
-                }`}
+                  }`}
               >
                 📖 Document Viewer
               </button>
               <button
                 onClick={() => setActiveTab('notes')}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'notes'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${activeTab === 'notes'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]'
-                }`}
+                  }`}
               >
                 📝 Lawyer Notes {notes ? '•' : ''}
               </button>
               <button
                 onClick={handleLoadBrief}
-                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${
-                  activeTab === 'brief'
+                className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-all cursor-pointer ${activeTab === 'brief'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]'
-                }`}
+                  }`}
               >
                 ⚖️ AI Case Brief
               </button>
@@ -288,7 +284,7 @@ export default function CaseWorkspacePage() {
                   <div key={idx} className="relative pl-6 group">
                     {/* Timeline node icon */}
                     <div className="absolute -left-[9px] top-1.5 h-4 w-4 rounded-full border-2 border-blue-500 bg-[#0A0D14] group-hover:bg-blue-500 transition-colors" />
-                    
+
                     <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 transition-all group-hover:border-blue-500/30 group-hover:bg-white/[0.04]">
                       <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400">
                         Event #{idx + 1}
