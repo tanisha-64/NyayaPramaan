@@ -1,19 +1,20 @@
-# ⚖️ NyayaPramaan
-### *Verifiable, Citational, & Transparent AI Platform for Indian Law*
+# ⚖️ NyayaPramaan (न्यायप्रमाण)
+### *Enterprise Verifiable, Citational, & Transparent AI Platform for Indian Law*
 
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Supabase](https://img.shields.io/badge/Database-Supabase%20%2B%20pgvector-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat&logo=python)](https://python.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## 📌 Overview
 
-**NyayaPramaan** is an enterprise-grade, verifiable legal AI platform tailored specifically for the Indian legal ecosystem (Constitution of India, IPC, BNS, CrPC, BNSS, CPC, and landmark Supreme Court & High Court judgments). 
+**NyayaPramaan** is a production-ready, verifiable legal AI platform built specifically for the Indian legal ecosystem. It covers the **Constitution of India**, **Indian Penal Code (IPC)**, **Bharatiya Nyaya Sanhita (BNS)**, **Code of Criminal Procedure (CrPC)**, **Bharatiya Nagarik Suraksha Sanhita (BNSS)**, **Code of Civil Procedure (CPC)**, **Bharatiya Sakshya Adhiniyam (BSA)**, and landmark judgments of the **Supreme Court of India** and **High Courts**.
 
-It combines **Multi-Document RAG**, **TrustAgent™ claim-level verification**, **Cryptographic Hash-Chained Audit Logs**, **Automated Indian PII Redaction**, **3-Tier Multi-Model Fallbacks**, and an **Interactive 3D Advocate Guide** to ensure zero hallucinations and complete citational transparency.
+The platform prevents legal hallucinations by integrating **Multi-Document RAG**, **TrustAgent™ claim-level verification**, **Cryptographic Hash-Chained Audit Logs**, **Automated Indian PII Redaction**, **3-Tier Multi-Model Fallbacks**, and an **Interactive 3D Lady Advocate Guide** (*Advocate Nyaya Mitra*).
 
 ---
 
@@ -21,76 +22,96 @@ It combines **Multi-Document RAG**, **TrustAgent™ claim-level verification**, 
 
 ```mermaid
 graph TD
-    A[User / Frontend Client] -->|Next.js 16 + TailwindCSS| B[API Gateway / Auth]
-    B -->|FastAPI + Supabase Auth| C[Input Guardrails & Safety Filter]
-    C -->|Safe Query| D[Adaptive Model & Intent Router]
+    User([User / Citizen / Advocate]) -->|Next.js 16 Web Client| Gateway[FastAPI Backend Gateway :8000]
     
-    subgraph "Knowledge & Retrieval Engine"
-        D -->|Document Attached| E[Multi-Doc Chunk Vector Store]
-        D -->|General Legal Query| F[Indian Law Statutes & Precedents KB]
-        F -->|Low Retrieval Confidence| G[CRAG Corrective Web Search]
+    subgraph "1. Safety & Guardrails"
+        Gateway --> InGuard[Input Guardrail: Jailbreak & Prompt Injection Filter]
+        InGuard --> IntentClass[Intent & Audience Classifier]
     end
 
-    subgraph "TrustAgent & Verification Engine"
-        E --> H[LLM Gateway: Gemini / Groq / OpenRouter]
-        F --> H
-        G --> H
-        H --> I[Claim Extractor]
-        I --> J[Batch Claim Verifier against Evidence]
-        J --> K[LLM Judge & Self-Reflect]
+    subgraph "2. Ingestion & Document Processing"
+        Gateway --> DocIngest[Document Ingestion /document/upload]
+        DocIngest --> DocClass[Document Classifier: Kanoon, Citations, Filename Regex]
+        DocClass --> Chunker[PyPDF Fast-Path + Local OCR Fallback]
+        Chunker --> Summarizer[Intelligent Windowed Summarizer & Timeline Extractor]
+        Chunker --> Embedder[Gemini Embeddings 768-dim Batch Indexer]
+        Embedder --> VectorDB[(Supabase PostgreSQL + pgvector)]
     end
 
-    subgraph "Safety & Audit Pipeline"
-        K --> L[Output Guardrail: PII Redaction: Aadhaar, PAN, Phone, Email]
-        L --> M[Cryptographic Hash-Chain Audit Logger]
-        M --> N[Final Verified Response to User]
+    subgraph "3. Hybrid Retrieval & CRAG"
+        IntentClass -->|Attached Docs| DocRAG[Multi-Doc Chunk Search + Full Text Fallback]
+        IntentClass -->|Statute / Precedent Query| KbRAG[Hybrid Dense + Sparse Search on Indian Law KB]
+        KbRAG -->|Low Confidence| CRAG[CRAG Corrective Web Search]
     end
+
+    subgraph "4. Multi-Model LLM Gateway & TrustAgent™"
+        DocRAG --> LLMGateway[3-Tier LLM Gateway: Gemini -> Groq -> OpenRouter]
+        KbRAG --> LLMGateway
+        CRAG --> LLMGateway
+        LLMGateway --> DraftAnswer[Draft Legal Answer]
+        DraftAnswer --> ClaimExt[Claim Extractor]
+        ClaimExt --> Verifier[Batch Claim Verifier against Retrieved Evidence]
+        Verifier --> Judge[LLM Self-Reflection & Evaluation Judge]
+    end
+
+    subgraph "5. Privacy & Cryptographic Audit"
+        Judge --> OutGuard[Output Guardrail: Aadhaar, PAN, Phone, Email Redaction]
+        OutGuard --> HashChain[SHA-256 Hash-Chain Audit Logger]
+        HashChain --> FinalResponse[Verified Citational Response + Precedents]
+    end
+
+    FinalResponse --> User
 ```
 
 ---
 
-## ✨ Key Capabilities & Modules
+## ✨ Key Platform Modules & Capabilities
 
 ### 1. 👩‍⚖️ Interactive 3D Lady Advocate Guide (*Advocate Nyaya Mitra*)
-- **3D Perspective Entrance**: When opening the platform, a 3D-modeled Indian female advocate in traditional formal saree and advocate coat appears smoothly from the background into the foreground.
-- **Speech Synthesis Narration**: Built-in Web Speech API voice narration explains platform features with real-time audio wave visualization and step-by-step guidance.
-- **Interactive Tour**: Guides visitors through platform capabilities, document upload flows, and developer extension procedures.
+- **3D Perspective Entrance**: When opening the platform, a 3D-modeled Indian female advocate in formal legal attire appears with smooth perspective transitions.
+- **Real-Time Voice Narration**: Built-in Web Speech API voice narration explains platform features with real-time audio wave animation and step-by-step guidance.
+- **Guided Platform Tour**: Walks users through AI research chat, document uploads, precedent research, and developer extension procedures.
 
-### 2. 📂 Multi-Document Analysis & RAG
-- **Fast Classification Preview**: Quickly assesses document legal relevance prior to full processing.
-- **Background Pipeline**: Reads, summarizes, extracts timelines, and chunks documents into 768-dimensional embeddings (`gemini-embedding-001`).
-- **Multi-Document Cross-Querying**: Attach multiple legal documents simultaneously in a single conversation.
+### 2. 📂 Multi-Document Analysis & Precedent Workspace
+- **Instant Legal Classification**: Automatically recognizes Indian Kanoon case laws, Supreme Court & High Court judgments (e.g. *A.K. Gopalan vs State of Madras*), FIRs, bail petitions, affidavits, civil suits, deeds, contracts, and bare acts.
+- **Intelligent Background Ingestion**: Processes multi-page files asynchronously with local PyPDF fast extraction, local Tesseract OCR, and multimodal Gemini fallback.
+- **Large Document Safe Windowing**: Automatically windows massive judgments (100+ pages) to preserve parties, facts, issues, and operative orders without token/rate limit overflow.
+- **Executive Case Briefs & Timeline**: Generates structured advocate briefs (Material Facts, Core Issues, Applicable Statutes, Ratio Decidendi, Operative Order) and chronological event histories.
 
 ### 3. 🛡️ TrustAgent™ Citation & Claim Verification
-- Deconstructs LLM responses into discrete factual claims.
-- Evaluates each claim directly against retrieved statutory provisions or court records.
-- Categorizes citations as `verified`, `partial`, `contradicted`, or `unverified`.
+- Deconstructs AI draft responses into distinct factual claims.
+- Evaluates each claim directly against retrieved statutory provisions or court records in a single batched LLM call.
+- Labels citations as `verified`, `partial`, `contradicted`, or `unverified`.
 
 ### 4. ⛓️ Tamper-Evident Hash-Chain Audit Logging
-- Every query, response, model selection, and verification verdict is appended to a SHA-256 hash-chain stored in the database.
-- Provides cryptographic tamper-detection for administrative oversight and compliance.
+- Every query, response, model selection, and verification verdict is appended to a cryptographic SHA-256 hash-chain stored in the database.
+- Enables tamper detection and administrative compliance auditing.
 
-### 5. 🔒 Multi-Layer Guardrails & Privacy
-- **Input Guard**: Rejects prompt injections, malicious inputs, and out-of-domain queries.
-- **Output Guard**: Automatically redacts sensitive Indian PII including **Aadhaar numbers**, **PAN cards**, **Phone numbers**, and **Email addresses**.
+### 5. 🔒 Multi-Layer Safety & Indian PII Redaction
+- **Input Guard**: Blocks jailbreaks, prompt injections, and out-of-domain queries.
+- **Output Guard**: Automatically redacts sensitive Indian PII (**Aadhaar numbers**, **PAN cards**, **Phone numbers**, and **Email addresses**).
 
-### 6. 🌐 Resilience: 3-Tier LLM Fallback Chain
-- Intelligent fallback routing: `Gemini 3.6 Flash` ➔ `Groq (Llama / GPT-OSS)` ➔ `OpenRouter (DeepSeek R1)`.
-- Handles rate-limits and outages seamlessly with automatic backoff and in-process response caching.
+### 6. 🌐 3-Tier Multi-Model Resilience Chain
+- Fallback chain: `Gemini 3.6 Flash` ➔ `Groq (Llama / GPT-OSS)` ➔ `OpenRouter (DeepSeek R1)`.
+- Features automatic backoff and in-process SHA-256 response caching.
 
 ### 7. 🎮 Citizen & Student Tools
-- **Rights-Rakshak Game**: Scenario-based interactive legal education with real-time scoring.
+- **Rights-Rakshak Game**: Scenario-based interactive legal education with instant scoring.
 - **Daily Constitutional Quiz**: Dynamic 5-question daily quiz with judicial explanations.
 - **Live Legal News Wire**: 24-hour curated feed of Indian judicial announcements and gazette updates.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, Lucide Icons.
-- **Backend**: Python 3.11+, FastAPI, Pydantic, Uvicorn, LiteLLM, Google GenAI SDK.
-- **Database & Auth**: Supabase PostgreSQL with `pgvector`, Row-Level Security (RLS), and JWT authentication.
-- **Testing**: Pytest, FastAPI TestClient, TypeScript Type-Checking (`tsc`).
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | Next.js 16 (App Router), React 19, TypeScript, Vanilla CSS + Tailwind CSS, Lucide Icons |
+| **Backend** | Python 3.11+, FastAPI, Pydantic, Uvicorn, LiteLLM, Google GenAI SDK |
+| **Database & Vectors** | Supabase PostgreSQL with `pgvector`, Row-Level Security (RLS), JWT Authentication |
+| **Embeddings & LLMs** | Google `gemini-embedding-001` (768-dim), Gemini 3.6 Flash, Groq GPT-OSS, OpenRouter DeepSeek R1 |
+| **Verification & Audit** | TrustAgent™ Batched Claim Verifier, SHA-256 Cryptographic Hash Chain |
+| **Testing** | Pytest, FastAPI TestClient, TypeScript Type-Checking (`tsc`) |
 
 ---
 
@@ -99,57 +120,57 @@ graph TD
 ### 1. Prerequisites
 - **Node.js** >= 18.x
 - **Python** >= 3.11
-- **Supabase Account** with pgvector enabled
+- **Supabase Account** with PostgreSQL + `pgvector`
 
 ---
 
 ### 2. Environment Configuration
 
-#### Root / Backend `.env`
-Create `.env` in the repository root:
+#### Backend `.env` (Root Directory)
+Create a `.env` file in the project root:
 ```env
-GEMINI_API_KEY=your_gemini_api_key
-GROQ_API_KEY=your_groq_api_key
-OPENROUTER_API_KEY=your_openrouter_api_key
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+GEMINI_API_KEY="your_gemini_api_key"
+GROQ_API_KEY="your_groq_api_key"
+OPENROUTER_API_KEY="your_openrouter_api_key"
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_ANON_KEY="your_supabase_anon_key"
+SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_role_key"
 ```
 
 #### Frontend `frontend/.env.local`
-Create `frontend/.env.local`:
+Create a `frontend/.env.local` file:
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_API_BASE_URL="http://127.0.0.1:8000"
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
 ```
 
 ---
 
 ### 3. Database Setup (Supabase)
-Execute the SQL statements from [`supabase_schema_updates.sql`](./supabase_schema_updates.sql) in your Supabase SQL Editor to initialize:
+Run the migration script [`supabase_schema_updates.sql`](./supabase_schema_updates.sql) in your Supabase SQL Editor to set up:
 - `cases` and `document_chunks` tables
 - `session_documents` and `chat_sessions`
-- `query_log` hash-chain table
-- `match_document_chunks_multi` vector search RPC function
+- `query_log` cryptographic hash-chain table
+- `match_document_chunks_multi` vector similarity search RPC
 
 ---
 
 ### 4. Running the Backend
 
 ```bash
-# In the repository root
-# Activate virtual environment
+# Activate Python virtual environment
 .\backend\venv\Scripts\activate   # Windows
 # source backend/venv/bin/activate # Linux/macOS
 
-# Install dependencies (if needed)
+# Install dependencies (if not already installed)
 pip install -r requirements.txt
 
 # Start the FastAPI server
 python -m uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
-Backend API will be live at: `http://127.0.0.1:8000` (Interactive Swagger Docs at `http://127.0.0.1:8000/docs`).
+- API is accessible at: `http://127.0.0.1:8000`
+- Interactive Swagger UI: `http://127.0.0.1:8000/docs`
 
 ---
 
@@ -164,83 +185,32 @@ npm install
 # Start Next.js development server
 npm run dev
 ```
-Frontend web application will be accessible at: `http://localhost:3000`.
-
----
-
-## 🔄 Developer Guide: How to Extend & Update Features
-
-Follow these clear architectural conventions whenever adding new functions or modules:
-
-### Step 1: Adding a New Backend Endpoint
-1. Create a router file inside `backend/routers/` (e.g., `backend/routers/contract_router.py`).
-2. Define Pydantic request/response schemas and authentication dependencies (`Depends(get_current_user)`).
-3. Register and mount the new router in `backend/main.py`:
-   ```python
-   from backend.routers import contract_router
-   app.include_router(contract_router.router, prefix="/contract")
-   ```
-
-### Step 2: Adding a New AI Model or LLM Provider
-1. Open `ai_core/llm_gateway.py`.
-2. Add your new model identifier to `FALLBACK_CHAIN`:
-   ```python
-   FALLBACK_CHAIN = {
-       "gemini": ["groq/openai/gpt-oss-20b", "openrouter/deepseek/deepseek-r1:free", "new_provider/model_id"],
-       ...
-   }
-   ```
-3. Ensure the provider API key is loaded into `os.environ` in `ai_core/llm_gateway.py`.
-
-### Step 3: Adding Statutory Datasets or Knowledge Vectors
-1. Add new text chunks or statutory acts in Supabase `statutes` / `judgments` table.
-2. Generate embeddings using `ai_core/rag/embeddings.py` (`embed_text` or `embed_texts_batch`).
-3. Update search queries in `ai_core/rag/vector_store.py`.
-
-### Step 4: Connecting the Frontend Service & UI
-1. Create a service file in `frontend/services/` (e.g., `frontend/services/contractService.ts`) utilizing the centralized `apiClient.ts` helper (`apiGet`, `apiPost`, `apiUpload`).
-2. Build the corresponding page in `frontend/app/` using existing design tokens and UI components (`frontend/components/ui/`).
-
-### Step 5: Validating with Automated Tests
-Always execute the test suite to guarantee regression-free additions:
-```bash
-# Backend unit & integration tests
-$env:PYTHONPATH="."
-pytest tests/test_api.py -v
-
-# Frontend TypeScript check and production build
-cd frontend
-npx tsc --noEmit
-npm run build
-```
+- Web Application is accessible at: `http://localhost:3000`
 
 ---
 
 ## 🧪 Testing & Verification
 
-### Automated Backend Tests
+Execute the complete automated test suite:
+
 ```bash
+# Run backend pytest suite
 $env:PYTHONPATH="."
-pytest tests/test_api.py -v
-```
-Expected output:
-```
-tests/test_api.py::test_health_endpoint PASSED
-tests/test_api.py::test_input_guardrails_safety PASSED
-tests/test_api.py::test_output_guardrails_pii_redaction PASSED
-tests/test_api.py::test_intent_classification PASSED
-tests/test_api.py::test_hash_chain_integrity PASSED
-tests/test_api.py::test_document_classifier PASSED
-6 passed in 37s (100% test pass rate)
+python -m pytest tests -v
 ```
 
-### Frontend Type-Safety & Build
-```bash
-cd frontend
-npx tsc --noEmit
-npm run build
+Expected output:
 ```
-Expected output: `✓ Compiled successfully` with 37 static and dynamic routes.
+tests/test_api.py::test_health_endpoint PASSED                           [ 12%]
+tests/test_api.py::test_input_guardrails_safety PASSED                   [ 25%]
+tests/test_api.py::test_output_guardrails_pii_redaction PASSED           [ 37%]
+tests/test_api.py::test_intent_classification PASSED                     [ 50%]
+tests/test_api.py::test_hash_chain_integrity PASSED                      [ 62%]
+tests/test_api.py::test_document_classifier PASSED                       [ 75%]
+tests/test_api.py::test_trustagent_corrector_and_jurisdiction PASSED     [ 87%]
+tests/test_api.py::test_rights_game_scenarios PASSED                     [100%]
+======================== 8 passed in 41s (100% pass rate) ========================
+```
 
 ---
 
@@ -253,7 +223,7 @@ Nyayapramaan/
 │   ├── guardrails/             # Safety & PII (Aadhaar, PAN, Phone) filters
 │   ├── rag/                    # Embeddings, chunkers, classifiers, vector store
 │   ├── router/                 # Adaptive model routing & intent classifier
-│   ├── timeline/               # Case event extraction
+│   ├── timeline/               # Chronological case event extraction
 │   ├── trustagent/             # Fact verification & claim extraction
 │   └── llm_gateway.py          # 3-tier resilient LLM gateway
 ├── backend/                    # FastAPI Application Services
@@ -263,9 +233,9 @@ Nyayapramaan/
 │   ├── routers/                # Chat, Document, Case, Search, Quiz, News, Admin
 │   └── main.py                 # FastAPI application entrypoint
 ├── frontend/                   # Next.js 16 (App Router) Client
-│   ├── app/                    # Pages: /public/chat, /app/cases, /admin, /quiz, /game, etc.
-│   ├── components/             # Reusable UI components, 3D Lady Advocate Guide, Navbars
-│   ├── hooks/                  # useTheme, useAuth, useSession
+│   ├── app/                    # Pages: /public/chat, /app/dashboard, /game, /quiz, etc.
+│   ├── components/             # UI components, 3D Lady Advocate Guide, Answer cards
+│   ├── hooks/                  # useTheme, useAuth, useVoiceInput
 │   ├── lib/                    # Supabase client & utilities
 │   ├── public/images/          # 3D Avatar and static assets
 │   └── services/               # API clients (chat, documents, cases, search, etc.)
@@ -273,10 +243,10 @@ Nyayapramaan/
 ├── trust_log/                  # Cryptographic SHA-256 hash-chain audit engine
 ├── supabase_schema_updates.sql # Supabase DB & pgvector migrations
 ├── requirements.txt            # Python dependencies
-└── README.md                   # Full platform documentation (English)
+└── README.md                   # Full platform documentation
 ```
 
 ---
 
 ## 📜 License
-This project is built for legal transparency, verification, and research under the MIT License.
+This project is open-source under the [MIT License](./LICENSE). Built for legal transparency, access to justice, and verified AI in the Indian judicial ecosystem.
