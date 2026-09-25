@@ -52,16 +52,17 @@ def general_legal_answer(query: str, model: str, audience: str, history: str = "
         f"PREVIOUS MESSAGES (context only, never invent beyond this):\n{history}\n"
         if history else "(First message in this chat — no earlier context.)\n"
     )
-    prompt = f"""You are a legal-information assistant for Indian law (IPC, BNS, CrPC, BNSS, civil law, court procedure).
+    prompt = f"""You are an Indian legal intelligence assistant (covering IPC, BNS, CrPC, BNSS, CPC, Constitution, and court procedure).
 {LANGUAGE_INSTRUCTION}
 {LENGTH_INSTRUCTION}
 {AUDIENCE_INSTRUCTIONS[audience]}
 
 {history_section}
 
-CRITICAL: If asked about earlier messages, use ONLY the section above.
-Be precise with section numbers. For specific fine/sentence figures, add:
-"Please verify the exact current figure from the latest Bharatiya Nyaya Sanhita (BNS) text."
+INSTRUCTIONS:
+- Directly provide a factually accurate, structured legal answer.
+- Do NOT add repetitive robotic introductions or disclaimers about being an AI.
+- Cite exact section numbers where applicable.
 
 QUESTION: {query}
 
@@ -157,11 +158,24 @@ def ask_legal_question(request: QueryRequest, user=Depends(get_current_user)):
 def _handle_ask(request: QueryRequest, user_id: str):
     query = request.query
     safety = check_input_safety(query)
-    if not safety["is_safe"]:
-        return {"blocked": True, "reason": safety["reason"]}
-
+    
     session_id = ensure_valid_session(request.session_id, user_id, query)
     save_message(session_id, "user", query)
+
+    # 1. Prompt Injection / Jailbreak Safety Guard
+    if not safety["is_safe"]:
+        block_msg = "I cannot process queries attempting system instruction override or manipulation. Please ask a valid question related to Indian law or your case documents."
+        save_message(session_id, "assistant", block_msg)
+        return {
+            "answer": block_msg,
+            "conclusion": block_msg,
+            "verified": False,
+            "sources": [],
+            "usefulness": "low",
+            "session_id": session_id,
+            "mode": "blocked",
+        }
+
     history = get_recent_history(session_id)
     model = choose_model(query)
     query_vec = embed_text(query, task_type="RETRIEVAL_QUERY")
@@ -171,7 +185,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
     if request.case_id and request.case_id not in effective_case_ids:
         effective_case_ids.append(request.case_id)
 
-    # ---- MODE A: one or more documents attached ----
+    # ---- MODE A: one or more documents attached (Court Case / FIR / Contract / Judgment) ----
     if effective_case_ids:
         client = get_supabase_client()
         # Strict readiness check -- NEVER answer against an unready document
@@ -198,21 +212,21 @@ def _handle_ask(request: QueryRequest, user_id: str):
                 pass
 
         audience = "student_public"
-        chunk_matches = search_document_chunks_multi(query_vec, effective_case_ids, match_count=4)
+        chunk_matches = search_document_chunks_multi(query_vec, effective_case_ids, match_count=6)
         source_objects = []
 
         if not chunk_matches:
-            # Fallback to case summary and text directly from cases table
+            # Fallback to case summary and text directly from cases table so query is NEVER rejected
             case_data = client.table("cases").select("filename, summary, case_text").in_("id", effective_case_ids).execute().data or []
             fallback_text_parts = []
             for cd in case_data:
                 fname = cd.get("filename", "Document")
                 summary_text = cd.get("summary", "")
-                raw_text = (cd.get("case_text") or "")[:8000]
+                raw_text = (cd.get("case_text") or "")[:10000]
                 content = f"Document: {fname}\nSummary: {summary_text}\nContent:\n{raw_text}"
                 fallback_text_parts.append(content)
                 source_objects.append({
-                    "name": f"{fname} (Case Record)",
+                    "name": f"{fname} (Case Document)",
                     "type": "document",
                     "url": None,
                     "verification_status": "pending",
@@ -235,7 +249,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
             evidence = "\n".join(c["chunk_text"] for c in chunk_matches)
             source_objects = [
                 {
-                    "name": f"{c.get('filename', 'Document')} — Page {c['page_number']}",
+                    "name": f"{c.get('filename', 'Document')} — Page {c.get('page_number', 1)}",
                     "type": "document",
                     "url": None,
                     "verification_status": "pending",
@@ -294,10 +308,39 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
     # ---- Draft + TrustAgent (shared) ----
     history_section = f"PREVIOUS MESSAGES:\n{history}\n" if history else ""
-    draft = call_llm(
-        model,
-        f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n\n{history_section}\nAnswer the CURRENT query using ONLY this evidence -- do not add outside ungrounded information.\n\nEvidence: {evidence}\n\nCURRENT QUERY: {query}",
-    )
+    
+    if effective_case_ids:
+        doc_prompt = f"""You are analyzing the user's attached legal/case document(s).
+{LANGUAGE_INSTRUCTION}
+{LENGTH_INSTRUCTION}
+{AUDIENCE_INSTRUCTIONS[audience]}
+
+{history_section}
+TASK: Answer the user's question accurately using the attached document evidence below.
+If the user asks for a summary or overview, provide a structured summary highlighting the key facts, parties involved, legal sections/issues, and findings/orders.
+Do NOT state that information is missing if it is present in the document evidence.
+
+DOCUMENT EVIDENCE:
+{evidence}
+
+USER QUESTION: {query}
+
+ANSWER:"""
+        draft = call_llm(model, doc_prompt)
+    else:
+        general_prompt = f"""{LANGUAGE_INSTRUCTION}
+{LENGTH_INSTRUCTION}
+{AUDIENCE_INSTRUCTIONS[audience]}
+
+{history_section}
+Answer the CURRENT query using ONLY this legal evidence -- do not invent ungrounded sections.
+
+Evidence: {evidence}
+
+CURRENT QUERY: {query}
+
+ANSWER:"""
+        draft = call_llm(model, general_prompt)
 
     claims = extract_claims(draft)
     verdicts = verify_claims_batch(claims, evidence)
@@ -340,11 +383,10 @@ def _general_fallback(query: str, model: str, audience: str, session_id: str | N
     general_answer = redact_pii(general_answer)
     reflection = self_reflect(query, general_answer, "(general knowledge, no specific evidence)")
     suggestions = generate_suggestions(query, general_answer, model)
-    final = f"{general_answer}\n\n[ℹ️ General Legal Information — not verified against our case/statute database.]"
-    save_message(session_id, "assistant", final)
+    save_message(session_id, "assistant", general_answer)
     _log(query, general_answer, model, verified=False)
     return {
-        "answer": final,
+        "answer": general_answer,
         "conclusion": reflection["conclusion"],
         "usefulness": reflection["usefulness"],
         "verified": False,
@@ -354,6 +396,7 @@ def _general_fallback(query: str, model: str, audience: str, session_id: str | N
         "suggestions": suggestions,
         "session_id": session_id,
     }
+
 
 
 def _log(query: str, answer: str, model: str, verified: bool):
@@ -421,6 +464,22 @@ def update_session(session_id: str, body: SessionUpdate, user=Depends(get_curren
     if updates:
         client.table("chat_sessions").update(updates).eq("id", session_id).eq("user_id", user.id).execute()
     return {"updated": True}
+
+
+@router.delete("/sessions/clear/all")
+def clear_all_chat_sessions(user=Depends(get_current_user)):
+    client = get_supabase_client()
+    try:
+        user_sessions = client.table("chat_sessions").select("id").eq("user_id", user.id).execute().data or []
+        session_ids = [s["id"] for s in user_sessions]
+        if session_ids:
+            client.table("chat_messages").delete().in_("session_id", session_ids).execute()
+            client.table("session_documents").delete().in_("session_id", session_ids).execute()
+            client.table("chat_sessions").delete().eq("user_id", user.id).execute()
+        return {"status": "success", "cleared_sessions": len(session_ids)}
+    except Exception as e:
+        print(f"[chat_router] clear_all_chat_sessions error: {e}")
+        return {"status": "error", "detail": str(e)}
 
 
 @router.delete("/sessions/{session_id}")

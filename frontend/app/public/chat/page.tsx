@@ -1,9 +1,9 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
-import { uploadDocument, getCaseStatus, deleteDocument, UploadResponse } from '@/services/documentService'
+import { uploadDocument, getCaseStatus, deleteDocument, UploadResponse, ACCEPTED_FORMATS, validateFileType } from '@/services/documentService'
 import { askQuestion, listSessions, getSessionMessages, renameSession, deleteSession, togglePin } from '@/services/chatService'
 import { AnswerCard } from '@/components/chat/AnswerCard'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
@@ -18,6 +18,7 @@ type Message = {
   sources?: any[]
   qualityNote?: string
   departmentSuggestion?: string | null
+  confidenceScore?: number
 }
 
 type DocState = {
@@ -35,24 +36,22 @@ const STARTER_PROMPTS = [
   {
     title: "Bharatiya Nyaya Sanhita (BNS)",
     desc: "Compare Section 106 of BNS vs Section 304A IPC for medical negligence.",
+    icon: "📜",
   },
   {
     title: "Bail & Criminal Procedure",
     desc: "What are the mandatory grounds for regular bail under Section 437/439 CrPC?",
+    icon: "⚖️",
   },
   {
     title: "Document Analysis",
-    desc: "Attach your case PDF (.pdf) to extract citations, timeline and key rulings.",
+    desc: "Attach your case file (PDF, DOCX, image) to extract citations, timeline and key rulings.",
+    icon: "📄",
   },
 ]
 
-export default function PublicChat() {
-  const { user, loading: authLoading, signOut } = useAuth()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (!authLoading && !user) router.push('/login?redirect=/public/chat')
-  }, [authLoading, user, router])
+function CitizenChatContent() {
+  const { user, signOut } = useAuth()
 
   const [query, setQuery] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -227,6 +226,16 @@ export default function PublicChat() {
     if (!files.length) return
 
     for (const file of files) {
+      // Validate file type and size before uploading
+      const validationError = validateFileType(file)
+      if (validationError) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: `⚠️ ${validationError}` },
+        ])
+        continue
+      }
+
       const controller = new AbortController()
       setPendingUploads((prev) => [...prev, { fileName: file.name, controller }])
 
@@ -308,22 +317,11 @@ export default function PublicChat() {
     setLoading(false)
   }
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#050608] text-slate-400 font-sans text-sm">
-        <div className="flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse-dot" />
-          <span>Authenticating NyayaPramaan Workspace...</span>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="relative flex h-screen w-full overflow-hidden bg-[#050608] text-slate-100 font-sans antialiased">
-      {/* Ambient background bloom orbs */}
-      <div className="bloom-orb-indigo top-[-60px] left-[20%] opacity-35" />
-      <div className="bloom-orb-amber bottom-[-80px] right-[15%] opacity-30" />
+    <div className="citizen-chat-shell relative flex h-screen w-full overflow-hidden text-slate-100 font-sans antialiased">
+      {/* Ambient background bloom orbs — gold-themed for Citizen */}
+      <div className="bloom-orb-citizen-1" />
+      <div className="bloom-orb-citizen-2" />
 
       {/* Sleek Sidebar */}
       <ChatSidebar
@@ -339,11 +337,11 @@ export default function PublicChat() {
 
       {/* Main Chat Workspace */}
       <main className="relative flex flex-1 flex-col h-full overflow-hidden bg-transparent">
-        {/* Top Header Bar */}
-        <header className="flex-shrink-0 border-b border-white/[0.08] bg-[#07080D]/80 backdrop-blur-2xl z-20">
+        {/* Top Header Bar — Citizen Gold Accent */}
+        <header className="flex-shrink-0 border-b border-[#B8925A]/15 bg-[#0A0A0B]/85 backdrop-blur-2xl z-20">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500/20 via-blue-500/15 to-transparent border border-white/10 text-sm shadow-inner">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#B8925A]/25 via-[#D4A368]/15 to-transparent border border-[#B8925A]/20 text-sm shadow-inner">
                 ⚖️
               </div>
               <div>
@@ -356,8 +354,8 @@ export default function PublicChat() {
                     Verified RAG
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  Indian Statutes, Bare Acts & Case Law Intelligence
+                <p className="text-[11px] text-[#B8925A]/70">
+                  Ask me anything about Indian Law — Statutes, Bare Acts & Case Law
                 </p>
               </div>
             </div>
@@ -385,14 +383,14 @@ export default function PublicChat() {
             {isSessionLoading ? (
               <div className="my-16 flex flex-col items-center justify-center text-center">
                 <div className="flex items-center gap-3 text-sm text-slate-400">
-                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse-dot" />
+                  <span className="h-2 w-2 rounded-full bg-[#B8925A] animate-pulse-dot" />
                   <span>Loading conversation history...</span>
                 </div>
               </div>
             ) : messages.length === 0 ? (
-              /* Empty State Hero with dynamic float */
+              /* Empty State Hero with dynamic float — Gold themed */
               <div className="my-8 flex flex-col items-center justify-center text-center">
-                <div className="animate-text-float flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-blue-600/30 via-indigo-500/20 to-amber-500/15 border border-white/15 text-3xl shadow-2xl">
+                <div className="animate-text-float flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-tr from-[#B8925A]/30 via-[#D4A368]/20 to-[#C89B59]/15 border border-[#B8925A]/25 text-3xl shadow-2xl">
                   ⚖️
                 </div>
                 <h2 className="mt-5 text-2xl font-medium tracking-tight text-white">
@@ -402,23 +400,26 @@ export default function PublicChat() {
                   Every query is cross-checked against authoritative statutes and judgment chunks with transparent verification badges.
                 </p>
 
-                {/* Starter Prompts Grid with glass jelly styling */}
+                {/* Starter Prompts Grid with glass jelly styling — Gold themed */}
                 <div className="mt-8 grid w-full gap-3 sm:grid-cols-3 text-left">
                   {STARTER_PROMPTS.map((p, idx) => (
                     <button
                       key={idx}
                       onClick={() => sendQuery(p.desc)}
-                      className="glass-jelly-card group flex flex-col justify-between p-4 cursor-pointer text-left"
+                      className="group flex flex-col justify-between p-4 cursor-pointer text-left rounded-2xl border border-[#B8925A]/15 bg-[#B8925A]/[0.04] hover:bg-[#B8925A]/[0.08] hover:border-[#B8925A]/30 transition-all shadow-sm"
                     >
                       <div>
-                        <span className="text-xs font-semibold text-white group-hover:text-blue-400 transition-colors">
-                          {p.title}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">{p.icon}</span>
+                          <span className="text-xs font-semibold text-white group-hover:text-[#D4A368] transition-colors">
+                            {p.title}
+                          </span>
+                        </div>
                         <p className="mt-1.5 text-[11px] leading-relaxed text-slate-400">
                           {p.desc}
                         </p>
                       </div>
-                      <span className="mt-3 text-[10px] font-medium text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                      <span className="mt-3 text-[10px] font-medium text-[#B8925A] flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
                         Explore topic →
                       </span>
                     </button>
@@ -444,7 +445,7 @@ export default function PublicChat() {
                           {m.attachedFileNames.map((name, j) => (
                             <span
                               key={j}
-                              className="flex items-center gap-1 rounded-lg bg-blue-500/20 border border-blue-500/35 px-2.5 py-1 text-[11px] font-medium text-blue-300"
+                              className="flex items-center gap-1 rounded-lg bg-[#B8925A]/20 border border-[#B8925A]/35 px-2.5 py-1 text-[11px] font-medium text-[#D4A368]"
                             >
                               <span>📄</span>
                               <span className="truncate max-w-[200px]">{name}</span>
@@ -452,7 +453,7 @@ export default function PublicChat() {
                           ))}
                         </div>
                       )}
-                      <div className="rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 px-4 py-3 text-sm text-white shadow-xl leading-relaxed border border-white/10">
+                      <div className="rounded-2xl bg-gradient-to-br from-[#B8925A] via-[#C89B59] to-[#D4A368] px-4 py-3 text-sm text-slate-950 font-medium shadow-xl leading-relaxed border border-[#B8925A]/30">
                         {m.content}
                       </div>
                     </div>
@@ -465,6 +466,8 @@ export default function PublicChat() {
                         sources={m.sources}
                         qualityNote={m.qualityNote}
                         departmentSuggestion={m.departmentSuggestion}
+                        confidenceScore={m.confidenceScore}
+                        messageIndex={i}
                       />
                     </div>
                   )}
@@ -477,7 +480,7 @@ export default function PublicChat() {
               </div>
             )}
 
-            {/* Suggestions Chips */}
+            {/* Suggestions Chips — Gold themed */}
             {suggestions.length > 0 && !loading && (
               <div className="flex flex-wrap items-center gap-2 pt-2">
                 <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
@@ -487,10 +490,10 @@ export default function PublicChat() {
                   <button
                     key={i}
                     onClick={() => sendQuery(s)}
-                    className="flex items-center gap-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] px-3.5 py-1 text-xs text-slate-200 hover:border-blue-400/40 hover:bg-blue-600/10 hover:text-white transition-all cursor-pointer shadow-xs"
+                    className="flex items-center gap-1.5 rounded-full border border-[#B8925A]/20 bg-[#B8925A]/[0.06] px-3.5 py-1 text-xs text-slate-200 hover:border-[#B8925A]/40 hover:bg-[#B8925A]/15 hover:text-white transition-all cursor-pointer shadow-xs"
                   >
                     <span>{s}</span>
-                    <span className="text-blue-400 text-[10px]">↗</span>
+                    <span className="text-[#B8925A] text-[10px]">↗</span>
                   </button>
                 ))}
               </div>
@@ -498,8 +501,8 @@ export default function PublicChat() {
           </div>
         </div>
 
-        {/* Floating Input Command Dock */}
-        <div className="flex-shrink-0 border-t border-white/[0.08] bg-[#07080D]/85 p-4 backdrop-blur-2xl">
+        {/* Floating Input Command Dock — Gold themed */}
+        <div className="flex-shrink-0 border-t border-[#B8925A]/10 bg-[#0A0A0B]/90 p-4 backdrop-blur-2xl">
           <div className="mx-auto max-w-3xl">
             {/* Attached & Processing Documents Chips */}
             {(documents.length > 0 || pendingUploads.length > 0) && (
@@ -527,7 +530,7 @@ export default function PublicChat() {
                     key={doc.caseId}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs shadow-xs ${
                       doc.status === 'processing'
-                        ? 'border-blue-500/35 bg-blue-500/15 text-blue-300'
+                        ? 'border-[#B8925A]/35 bg-[#B8925A]/15 text-[#D4A368]'
                         : doc.status === 'ready'
                         ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300'
                         : 'border-red-500/35 bg-red-500/15 text-red-300'
@@ -537,8 +540,8 @@ export default function PublicChat() {
                     <span className="truncate max-w-[160px] font-medium">{doc.fileName}</span>
                     <span className="text-[10px] font-semibold">
                       {doc.status === 'processing' ? (
-                        <span className="flex items-center gap-1 text-blue-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-pulse-dot" />
+                        <span className="flex items-center gap-1 text-[#B8925A]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#B8925A] animate-pulse-dot" />
                           Indexing...
                         </span>
                       ) : doc.status === 'ready' ? (
@@ -559,12 +562,12 @@ export default function PublicChat() {
               </div>
             )}
 
-            {/* Input Jelly Box */}
-            <div className="glass-jelly relative flex items-end gap-2 p-2.5 focus-within:border-blue-500/60 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+            {/* Input Jelly Box — Gold themed */}
+            <div className="glass-jelly relative flex items-end gap-2 p-2.5 focus-within:border-[#B8925A]/50 focus-within:ring-2 focus-within:ring-[#B8925A]/20 transition-all">
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".pdf"
+                accept={ACCEPTED_FORMATS}
                 multiple
                 onChange={handleFileSelect}
                 className="hidden"
@@ -575,8 +578,8 @@ export default function PublicChat() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-white/[0.08] hover:text-white transition-all cursor-pointer"
-                  title="Attach Case Document (.pdf)"
+                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-white/[0.08] hover:text-[#B8925A] transition-all cursor-pointer"
+                  title="Attach Document (PDF, DOCX, Image, TXT)"
                 >
                   📎
                 </button>
@@ -586,7 +589,7 @@ export default function PublicChat() {
                   disabled={loading}
                   className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all cursor-pointer ${
                     listening
-                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+                      ? 'bg-[#B8925A]/20 text-[#B8925A] border border-[#B8925A]/40 animate-pulse'
                       : 'text-slate-400 hover:bg-white/[0.08] hover:text-white'
                   }`}
                   title={listening ? 'Stop Microphone' : 'Start Voice Input'}
@@ -608,7 +611,7 @@ export default function PublicChat() {
                 placeholder={
                   hasProcessingDocs
                     ? 'Processing attached document chunks...'
-                    : 'Ask about IPC, BNS, court precedents, or attached case files...'
+                    : 'Ask about IPC, BNS, court precedents, or attach any case file...'
                 }
                 disabled={loading}
                 className="max-h-32 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-slate-100 placeholder:text-slate-400 outline-none leading-relaxed"
@@ -628,12 +631,20 @@ export default function PublicChat() {
             </div>
 
             <div className="mt-2 flex items-center justify-between px-1 text-[11px] text-slate-400">
-              <span>NyayaPramaan AI • Multi-document citations</span>
+              <span>NyayaPramaan AI • Multi-document citations • PDF, DOCX, Image, TXT</span>
               <span>Press Enter to send, Shift+Enter for new line</span>
             </div>
           </div>
         </div>
       </main>
     </div>
+  )
+}
+
+export default function PublicChat() {
+  return (
+    <RoleGuard allowedRole="public">
+      <CitizenChatContent />
+    </RoleGuard>
   )
 }

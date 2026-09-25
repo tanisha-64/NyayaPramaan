@@ -1,23 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import { getAdminMetrics, getJudgmentsCount, AdminMetrics } from '@/services/adminService'
 
-export default function AdminDashboardPage() {
-  const { user, loading: authLoading, role, signOut } = useAuth()
-  const router = useRouter()
-
-  useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/login?redirect=/admin')
-      } else if (role !== 'admin') {
-        router.push('/public/chat')
-      }
-    }
-  }, [authLoading, user, role, router])
+function AdminContent() {
+  const { user, signOut } = useAuth()
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null)
   const [judgmentCount, setJudgmentCount] = useState<number | null>(null)
@@ -25,10 +14,8 @@ export default function AdminDashboardPage() {
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
-    if (user && role === 'admin') {
-      fetchData()
-    }
-  }, [user, role])
+    if (user) fetchData()
+  }, [user])
 
   async function fetchData() {
     setLoading(true)
@@ -48,12 +35,12 @@ export default function AdminDashboardPage() {
     setRefreshing(false)
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050608] text-slate-400 font-sans text-sm">
+      <div className="flex h-screen items-center justify-center bg-[#141414] text-slate-400 font-mono text-sm">
         <div className="flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse-dot" />
-          <span>Loading NyayaPramaan Control Tower Metrics...</span>
+          <span className="h-2.5 w-2.5 rounded-full bg-[#D9A441] animate-pulse-dot" />
+          <span>Loading NyayaPramaan System Console Metrics...</span>
         </div>
       </div>
     )
@@ -71,20 +58,31 @@ export default function AdminDashboardPage() {
 
   const totalModelCalls = Object.values(modelUsage).reduce((a, b) => a + b, 0) || 1
 
+  const TRUST_PIPELINE = [
+    { name: 'NeMo & Input Guardrails', status: 'Active & Enforcing', ok: true },
+    { name: 'Hybrid pgvector RAG (Statutes + Judgments)', status: 'Operational', ok: true },
+    { name: 'CRAG (Corrective Live Web Verifier)', status: 'Fallback Ready', ok: true },
+    { name: 'TrustAgent 4-Level Claim Checker', status: 'Enforcing Citations', ok: true },
+    { name: 'Self-RAG Critique & Refinement', status: 'Online', ok: true },
+    { name: 'LLM-as-Judge Final Evaluator', status: 'Active', ok: true },
+  ]
+
   return (
-    <div className="min-h-screen bg-[#050608] text-slate-100 font-sans antialiased">
-      {/* Top Header */}
-      <header className="border-b border-white/[0.08] bg-[#07080D]/90 backdrop-blur-2xl sticky top-0 z-30">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5 flex-wrap gap-4">
+    <div className="min-h-screen bg-[#141414] text-[#E8E6E1] font-mono antialiased">
+      {/* Top Header — Technical Charcoal with Amber accent */}
+      <header className="border-b border-[#D9A441]/15 bg-[#1A1A1A]/95 backdrop-blur-2xl sticky top-0 z-30">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3 flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="flex items-center gap-2.5 text-white no-underline">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500/20 via-blue-500/15 to-transparent border border-white/10 text-sm">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#D9A441]/15 border border-[#D9A441]/25 text-sm">
                 🛡️
               </span>
-              <span className="text-base font-semibold tracking-tight">NyayaPramaan Admin</span>
+              <span className="text-sm font-bold tracking-wider uppercase text-[#D9A441]">
+                NYAYAPRAMAAN
+              </span>
             </Link>
-            <span className="rounded-full bg-indigo-500/15 border border-indigo-500/25 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-300">
-              Control Tower
+            <span className="rounded bg-[#D9A441]/12 border border-[#D9A441]/25 px-2 py-0.5 text-[10px] font-bold text-[#D9A441] tracking-widest uppercase">
+              SYSTEM CONSOLE
             </span>
           </div>
 
@@ -92,122 +90,101 @@ export default function AdminDashboardPage() {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-lg border border-[#D9A441]/20 bg-[#D9A441]/[0.06] px-3 py-1.5 text-[11px] text-[#D9A441] hover:bg-[#D9A441]/15 transition-all cursor-pointer font-bold tracking-wider uppercase"
             >
-              <span>{refreshing ? '⟳ Refreshing...' : '⟳ Refresh Metrics'}</span>
+              {refreshing ? '⟳ REFRESHING...' : '⟳ REFRESH'}
             </button>
             <Link
               href="/app/dashboard"
-              className="rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 transition-all no-underline"
+              className="rounded-lg bg-[#2B5CE0]/80 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#2B5CE0] transition-all no-underline tracking-wider uppercase"
             >
-              Lawyer Workspace
+              LAWYER WORKSPACE
             </Link>
             <button
               onClick={signOut}
-              className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+              className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-[11px] text-red-400 hover:bg-red-500/20 transition-all cursor-pointer font-bold tracking-wider uppercase"
             >
-              Sign Out
+              LOG OUT
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-6 py-8 space-y-8">
-        {/* Banner */}
-        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-r from-[#0E121E] via-[#0B0E17] to-[#07090E] p-6 shadow-xl">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400">
-            System Operations & Verification Telemetry
-          </span>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">
+      <main className="mx-auto max-w-7xl px-6 py-6 space-y-6">
+        {/* System Banner — Compact, technical */}
+        <div className="rounded-xl border border-[#D9A441]/12 bg-gradient-to-r from-[#1A1A1A] via-[#181818] to-[#1A1A1A] p-5">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="h-2 w-2 rounded-full bg-[#D9A441] animate-pulse-dot" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#D9A441]">
+              SYSTEM OPERATIONS & VERIFICATION TELEMETRY
+            </span>
+          </div>
+          <h1 className="text-lg font-bold tracking-tight text-white">
             Trust & Evidence Health Dashboard
           </h1>
-          <p className="mt-1 text-xs text-slate-400 max-w-2xl leading-relaxed">
-            Live telemetry monitoring verification accuracy, vector store corpus capacity, model routing latency, and guardrail protections.
+          <p className="mt-0.5 text-[11px] text-[#E8E6E1]/40 max-w-2xl leading-relaxed font-mono">
+            Live telemetry: verification accuracy, vector store corpus, model routing, guardrail protections.
           </p>
         </div>
 
-        {/* 4 KPI Grid Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* KPI 1 */}
-          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111420] to-[#0A0D14] p-5 shadow-lg space-y-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Total Legal Queries
-            </span>
-            <div className="text-3xl font-extrabold text-white">
-              {metrics?.total_queries ?? 48}
-            </div>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <span className="text-emerald-400">↑ active</span> across citizen & professional portals
-            </p>
-          </div>
-
-          {/* KPI 2 */}
-          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111420] to-[#0A0D14] p-5 shadow-lg space-y-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Evidence Verified Queries
-            </span>
-            <div className="text-3xl font-extrabold text-emerald-400">
-              {metrics?.verified_count ?? 46}
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Cross-checked with pgvector chunks
-            </p>
-          </div>
-
-          {/* KPI 3 */}
-          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111420] to-[#0A0D14] p-5 shadow-lg space-y-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Citation Accuracy Rate
-            </span>
-            <div className="text-3xl font-extrabold text-amber-300">
-              {accuracyPercent}%
-            </div>
-            <p className="text-[11px] text-slate-400">
-              4-level TrustAgent validation
-            </p>
-          </div>
-
-          {/* KPI 4 */}
-          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#111420] to-[#0A0D14] p-5 shadow-lg space-y-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Indexed Judgments & Statutes
-            </span>
-            <div className="text-3xl font-extrabold text-blue-400">
-              {judgmentCount != null ? judgmentCount : '26,000+'}
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Supreme Court & High Court cases
-            </p>
-          </div>
+        {/* 4 KPI Grid — Technical, compact cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <KPICard
+            label="TOTAL QUERIES"
+            value={metrics?.total_queries ?? 48}
+            sublabel="across all portals"
+            color="#D9A441"
+          />
+          <KPICard
+            label="EVIDENCE VERIFIED"
+            value={metrics?.verified_count ?? 46}
+            sublabel="pgvector cross-checked"
+            color="#10B981"
+          />
+          <KPICard
+            label="CITATION ACCURACY"
+            value={`${accuracyPercent}%`}
+            sublabel="4-level TrustAgent"
+            color="#D9A441"
+          />
+          <KPICard
+            label="INDEXED JUDGMENTS"
+            value={judgmentCount != null ? judgmentCount.toLocaleString() : '26,000+'}
+            sublabel="SC & HC cases"
+            color="#5B8DEF"
+          />
         </div>
 
-        {/* 2-Column Section: Model Usage vs Trust Pipeline Health */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* 2-Column: Model Usage + Trust Pipeline */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left: Model Routing Breakdown */}
-          <section className="lg:col-span-6 rounded-2xl border border-white/[0.08] bg-[#0A0D14] p-6 shadow-xl space-y-5">
-            <div className="border-b border-white/[0.08] pb-3">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-                Multi-Model Routing & LLM Gateway Usage
+          <section className="lg:col-span-6 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
+            <div className="border-b border-[#D9A441]/10 pb-2.5">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
+                MULTI-MODEL ROUTING & LLM GATEWAY
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Distribution of workload across free-tier and specialized models.
+              <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
+                Workload distribution across free-tier models
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {Object.entries(modelUsage).map(([model, count]) => {
                 const pct = Math.round((count / totalModelCalls) * 100)
                 return (
-                  <div key={model} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-slate-200">{model}</span>
-                      <span className="text-slate-400 font-semibold">{count} queries ({pct}%)</span>
+                  <div key={model} className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-mono text-[#E8E6E1]/70 truncate max-w-[250px]">{model}</span>
+                      <span className="text-[#D9A441] font-bold tabular-nums">{count} ({pct}%)</span>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                    <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500"
-                        style={{ width: `${pct}%` }}
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${pct}%`,
+                          background: `linear-gradient(90deg, #D9A441, #E5B84A)`,
+                        }}
                       />
                     </div>
                   </div>
@@ -216,35 +193,28 @@ export default function AdminDashboardPage() {
             </div>
           </section>
 
-          {/* Right: Trust Pipeline Component Health */}
-          <section className="lg:col-span-6 rounded-2xl border border-white/[0.08] bg-[#0A0D14] p-6 shadow-xl space-y-5">
-            <div className="border-b border-white/[0.08] pb-3">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-                Core Trust Engine Verification Status
+          {/* Right: Trust Pipeline Health */}
+          <section className="lg:col-span-6 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
+            <div className="border-b border-[#D9A441]/10 pb-2.5">
+              <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
+                CORE TRUST ENGINE STATUS
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Real-time health of the 7-step anti-hallucination pipeline.
+              <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
+                7-step anti-hallucination pipeline health
               </p>
             </div>
 
-            <div className="space-y-3">
-              {[
-                { name: 'NeMo & Input Guardrails', status: 'Active & Enforcing', color: 'emerald' },
-                { name: 'Hybrid pgvector RAG (Statutes + Judgments)', status: 'Operational', color: 'emerald' },
-                { name: 'CRAG (Corrective Live Web Verifier)', status: 'Fallback Ready', color: 'blue' },
-                { name: 'TrustAgent 4-Level Claim Checker', status: 'Enforcing Citations', color: 'emerald' },
-                { name: 'Self-RAG Critique & Refinement', status: 'Online', color: 'emerald' },
-                { name: 'LLM-as-Judge Final Evaluator', status: 'Active', color: 'emerald' },
-              ].map((item, i) => (
+            <div className="space-y-2">
+              {TRUST_PIPELINE.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 text-xs"
+                  className="flex items-center justify-between rounded-lg border border-[#D9A441]/08 bg-[#D9A441]/[0.03] p-3 text-[11px]"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse-dot" />
-                    <span className="font-medium text-slate-200">{item.name}</span>
+                    <span className={`h-1.5 w-1.5 rounded-full ${item.ok ? 'bg-emerald-400' : 'bg-red-400'} animate-pulse-dot`} />
+                    <span className="font-mono text-[#E8E6E1]/70">{item.name}</span>
                   </div>
-                  <span className="text-emerald-400 font-semibold text-[11px] bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                  <span className="text-[10px] font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 uppercase">
                     {item.status}
                   </span>
                 </div>
@@ -252,7 +222,68 @@ export default function AdminDashboardPage() {
             </div>
           </section>
         </div>
+
+        {/* Admin Quick Nav Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+          {[
+            { label: 'RAG Config', href: '/admin/rag', icon: '🔧' },
+            { label: 'Guardrails', href: '/admin/guardrails', icon: '🛡️' },
+            { label: 'TrustAgent', href: '/admin/trustagent', icon: '✅' },
+            { label: 'Evaluation', href: '/admin/evaluation', icon: '📊' },
+            { label: 'Users', href: '/admin/users', icon: '👥' },
+            { label: 'Audit Log', href: '/admin/audit', icon: '📋' },
+            { label: 'Routing', href: '/admin/routing', icon: '🔀' },
+            { label: 'System', href: '/admin/system', icon: '⚙️' },
+          ].map((nav) => (
+            <Link
+              key={nav.href}
+              href={nav.href}
+              className="flex flex-col items-center gap-1.5 rounded-lg border border-[#D9A441]/10 bg-[#D9A441]/[0.03] p-3 text-[10px] font-bold tracking-wider uppercase text-[#E8E6E1]/50 hover:text-[#D9A441] hover:bg-[#D9A441]/10 hover:border-[#D9A441]/25 transition-all no-underline"
+            >
+              <span className="text-base">{nav.icon}</span>
+              <span>{nav.label}</span>
+            </Link>
+          ))}
+        </div>
       </main>
     </div>
+  )
+}
+
+function KPICard({
+  label,
+  value,
+  sublabel,
+  color,
+}: {
+  label: string
+  value: string | number
+  sublabel: string
+  color: string
+}) {
+  return (
+    <div
+      className="rounded-xl border p-4 space-y-1.5"
+      style={{
+        borderColor: `${color}15`,
+        background: `linear-gradient(180deg, ${color}08 0%, #14141400 100%)`,
+      }}
+    >
+      <span className="text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: `${color}90` }}>
+        {label}
+      </span>
+      <div className="text-2xl font-black tabular-nums" style={{ color }}>
+        {value}
+      </div>
+      <p className="text-[10px] text-[#E8E6E1]/30 font-mono">{sublabel}</p>
+    </div>
+  )
+}
+
+export default function AdminPage() {
+  return (
+    <RoleGuard allowedRole="admin">
+      <AdminContent />
+    </RoleGuard>
   )
 }

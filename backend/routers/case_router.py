@@ -97,9 +97,22 @@ CASE TEXT:
     }
 
 
+@router.delete("/clear/all")
+def clear_all_cases(user=Depends(get_current_user)):
+    client = get_supabase_client()
+    user_cases = client.table("cases").select("id").eq("user_id", user.id).execute().data or []
+    case_ids = [c["id"] for c in user_cases]
+    if case_ids:
+        client.table("document_chunks").delete().in_("case_id", case_ids).execute()
+        client.table("session_documents").delete().in_("case_id", case_ids).execute()
+        client.table("cases").delete().eq("user_id", user.id).execute()
+    return {"status": "success", "cleared_count": len(case_ids)}
+
+
 @router.delete("/{case_id}")
 def delete_case(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
     client.table("document_chunks").delete().eq("case_id", case_id).execute()
+    client.table("session_documents").delete().eq("case_id", case_id).execute()
     client.table("cases").delete().eq("id", case_id).eq("user_id", user.id).execute()
-    return {"deleted": case_id}
+    return {"deleted": case_id}

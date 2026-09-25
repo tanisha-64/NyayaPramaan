@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { ChatSettingsModal } from './ChatSettingsModal'
 
 type Session = { id: string; title: string; updated_at: string; pinned: boolean }
 
@@ -28,6 +29,8 @@ export function ChatSidebar({
   const [collapsed, setCollapsed] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+
 
   if (collapsed) {
     return (
@@ -210,6 +213,13 @@ export function ChatSidebar({
           <span>Case Workspace</span>
         </a>
         <a
+          href="/public/saved"
+          className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-[#B8925A] transition-all no-underline"
+        >
+          <span>★</span>
+          <span>Saved Answers</span>
+        </a>
+        <a
           href="/game"
           className="flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-amber-400 transition-all no-underline"
         >
@@ -234,6 +244,17 @@ export function ChatSidebar({
 
       {/* Bottom User Bar */}
       <div className="border-t border-white/[0.08] pt-2 flex flex-col gap-1">
+        <button
+          onClick={() => setSettingsOpen(true)}
+          className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.06] hover:text-white transition-all cursor-pointer"
+        >
+          <span className="flex items-center gap-2">
+            <span className="text-[13px]">⚙️</span>
+            <span>Settings & Library</span>
+          </span>
+          <span className="text-[9px] rounded bg-white/10 px-1.5 py-0.5 text-slate-400">Manage</span>
+        </button>
+
         <button
           onClick={() => setConfirmLogout(true)}
           className="flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-xs text-slate-400 hover:bg-white/[0.05] hover:text-red-400 transition-all cursor-pointer"
@@ -267,6 +288,15 @@ export function ChatSidebar({
           onLogout()
         }}
         onCancel={() => setConfirmLogout(false)}
+      />
+
+      <ChatSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onChatsCleared={() => {
+          onNew()
+          window.location.reload()
+        }}
       />
     </aside>
   )

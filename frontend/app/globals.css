@@ -87,18 +87,67 @@ body {
 
 .glass-jelly-card:hover {
   border-color: var(--border-glass-highlight);
-  transform: translateY(-2px);
-  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.45);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5), 0 0 25px -5px rgba(200, 155, 89, 0.15);
+}
+
+/* Luminous Glow & Shimmer Utilities */
+.glow-gold {
+  box-shadow: 0 0 40px -8px rgba(200, 155, 89, 0.35);
+}
+
+.glow-blue {
+  box-shadow: 0 0 40px -8px rgba(59, 130, 246, 0.35);
+}
+
+.glow-emerald {
+  box-shadow: 0 0 40px -8px rgba(16, 185, 129, 0.35);
+}
+
+.border-glow-gold {
+  border-color: rgba(200, 155, 89, 0.4);
+  box-shadow: 0 0 20px rgba(200, 155, 89, 0.15) inset;
+}
+
+.gradient-text-gold {
+  background: linear-gradient(135deg, #FFF6E5 0%, #F5C77E 40%, #C89B59 80%, #9E7438 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, #FFFFFF 0%, #93C5FD 50%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-border-card {
+  position: relative;
+  background: #0B0E14;
+  border-radius: 1.25rem;
+}
+
+.gradient-border-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.3rem;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(200, 155, 89, 0.4) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(255, 255, 255, 0.05) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 /* Ambient Bloom Orbs */
 .bloom-orb-indigo {
   position: absolute;
-  width: 380px;
-  height: 380px;
+  width: 450px;
+  height: 450px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 70%);
-  filter: blur(50px);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, rgba(59, 130, 246, 0.1) 50%, transparent 70%);
+  filter: blur(65px);
   pointer-events: none;
   z-index: 0;
   animation: bloom-drift 12s ease-in-out infinite alternate;
@@ -106,11 +155,11 @@ body {
 
 .bloom-orb-amber {
   position: absolute;
-  width: 320px;
-  height: 320px;
+  width: 400px;
+  height: 400px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(200, 155, 89, 0.2) 0%, rgba(245, 158, 11, 0.06) 50%, transparent 70%);
-  filter: blur(50px);
+  background: radial-gradient(circle, rgba(200, 155, 89, 0.22) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 70%);
+  filter: blur(60px);
   pointer-events: none;
   z-index: 0;
   animation: bloom-drift-reverse 15s ease-in-out infinite alternate;
@@ -118,15 +167,24 @@ body {
 
 .bloom-orb-cyan {
   position: absolute;
-  width: 280px;
-  height: 280px;
+  width: 320px;
+  height: 320px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, transparent 65%);
-  filter: blur(45px);
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, transparent 65%);
+  filter: blur(50px);
   pointer-events: none;
   z-index: 0;
   animation: bloom-drift 18s ease-in-out infinite alternate;
 }
+
+/* Grid overlay background */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
 
 /* Dynamic Float Animations */
 @keyframes text-float {
@@ -287,4 +345,101 @@ html.light .bg-white\/\[0\.02\] {
 html[data-theme="light"] .bg-white\/\[0\.06\],
 html.light .bg-white\/\[0\.06\] {
   background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ============================================================
+   ROLE-SPECIFIC VISUAL IDENTITY THEMES
+   Three distinct experiences for Citizen, Professional, Admin
+   ============================================================ */
+
+/* ── Citizen / Student (#0A0A0B warm-black + #B8925A gold) ── */
+.citizen-chat-shell {
+  background: #0A0A0B;
+}
+
+.bloom-orb-citizen-1 {
+  position: fixed;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 146, 90, 0.18) 0%, rgba(212, 163, 104, 0.06) 50%, transparent 70%);
+  filter: blur(55px);
+  pointer-events: none;
+  z-index: 0;
+  top: -80px;
+  left: 18%;
+  animation: bloom-drift 14s ease-in-out infinite alternate;
+}
+
+.bloom-orb-citizen-2 {
+  position: fixed;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 146, 90, 0.12) 0%, rgba(200, 155, 89, 0.04) 50%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+  bottom: -60px;
+  right: 12%;
+  animation: bloom-drift-reverse 16s ease-in-out infinite alternate;
+}
+
+/* ── Professional (#0F1B2E deep-navy + #2B5CE0 trust-blue) ── */
+/* Body background handled inline via page component */
+
+/* ── Admin (#141414 technical-charcoal + #D9A441 amber) ── */
+/* Body background handled inline via page component */
+
+/* ── Skeleton loader animation ── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.15; }
+}
+
+.skeleton-pulse {
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.8s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* ── Entrance animation for cards ── */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered entrance for grid children */
+.animate-fade-up:nth-child(1) { animation-delay: 0ms; }
+.animate-fade-up:nth-child(2) { animation-delay: 60ms; }
+.animate-fade-up:nth-child(3) { animation-delay: 120ms; }
+.animate-fade-up:nth-child(4) { animation-delay: 180ms; }
+
+/* ── Confidence meter subtle glow ── */
+.confidence-meter {
+  transition: all 0.3s ease;
+}
+
+/* ── Report button expand animation ── */
+@keyframes report-expand {
+  from {
+    opacity: 0;
+    transform: scaleY(0.8);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
 }

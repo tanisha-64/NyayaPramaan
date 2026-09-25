@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/hooks/useAuth";
 
-const publicLinks = [
+const publicGuestLinks = [
   { href: "/how-it-works", label: "How It Works" },
   { href: "/trust-verification", label: "Trust & Verification" },
   { href: "/game", label: "Legal Rights Game 🎮" },
@@ -12,27 +12,55 @@ const publicLinks = [
   { href: "/news", label: "Legal News" },
 ];
 
-const authenticatedLinks = [
-  { href: "/public/chat", label: "AI Research" },
-  { href: "/app/dashboard", label: "Case Workspace" },
-  { href: "/game", label: "Rights Game 🎮" },
-  { href: "/quiz", label: "Daily Quiz" },
-  { href: "/news", label: "Legal News" },
-  { href: "/trust-verification", label: "Trust Engine" },
-];
-
 export function TopNav() {
   const [open, setOpen] = useState(false);
-  const { user, role, signOut } = useAuth();
+  const { user, role, isAdmin, signOut } = useAuth();
 
-  let links = user ? [...authenticatedLinks] : publicLinks;
-  if (user && role === "admin") {
-    links = [{ href: "/admin", label: "🛡️ Admin Console" }, ...authenticatedLinks];
+  let links = publicGuestLinks;
+  let primaryActionHref = "/login";
+  let primaryActionLabel = "Launch AI Workspace →";
+
+  if (user) {
+    if (isAdmin) {
+      // Superadmin gets universal navigation
+      links = [
+        { href: "/admin", label: "🛡️ Admin Console" },
+        { href: "/app/dashboard", label: "⚖️ Case Workspace" },
+        { href: "/public/chat", label: "🧑‍🎓 Citizen Chat" },
+        { href: "/trust-verification", label: "Trust Engine" },
+        { href: "/game", label: "Rights Game 🎮" },
+        { href: "/quiz", label: "Daily Quiz" },
+      ];
+      primaryActionHref = "/admin";
+      primaryActionLabel = "Admin Console →";
+    } else if (role === "professional") {
+      // Legal professionals
+      links = [
+        { href: "/app/dashboard", label: "⚖️ Case Workspace" },
+        { href: "/public/chat", label: "AI Research" },
+        { href: "/trust-verification", label: "Trust Engine" },
+        { href: "/game", label: "Rights Game 🎮" },
+        { href: "/quiz", label: "Daily Quiz" },
+      ];
+      primaryActionHref = "/app/dashboard";
+      primaryActionLabel = "Open Workspace →";
+    } else {
+      // Citizen / Student
+      links = [
+        { href: "/public/chat", label: "💬 Legal AI Chat" },
+        { href: "/public/saved", label: "⭐ Saved Answers" },
+        { href: "/trust-verification", label: "Trust & Verification" },
+        { href: "/game", label: "Rights Game 🎮" },
+        { href: "/quiz", label: "Daily Quiz" },
+        { href: "/news", label: "Legal News" },
+      ];
+      primaryActionHref = "/public/chat";
+      primaryActionLabel = "Ask Legal AI →";
+    }
   }
 
-
   return (
-    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#050608]/80 backdrop-blur-2xl">
+    <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#050608]/85 backdrop-blur-2xl">
       <nav className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-3.5">
         <Link href="/" className="flex items-center gap-2.5 no-underline group">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500/20 via-blue-500/20 to-transparent border border-white/15 text-sm shadow-sm group-hover:scale-105 transition-transform">
@@ -41,9 +69,14 @@ export function TopNav() {
           <span className="font-[var(--font-serif)] text-lg tracking-wide text-white font-medium">
             NyayaPramaan
           </span>
+          {isAdmin && (
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+              ADMIN
+            </span>
+          )}
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -58,8 +91,8 @@ export function TopNav() {
         <div className="hidden items-center gap-3 md:flex">
           {user ? (
             <>
-              <Button href="/public/chat" variant="primary">
-                Open Workspace →
+              <Button href={primaryActionHref} variant="primary">
+                {primaryActionLabel}
               </Button>
               <button
                 onClick={() => signOut()}
@@ -106,8 +139,8 @@ export function TopNav() {
           <div className="mt-2 flex flex-col gap-2 pt-2 border-t border-white/[0.08]">
             {user ? (
               <>
-                <Button href="/public/chat" variant="primary">
-                  Open Workspace
+                <Button href={primaryActionHref} variant="primary">
+                  {primaryActionLabel}
                 </Button>
                 <button
                   onClick={() => {

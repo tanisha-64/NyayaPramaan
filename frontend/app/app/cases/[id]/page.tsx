@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
+import { RoleGuard } from '@/components/auth/RoleGuard'
 import { getCase, saveCaseNotes, getCaseBrief, CaseDetail, CaseBriefResponse } from '@/services/caseService'
 
-export default function CaseWorkspacePage() {
+function CaseWorkspaceContent() {
   const { user, role, loading: authLoading, signOut } = useAuth()
   const router = useRouter()
   const params = useParams()
@@ -100,9 +101,9 @@ export default function CaseWorkspacePage() {
 
   if (authLoading || (loading && (role === 'professional' || role === 'admin'))) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#050608] text-slate-400 font-sans text-sm">
+      <div className="flex h-screen items-center justify-center bg-[#0F1B2E] text-slate-400 font-sans text-sm">
         <div className="flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse-dot" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#2B5CE0] animate-pulse-dot" />
           <span>Loading Case Workspace...</span>
         </div>
       </div>
@@ -157,9 +158,9 @@ export default function CaseWorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050608] text-slate-100 font-sans antialiased">
-      {/* Top Professional Navigation */}
-      <header className="border-b border-white/[0.08] bg-[#07080D]/90 backdrop-blur-2xl sticky top-0 z-30">
+    <div className="min-h-screen bg-[#0F1B2E] text-slate-100 font-sans antialiased">
+      {/* Top Professional Navigation — Navy Theme */}
+      <header className="border-b border-[#2B5CE0]/15 bg-[#0C1624]/90 backdrop-blur-2xl sticky top-0 z-30">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-3">
             <Link href="/app/dashboard" className="text-slate-400 hover:text-white transition-colors flex items-center gap-1 text-xs">
@@ -418,5 +419,13 @@ export default function CaseWorkspacePage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function CaseWorkspacePage() {
+  return (
+    <RoleGuard allowedRole="professional">
+      <CaseWorkspaceContent />
+    </RoleGuard>
   )
 }

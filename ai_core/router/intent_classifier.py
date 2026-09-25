@@ -8,9 +8,8 @@ from ai_core.llm_gateway import call_llm
 CLASSIFIER_MODEL = "groq/openai/gpt-oss-20b"
 
 REFUSAL_MESSAGE = (
-    "I'm a legal-domain assistant and only answer questions related to "
-    "Indian law, legal rights, court procedure, or specific "
-    "cases/documents. Please ask me something related to law."
+    "I specialize exclusively in Indian law, legal rights, court procedures, and case documents. "
+    "Please ask a legal or case-related question."
 )
 
 LEGAL_KEYWORDS = [
@@ -21,7 +20,10 @@ LEGAL_KEYWORDS = [
     "crime", "theft", "murder", "divorce", "maintenance", "dowry", "property",
     "land", "tenant", "rights", "rights rakshak", "constitution", "article",
     "evidence", "witness", "trial", "appeal", "tribunal", "document", "summary",
-    "explain", "accused", "victim", "complainant", "petitioner", "respondent"
+    "explain", "accused", "victim", "complainant", "petitioner", "respondent",
+    "dhara", "kanoon", "adalat", "mukadma", "faisla", "nyaya", "vakil", "sazaa",
+    "overview", "parties", "charge", "allegation", "claim", "clause", "stamp",
+    "deed", "registry", "challan", "warrant", "inquiry", "plea", "quash"
 ]
 
 
@@ -32,11 +34,11 @@ def classify_intent(query: str) -> dict:
         return {"domain": "legal", "audience": "student_public"}
 
     prompt = f"""Classify this question on two dimensions. Respond with ONLY this JSON:
-{{"domain": "legal", "audience": "professional"}}
+{{"domain": "legal", "audience": "student_public"}}
 
-domain: "legal" if about Indian law, legal rights, court procedure, IPC/BNS/statutes,
-a legal case, document summary, or justice system -- even if in Hindi/Hinglish.
-"out_of_domain" ONLY if completely unrelated (e.g., cooking recipes, video games, sports scores, math calculus).
+domain: "legal" if related to Indian law, legal rights, court procedure, IPC/BNS/CrPC/BNSS statutes,
+cases, agreements, contracts, rights, or justice system -- in English, Hindi, or Hinglish.
+"out_of_domain" ONLY if completely unrelated to law (e.g., cooking recipes, gaming cheats, sports trivia, coding tutorials).
 
 audience: "professional" or "student_public"
 
@@ -61,12 +63,11 @@ JSON:"""
 AUDIENCE_INSTRUCTIONS = {
     "professional": (
         "Write for a legal professional: use precise legal terminology, "
-        "cite exact section numbers, and include procedural nuance. Assume "
-        "the reader has legal literacy."
+        "cite exact section numbers, and include procedural nuance. Directly answer without filler or repetitive AI intros."
     ),
     "student_public": (
         "Write for a student or citizen: use simple, plain language, "
-        "briefly define any legal term you must use, and keep a friendly, "
-        "educational tone."
+        "briefly define any legal term you must use, and keep a clear, helpful tone. Directly answer without repetitive robotic disclaimers."
     ),
 }
+

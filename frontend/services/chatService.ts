@@ -44,3 +44,7 @@ export function togglePin(sessionId: string, pinned: boolean) {
 export function deleteSession(sessionId: string) {
   return apiDelete(`/chat/sessions/${sessionId}`);
 }
+
+export function clearAllSessions() {
+  return apiDelete<{ status: string; cleared_sessions: number }>("/chat/sessions/clear/all");
+}

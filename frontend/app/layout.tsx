@@ -3,6 +3,7 @@ import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ErrorBoundaryWrapper } from "@/components/ui/ErrorBoundaryWrapper";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" });
@@ -18,7 +19,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${fraunces.variable} dark`} data-theme="dark">
       <body className="antialiased selection:bg-indigo-500/30 selection:text-white min-h-screen">
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <ErrorBoundaryWrapper>
+              {children}
+            </ErrorBoundaryWrapper>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

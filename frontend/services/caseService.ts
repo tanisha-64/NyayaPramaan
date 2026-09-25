@@ -40,3 +40,7 @@ export function getCaseBrief(caseId: string) {
 export function deleteCase(caseId: string) {
   return apiDelete(`/case/${caseId}`);
 }
+
+export function clearAllCases() {
+  return apiDelete<{ status: string; cleared_count: number }>("/case/clear/all");
+}
