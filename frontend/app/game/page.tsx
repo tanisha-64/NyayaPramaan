@@ -1,9 +1,16 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-import { getScenario, submitAnswer, getProgress, Scenario, Progress } from '@/services/gameService'
+import {
+  getScenario,
+  submitAnswer,
+  getProgress,
+  getLocalUserProgress,
+  Scenario,
+  UserProgress,
+} from '@/services/gameService'
 
 const LEVELS = [
   { min: 0, name: 'Rookie', icon: '🥉', color: '#B08D57' },
@@ -28,53 +35,48 @@ export default function RightsGamePage() {
 
   const [scenario, setScenario] = useState<Scenario | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
-  const [progress, setProgress] = useState<Progress>({ total_points: 0, scenarios_completed: 0 })
-  const [streak, setStreak] = useState(0)
+  const [progress, setProgress] = useState<UserProgress>({
+    total_points: 0,
+    scenarios_completed: 0,
+    streak: 0,
+    best_streak: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [flash, setFlash] = useState<'correct' | 'wrong' | null>(null)
 
-  useEffect(() => {
-    if (!user) return
-
-    // Load local progress if available
-    try {
-      const saved = localStorage.getItem('legal_game_progress')
-      if (saved) {
-        setProgress(JSON.parse(saved))
-      }
-    } catch {
-      // ignore
-    }
-
-    loadScenario()
-    getProgress()
-      .then((p) => {
-        if (p && (p.total_points > 0 || p.scenarios_completed > 0)) {
-          setProgress(p)
-          localStorage.setItem('legal_game_progress', JSON.stringify(p))
-        }
-      })
-      .catch(() => {
-        // Keep local progress
-      })
-  }, [user])
-
-  async function loadScenario() {
+  const loadScenario = useCallback(async () => {
     setLoading(true)
     setSelected(null)
     setFlash(null)
     try {
       const s = await getScenario()
-      if (s && s.choices && s.choices.length > 0) {
-        setScenario(s)
-      } else {
-        setScenario(null)
-      }
+      setScenario(s)
     } catch {
-      setScenario(null)
+      // Fallback is handled inside getScenario, but guarantee state
+      const fallback = await getScenario()
+      setScenario(fallback)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
-  }
+  }, [])
+
+  // Load user-isolated progress
+  useEffect(() => {
+    if (!user) return
+
+    const initial = getLocalUserProgress(user.id)
+    setProgress(initial)
+
+    loadScenario()
+
+    getProgress(user.id)
+      .then((p) => {
+        if (p) setProgress(p)
+      })
+      .catch(() => {
+        // Keep isolated local progress
+      })
+  }, [user, loadScenario])
 
   function playSound(type: 'correct' | 'wrong') {
     try {
@@ -101,47 +103,27 @@ export default function RightsGamePage() {
         osc.stop(ctx.currentTime + 0.3)
       }
     } catch {
-      // Audio context might be restricted before interaction
+      // Audio context might be restricted before user interaction
     }
   }
 
   async function handleChoice(i: number) {
-    if (selected !== null || !scenario) return
+    if (selected !== null || !scenario || !user) return
     setSelected(i)
     const isBest = scenario.choices[i].is_best
     setFlash(isBest ? 'correct' : 'wrong')
     playSound(isBest ? 'correct' : 'wrong')
-    setStreak(isBest ? (s) => s + 1 : 0)
+
     const points = scenario.choices[i].points || 0
-
-    // Update local state immediately
-    const updatedLocal = {
-      total_points: progress.total_points + points,
-      scenarios_completed: progress.scenarios_completed + 1,
-    }
-    setProgress(updatedLocal)
-    try {
-      localStorage.setItem('legal_game_progress', JSON.stringify(updatedLocal))
-    } catch {
-      // ignore
-    }
-
-    try {
-      const updated = await submitAnswer(points)
-      if (updated && updated.total_points) {
-        setProgress(updated)
-        localStorage.setItem('legal_game_progress', JSON.stringify(updated))
-      }
-    } catch {
-      /* non-fatal fallback already handled locally */
-    }
+    const updated = await submitAnswer(points, isBest, user.id)
+    setProgress(updated)
   }
 
   if (authLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#050608] text-slate-400 font-sans text-sm">
         <div className="flex items-center gap-3">
-          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse-dot" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#B8925A] animate-pulse-dot" />
           <span>Authenticating Legal Rights Game...</span>
         </div>
       </div>
@@ -156,7 +138,7 @@ export default function RightsGamePage() {
       <header className="sticky top-0 z-50 border-b border-white/[0.08] bg-[#07080D]/90 backdrop-blur-2xl px-6 py-3.5">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 no-underline">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500/20 via-blue-500/20 to-transparent border border-white/15 text-sm shadow-sm">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#B8925A]/25 via-blue-500/20 to-transparent border border-white/15 text-sm shadow-sm">
               ⚖️
             </span>
             <span className="font-[var(--font-serif)] text-base font-semibold tracking-wide text-white">
@@ -210,7 +192,7 @@ export default function RightsGamePage() {
             </span>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium">
-            <span className="text-amber-400">🔥 Streak: {streak}</span>
+            <span className="text-amber-400">🔥 Streak: {progress.streak || 0}</span>
             <span className="text-emerald-400">⭐ Points: {progress.total_points}</span>
           </div>
         </div>
@@ -237,20 +219,8 @@ export default function RightsGamePage() {
 
         {loading && (
           <div className="mt-16 flex flex-col items-center justify-center text-center text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse-dot mb-3" />
+            <span className="h-2 w-2 rounded-full bg-[#B8925A] animate-pulse-dot mb-3" />
             <span className="text-xs">Loading scenario...</span>
-          </div>
-        )}
-
-        {!loading && !scenario && (
-          <div className="mt-16 text-center text-xs text-slate-400">
-            <p>Couldn't load scenario.</p>
-            <button
-              onClick={loadScenario}
-              className="mt-3 inline-block rounded-xl border border-blue-500/30 bg-blue-600/20 px-4 py-1.5 font-medium text-blue-300 hover:bg-blue-600/30 cursor-pointer"
-            >
-              Retry
-            </button>
           </div>
         )}
 
@@ -265,7 +235,7 @@ export default function RightsGamePage() {
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-blue-400">
+              <span className="rounded-full border border-[#B8925A]/30 bg-[#B8925A]/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#D4A368]">
                 🎯 {scenario.category.replace(/_/g, ' ')}
               </span>
               <span className="text-[11px] text-slate-400">Scenario #{(progress.scenarios_completed || 0) + 1}</span>

@@ -39,12 +39,14 @@ def get_scenario():
 
 class AnswerSubmit(BaseModel):
     points: int
+    is_best: bool = False
+    streak: int = 0
 
 
 @router.post("/answer")
 def submit_answer(body: AnswerSubmit, user=Depends(get_optional_user)):
     if not user:
-        return {"total_points": body.points, "scenarios_completed": 1}
+        return {"total_points": body.points, "scenarios_completed": 1, "streak": body.streak}
 
     client = get_supabase_client()
     try:
@@ -54,30 +56,39 @@ def submit_answer(body: AnswerSubmit, user=Depends(get_optional_user)):
             progress = existing.data[0]
             new_points = progress["total_points"] + body.points
             new_count = progress["scenarios_completed"] + 1
+            cur_best = progress.get("best_streak") or 0
+            new_best = max(cur_best, body.streak)
             client.table("user_game_progress").update({
-                "total_points": new_points, "scenarios_completed": new_count,
+                "total_points": new_points,
+                "scenarios_completed": new_count,
+                "streak": body.streak,
+                "best_streak": new_best,
             }).eq("user_id", user.id).execute()
         else:
             new_points, new_count = body.points, 1
             client.table("user_game_progress").insert({
-                "user_id": user.id, "total_points": new_points, "scenarios_completed": new_count,
+                "user_id": user.id,
+                "total_points": new_points,
+                "scenarios_completed": new_count,
+                "streak": body.streak,
+                "best_streak": body.streak,
             }).execute()
 
-        return {"total_points": new_points, "scenarios_completed": new_count}
+        return {"total_points": new_points, "scenarios_completed": new_count, "streak": body.streak}
     except Exception as e:
         print(f"[game_router] submit_answer error: {e}")
-        return {"total_points": body.points, "scenarios_completed": 1}
+        return {"total_points": body.points, "scenarios_completed": 1, "streak": body.streak}
 
 
 @router.get("/progress")
 def get_progress(user=Depends(get_optional_user)):
     if not user:
-        return {"total_points": 0, "scenarios_completed": 0}
+        return {"total_points": 0, "scenarios_completed": 0, "streak": 0, "best_streak": 0}
 
     client = get_supabase_client()
     try:
         result = client.table("user_game_progress").select("*").eq("user_id", user.id).execute()
-        return result.data[0] if result.data else {"total_points": 0, "scenarios_completed": 0}
+        return result.data[0] if result.data else {"total_points": 0, "scenarios_completed": 0, "streak": 0, "best_streak": 0}
     except Exception as e:
         print(f"[game_router] get_progress error: {e}")
-        return {"total_points": 0, "scenarios_completed": 0}
+        return {"total_points": 0, "scenarios_completed": 0, "streak": 0, "best_streak": 0}

@@ -61,3 +61,20 @@ alter table cases add column if not exists rejection_reason text;
 -- File URL: stored after background storage upload completes
 alter table cases add column if not exists file_url text;
 
+-- ==============================================================================
+-- 5. User Game & Quiz Progress Isolation Table
+-- ==============================================================================
+create table if not exists user_game_progress (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid not null,
+  total_points int default 0,
+  scenarios_completed int default 0,
+  streak int default 0,
+  best_streak int default 0,
+  updated_at timestamp default now()
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_game_progress TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_game_progress TO authenticated;
+ALTER TABLE public.user_game_progress DISABLE ROW LEVEL SECURITY;
+
