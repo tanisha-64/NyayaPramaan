@@ -111,6 +111,18 @@ app.include_router(news_router.router, prefix="/news")
 app.include_router(game_router.router, prefix="/game")
 
 
+@app.get("/")
+def root():
+    return {
+        "status": "ok",
+        "service": "NyayaPramaan API",
+        "version": "2.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "timestamp": time.time(),
+    }
+
+
 @app.get("/health")
 def health():
     return {"status": "ok", "service": "NyayaPramaan API", "timestamp": time.time()}
