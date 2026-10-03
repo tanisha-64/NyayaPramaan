@@ -7,11 +7,12 @@ import re
 
 # Precise injection & jailbreak regex patterns
 INJECTION_PATTERNS = [
-    r"ignore\s+(all\s+)?(previous|prior|above|system)\s+(instructions|prompts|rules|commands|guidelines)",
-    r"disregard\s+(all\s+)?(previous|prior|system)\s+(instructions|rules|directives)",
-    r"forget\s+(all\s+)?(previous|prior)\s+(instructions|rules|context)",
+    r"ignore\s+(all\s+)?(previous|prior|above|system\s+)?(instructions|prompts|rules|commands|guidelines)",
+    r"disregard\s+(all\s+)?(previous|prior|system\s+)?(instructions|rules|directives|prompts)",
+    r"forget\s+(all\s+)?(previous|prior\s+)?(instructions|rules|context)",
     r"system\s+(override|prompt\s+leak|instruction\s+leak)",
     r"(reveal|print|show|output|leak)\s+(your\s+)?(system\s+prompt|initial\s+instructions|secret\s+prompt)",
+    r"prompt\s+injection",
     r"(you\s+are\s+now|act\s+as)\s+(an?\s+)?(unrestricted|jailbroken|dan|evil|rogue|unfiltered)\s+(ai|assistant|model|agent)",
     r"developer\s+mode\s+(enabled|activated|on)",
     r"bypass\s+(all\s+)?(content|safety|guardrail|ethical)\s+(filters|checks|rules)",

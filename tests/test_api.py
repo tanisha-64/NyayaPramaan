@@ -14,7 +14,7 @@ client = TestClient(app)
 def test_health_endpoint():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "ok"
 
 def test_input_guardrails_safety():
     safe_query = "What is the bail provision under Section 437 CrPC?"

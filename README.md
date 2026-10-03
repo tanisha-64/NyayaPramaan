@@ -111,6 +111,39 @@ sequenceDiagram
 
 ---
 
+## 🛡️ TrustAgent™ Claim Verification & Self-Reflection Flow
+
+```mermaid
+flowchart TD
+    A[Raw Legal Answer from LLM] --> B[Atomic Claim Extractor]
+    B -->|Deconstructed Claims| C[Batch Citation & Statutory Verifier]
+    C --> D{Evidence Match Evaluation}
+    D -->|Direct Statutory Match| E[Mark: VERIFIED]
+    D -->|Contextual / Interpretive| F[Mark: PARTIAL]
+    D -->|Inconsistent with Statute| G[Mark: CONTRADICTED]
+    D -->|No Evidence Found| H[Mark: UNVERIFIED]
+    E & F & G & H --> I[LLM Judge & Confidence Scorer]
+    I --> J[Helpline & Department Recommendation Engine]
+    J --> K[PII Redactor & Hash Chain Logger]
+    K --> L[Structured Citational Response Delivered to Client]
+```
+
+---
+
+## 👥 Role-Based Access Control (RBAC) Matrix
+
+| Feature / Capability | Public Citizen (`public`) | Advocate / Researcher (`advocate`) | Super Administrator (`superadmin`) |
+| :--- | :---: | :---: | :---: |
+| **Legal AI Research & Q&A** | ✅ Public Knowledge Base | ✅ Case-Specific + Statutes | ✅ Universal Access |
+| **Case Document Ingestion** | Session Temporary | ✅ Persistent Workspaces | ✅ Universal All-User Records |
+| **Chronological Timeline & Briefs** | Basic | ✅ Advanced Dossier View | ✅ Advanced Dossier View |
+| **Rights Scenario Game & Quiz** | ✅ Full Access | ✅ Full Access | ✅ Full Access |
+| **Live Legal News Radar** | ✅ Full Access | ✅ Full Access | ✅ Full Access |
+| **Admin Control Panel & Metrics** | ❌ | ❌ | ✅ Full Operations Suite |
+| **Tamper-Evident SHA-256 Ledger** | ✅ Read & Verify | ✅ Read & Verify | ✅ Full Audit & Re-indexing |
+
+---
+
 ## ✨ Key Features & Capabilities
 
 ### 1. ⚡ High-Performance Async Ingestion & Live Progress
