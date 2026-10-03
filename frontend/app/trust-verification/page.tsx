@@ -1,6 +1,6 @@
 import { TopNav } from "@/components/layout/TopNav";
 import { Footer } from "@/components/layout/Footer";
-import { LiveTrustAgentDemo } from "@/components/marketing/LiveTrustAgentDemo";
+import { InteractivePipeline } from "@/components/marketing/InteractivePipeline";
 import { RealWorldComparison } from "@/components/marketing/RealWorldComparison";
 import { CTASection } from "@/components/marketing/CTASection";
 
@@ -24,17 +24,17 @@ export default function TrustVerificationPage() {
           </p>
         </div>
 
-        {/* 1. Live Interactive TrustAgent Demo */}
+        {/* 1. Live Interactive Verification Pipeline */}
         <section className="space-y-6">
           <div className="text-center max-w-2xl mx-auto space-y-2 mb-8">
             <h2 className="text-2xl sm:text-3xl font-bold text-white">
-              Live Claim Deconstruction & Verification
+              Standard 5-Step Verification Architecture
             </h2>
             <p className="text-xs sm:text-sm text-slate-400">
-              Select a landmark constitutional case below to inspect how atomic legal claims are validated, court hierarchies tagged, and cryptographic signatures generated.
+              Click any stage below to inspect the generic data transformation, bare act matching logic, and cryptographic verification flow.
             </p>
           </div>
-          <LiveTrustAgentDemo />
+          <InteractivePipeline />
         </section>
 
         {/* 2. Principles Grid */}

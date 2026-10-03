@@ -48,6 +48,16 @@ function ProfessionalDashboardContent() {
     if (user) refreshCases()
   }, [user])
 
+  // Auto-refresh when any case is still processing
+  useEffect(() => {
+    const hasProcessing = cases.some((c) => c.status === 'processing')
+    if (!hasProcessing) return
+    const interval = setInterval(() => {
+      refreshCases()
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [cases])
+
   async function refreshCases() {
     setLoadingCases(true)
     try {
@@ -74,9 +84,18 @@ function ProfessionalDashboardContent() {
     setUploading(true)
     try {
       await uploadDocument(file)
+      // Refresh immediately — case will show as "processing", then update via list polling
       await refreshCases()
     } catch (err: any) {
-      const msg = err?.message || 'Upload failed — please check document and backend connection.'
+      const rawMsg: string = err?.message || 'Upload failed — please check document and backend connection.'
+      let msg = rawMsg
+      if (rawMsg.includes('Cannot reach the server') || rawMsg.includes('fetch')) {
+        msg = 'Cannot reach the backend server. Please ensure the server is running at http://127.0.0.1:8000 and try again.'
+      } else if (rawMsg.includes('Unsupported file format')) {
+        msg = rawMsg
+      } else if (rawMsg.includes('too large')) {
+        msg = rawMsg
+      }
       alert(`Upload Notice: ${msg}`)
     }
     setUploading(false)
@@ -230,9 +249,26 @@ function ProfessionalDashboardContent() {
                         <h3 className="text-xs font-bold text-white group-hover:text-[#5B8DEF] transition-colors truncate max-w-[240px]">
                           {c.filename || 'Case Record'}
                         </h3>
+                        {c.status && c.status !== 'ready' && (
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold border ${
+                            c.status === 'processing'
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse'
+                              : c.status === 'rejected'
+                              ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                              : c.status === 'failed'
+                              ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                              : 'bg-slate-500/10 border-slate-500/30 text-slate-400'
+                          }`}>
+                            {c.status === 'processing' ? '⏳ Processing' : c.status === 'rejected' ? '⚠ Rejected' : c.status === 'failed' ? '✕ Failed' : c.status}
+                          </span>
+                        )}
                       </div>
                       <p className="mt-2 text-xs leading-relaxed text-slate-300 line-clamp-3">
-                        {c.summary || 'Indexing extracted facts & chronological timeline...'}
+                        {c.status === 'rejected'
+                          ? 'This document was not identified as a legal case file.'
+                          : c.status === 'processing'
+                          ? 'Analyzing document, extracting text and building index...'
+                          : c.summary || 'Indexing extracted facts & chronological timeline...'}
                       </p>
                     </div>
 

@@ -2,16 +2,17 @@ import { apiUpload, apiGet, apiDelete } from "./apiClient";
 
 export type UploadResponse = {
   case_id: string;
-  file_url: string;
   filename: string;
   status: string;
-  document_type: string;
 };
 
 export type CaseStatus = {
   status: string;
   summary: string;
   timeline: string;
+  pages_processed: number;
+  total_pages: number;
+  rejection_reason: string | null;
 };
 
 /**

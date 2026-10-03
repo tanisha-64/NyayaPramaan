@@ -5,7 +5,8 @@ services:
       dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
-    env_file: .env
+    env_file:
+      - .env
     volumes:
       - ./backend:/app/backend
       - ./ai_core:/app/ai_core
@@ -17,6 +18,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file: .env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
     volumes:
       - ./frontend:/app
+      - /app/node_modules
+      - /app/.next

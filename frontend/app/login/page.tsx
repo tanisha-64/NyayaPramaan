@@ -44,9 +44,9 @@ function LoginForm() {
         const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "mitanisha74@gmail.com").toLowerCase().trim();
         const isAdminUser = userEmail === adminEmail || userEmail === "mitanisha74@gmail.com";
 
-        let defaultTarget = "/public/chat";
+        let defaultTarget = "/";
         if (isAdminUser) {
-          defaultTarget = "/admin";
+          defaultTarget = "/";
         } else {
           const role = data.user?.user_metadata?.role ?? "public";
           defaultTarget = role === "professional" ? "/app/dashboard" : "/public/chat";

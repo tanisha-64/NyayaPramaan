@@ -1,21 +1,38 @@
 """
 Document Chunker — processes pages in batches (batch-embedding = fast),
 falls back to free local OCR when pypdf extraction is empty (scanned pages),
-and supports cooperative cancellation (checks case status before each batch
-so a user-cancelled upload stops promptly).
+supports cooperative cancellation (checks case status before each batch),
+and updates live progress counters (pages_processed / total_pages) in the
+cases table so the frontend can show "Processing 87/152 pages".
 """
 from pypdf import PdfReader
 from ai_core.rag.embeddings import embed_texts_batch
-from ai_core.rag.vector_store import insert_document_chunks_batch, get_case_status
+from ai_core.rag.vector_store import insert_document_chunks_batch, get_case_status, get_supabase_client
 from ai_core.rag.ocr_fallback import ocr_page
 
 BATCH_SIZE = 20
+
+
+def _update_progress(case_id: str, pages_processed: int, total_pages: int):
+    """Update live progress counters in the cases table."""
+    try:
+        client = get_supabase_client()
+        client.table("cases").update({
+            "pages_processed": pages_processed,
+            "total_pages": total_pages,
+        }).eq("id", case_id).execute()
+    except Exception as e:
+        # Progress update failure is non-fatal — processing continues
+        print(f"[document_chunker] Progress update failed for {case_id}: {e}")
 
 
 def chunk_and_index_pdf(file_path: str, case_id: str) -> int:
     reader = PdfReader(file_path)
     total_pages = len(reader.pages)
     pages_indexed = 0
+
+    # Set initial total so frontend knows the denominator immediately
+    _update_progress(case_id, 0, total_pages)
 
     for batch_start in range(0, total_pages, BATCH_SIZE):
         # Cooperative cancellation check
@@ -49,6 +66,9 @@ def chunk_and_index_pdf(file_path: str, case_id: str) -> int:
             except Exception as e:
                 print(f"[document_chunker] Batch {batch_start}-{batch_end} failed: {e}")
                 continue
+
+        # Update progress after each batch so frontend shows live page count
+        _update_progress(case_id, min(batch_end, total_pages), total_pages)
 
     return pages_indexed
 

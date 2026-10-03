@@ -1,7 +1,17 @@
-"""Document Router — FAST classification via a small page-preview slice (no full-document
-read needed just to classify), then returns immediately with status="processing" while the
-heavy work (full read, summary, timeline, page-by-page indexing) runs in the background.
-Frontend polls /document/{case_id}/status. Cancelling stops indexing and cleans up.
+"""Document Router — INSTANT response on upload (no blocking operations), then all
+heavy work runs in the background: storage upload, full-text extraction via Gemini,
+classification on the FULL extracted text (not a limited local preview), summary,
+timeline, and page-by-page indexing with live progress tracking.
+
+Frontend polls /document/{case_id}/status for progress (pages_processed/total_pages)
+and final status (ready/rejected/failed). Cancelling stops indexing and cleans up.
+
+Design decisions:
+- Classification AFTER Gemini read: scanned/old PDFs get classified on accurate
+  Gemini-extracted text rather than often-empty pypdf preview text.
+- Storage upload in background: 150MB files don't block the HTTP response.
+- Rejected docs get status="rejected" + rejection_reason (not an HTTP error).
+- Progress counter updates after each batch of pages for live UX feedback.
 
 Supported formats:
 - PDF: pypdf / Gemini extraction
@@ -17,7 +27,7 @@ from ai_core.rag.document_reader import read_case_file_with_gemini
 from ai_core.rag.summarizer import summarize_case
 from ai_core.timeline.extractor import extract_timeline
 from ai_core.rag.vector_store import get_supabase_client, get_case_status, set_case_status
-from ai_core.rag.document_chunker import chunk_and_index_pdf, get_document_preview
+from ai_core.rag.document_chunker import chunk_and_index_pdf
 from ai_core.rag.document_classifier import classify_document, REJECTION_MESSAGE
 from backend.db.supabase_storage import upload_case_file
 from backend.auth.supabase_auth import get_current_user
@@ -72,33 +82,45 @@ def _extract_text_from_txt(file_path: str) -> str:
     return ""
 
 
-def _quick_preview_text(tmp_path: str, suffix: str) -> str:
-    """Fast preview for classification without waiting for a full document read."""
-    ext = suffix.lower()
-    if ext == ".pdf":
-        return get_document_preview(tmp_path)
-    if ext in IMAGE_EXTENSIONS:
-        return _extract_text_from_image(tmp_path)[:1500]
-    if ext in DOCX_EXTENSIONS:
-        return _extract_text_from_docx(tmp_path)[:1500]
-    # TXT and others — direct read
+def _update_progress(case_id: str, pages_processed: int, total_pages: int):
+    """Update live progress counters in the cases table."""
     try:
-        with open(tmp_path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read(1500)
-    except Exception:
-        return ""
+        client = get_supabase_client()
+        client.table("cases").update({
+            "pages_processed": pages_processed,
+            "total_pages": total_pages,
+        }).eq("id", case_id).execute()
+    except Exception as e:
+        print(f"[document_router] Progress update failed for {case_id}: {e}")
 
 
-def _process_in_background(tmp_path: str, case_id: str, suffix: str):
+def _process_in_background(tmp_path: str, case_id: str, suffix: str, file_bytes: bytes, clean_filename: str):
     try:
         if get_case_status(case_id) == "cancelled":
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
             return
 
+        # ── Step 1: Upload original file to Supabase Storage (background, non-blocking) ──
+        file_url = None
+        try:
+            file_url = upload_case_file(file_bytes, clean_filename)
+            print(f"[document_router] Storage upload complete for {case_id}: {file_url}")
+            # Store file_url in database
+            client = get_supabase_client()
+            client.table("cases").update({"file_url": file_url}).eq("id", case_id).execute()
+        except Exception as e:
+            # Storage upload failure is non-fatal — processing continues
+            print(f"[document_router] Storage upload failed (non-fatal) for {case_id}: {e}")
+
+        if get_case_status(case_id) == "cancelled":
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            return
+
+        # ── Step 2: Extract full text via Gemini/pypdf/OCR ──
         ext = suffix.lower()
 
-        # Extract text based on file type
         if ext == ".pdf":
             case_text = read_case_file_with_gemini(tmp_path)
         elif ext in IMAGE_EXTENSIONS:
@@ -122,6 +144,22 @@ def _process_in_background(tmp_path: str, case_id: str, suffix: str):
             set_case_status(case_id, "failed")
             return
 
+        # ── Step 3: Classification on FULL extracted text (post-Gemini) ──
+        # This is the key fix: classify on accurate, complete text from Gemini,
+        # not on the limited/empty pypdf preview that fails on scanned PDFs.
+        classification = classify_document(case_text[:3000], filename=clean_filename)
+        if not classification["is_legal_relevant"]:
+            print(f"[document_router] Document rejected by classifier for {case_id}: {classification}")
+            client = get_supabase_client()
+            client.table("cases").update({
+                "status": "rejected",
+                "rejection_reason": REJECTION_MESSAGE,
+            }).eq("id", case_id).execute()
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            return
+
+        # ── Step 4: Summarize and extract timeline ──
         summary = summarize_case(case_text)
         timeline = extract_timeline(case_text)
 
@@ -137,7 +175,7 @@ def _process_in_background(tmp_path: str, case_id: str, suffix: str):
                 os.remove(tmp_path)
             return
 
-        # Chunk & index for PDF (page-based chunking)
+        # ── Step 5: Chunk & index with progress tracking ──
         if ext == ".pdf":
             chunk_and_index_pdf(tmp_path, case_id)
         else:
@@ -175,6 +213,9 @@ def _chunk_and_index_text(text: str, case_id: str, chunk_size: int = 1200):
         if current_chunk.strip():
             chunks.append(current_chunk)
 
+        # Update total for progress tracking
+        _update_progress(case_id, 0, len(chunks))
+
         client = get_supabase_client()
         for i, chunk in enumerate(chunks):
             client.table("document_chunks").insert({
@@ -183,6 +224,7 @@ def _chunk_and_index_text(text: str, case_id: str, chunk_size: int = 1200):
                 "chunk_index": i,
                 "page_number": i + 1,  # approximate
             }).execute()
+            _update_progress(case_id, i + 1, len(chunks))
 
         print(f"[document_router] Indexed {len(chunks)} text chunks for case {case_id}")
     except Exception as e:
@@ -216,19 +258,8 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
         tmp.write(file_bytes)
         tmp_path = tmp.name
 
-    # 4. FAST classification (local pypdf/OCR preview, no full-document API call)
-    preview_text = _quick_preview_text(tmp_path, suffix)
-    classification = classify_document(preview_text, filename=clean_filename)
-    if not classification["is_legal_relevant"]:
-        if os.path.exists(tmp_path):
-            try:
-                os.remove(tmp_path)
-            except Exception:
-                pass
-        raise HTTPException(status_code=422, detail=REJECTION_MESSAGE)
-
-    file_url = upload_case_file(file_bytes, clean_filename)
-
+    # 4. Create case record IMMEDIATELY with status="processing" — NO blocking operations
+    #    Classification, storage upload, and text extraction all happen in background.
     client = get_supabase_client()
     result = client.table("cases").insert({
         "user_id": user.id,
@@ -236,24 +267,28 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
         "summary": "",
         "filename": clean_filename,
         "status": "processing",
+        "pages_processed": 0,
+        "total_pages": 0,
     }).execute()
     case_id = result.data[0]["id"]
 
-    background_tasks.add_task(_process_in_background, tmp_path, case_id, suffix)
+    # 5. ALL heavy work (storage upload + Gemini read + classification + indexing) → background
+    background_tasks.add_task(_process_in_background, tmp_path, case_id, suffix, file_bytes, clean_filename)
 
+    # 6. Instant response — user sees "processing" immediately regardless of file size
     return {
         "case_id": case_id,
-        "file_url": file_url,
         "filename": clean_filename,
         "status": "processing",
-        "document_type": classification["document_type"],
     }
 
 
 @router.get("/{case_id}/status")
 def get_status(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = client.table("cases").select("status, summary, timeline").eq("id", case_id).eq("user_id", user.id).execute()
+    result = client.table("cases").select(
+        "status, summary, timeline, pages_processed, total_pages, rejection_reason"
+    ).eq("id", case_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Case not found")
     return result.data[0]

@@ -189,9 +189,14 @@ def _handle_ask(request: QueryRequest, user_id: str):
     if effective_case_ids:
         client = get_supabase_client()
         # Strict readiness check -- NEVER answer against an unready document
-        not_ready = [cid for cid in effective_case_ids if get_case_status(cid) != "ready"]
+        not_ready = [cid for cid in effective_case_ids if get_case_status(cid) not in ("ready",)]
         if not_ready:
-            answer = "One or more attached documents are still being processed. Please wait a moment before asking about them."
+            # Check if any are rejected (vs still processing)
+            rejected = [cid for cid in not_ready if get_case_status(cid) == "rejected"]
+            if rejected:
+                answer = "One or more attached documents were identified as non-legal content and cannot be analyzed. Please remove them and attach valid legal documents."
+            else:
+                answer = "One or more attached documents are still being processed. Please wait a moment before asking about them."
             save_message(session_id, "assistant", answer)
             return {
                 "answer": answer,

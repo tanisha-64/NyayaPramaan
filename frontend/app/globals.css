@@ -233,6 +233,21 @@ body {
   animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+@keyframes voice-bar {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+.voice-bar {
+  animation: voice-bar 0.8s ease-in-out infinite;
+}
+.voice-bar-2 {
+  animation: voice-bar 0.8s ease-in-out 0.15s infinite;
+}
+.voice-bar-3 {
+  animation: voice-bar 0.8s ease-in-out 0.3s infinite;
+}
+
 /* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

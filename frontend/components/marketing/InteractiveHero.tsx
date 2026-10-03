@@ -17,37 +17,37 @@ interface DemoScenario {
 
 const DEMO_SCENARIOS: DemoScenario[] = [
   {
+    id: 'cyber',
+    label: '🛡️ Online Scam & UPI Refund',
+    query: 'I lost money to an online UPI fraud. What immediate steps should I take?',
+    act: 'RBI Customer Protection Rules & Cybercrime Portal',
+    section: 'National Cyber Helpline 1930 & RBI Zero-Liability Circular',
+    verdict: 'statute',
+    confidence: 99,
+    summary: 'Report the scam within 3 days by calling helpline 1930. Under official RBI guidelines, you are entitled to zero liability and the bank must immediately freeze the recipient account.',
+    bindingCitation: 'RBI Mandate on Electronic Banking Fraud & Cybercrime Portal (1930)',
+  },
+  {
+    id: 'rent',
+    label: '🏠 Landlord & Security Deposit',
+    query: 'My landlord is refusing to refund my security deposit. What are my legal rights?',
+    act: 'Consumer Protection Act 2019 & Tenancy Laws',
+    section: 'Section 35 Consumer Protection Act & State Rent Rules',
+    verdict: 'supported',
+    confidence: 97,
+    summary: 'A landlord cannot withhold your deposit without providing valid repair bills. You have the right to send a formal legal notice and claim a full refund plus compensation in Consumer Court.',
+    bindingCitation: 'Consumer Protection Act 2019 & Model Tenancy Framework',
+  },
+  {
     id: 'bail',
-    label: '⚖️ Anticipatory Bail (BNS)',
-    query: 'Can anticipatory bail be granted for non-bailable offences under new criminal laws?',
-    act: 'Bharatiya Nagarik Suraksha Sanhita (BNSS)',
-    section: 'Section 482 (corresponding to Sec 438 CrPC)',
+    label: '⚖️ Police & Pre-Arrest Bail',
+    query: 'Can a citizen get bail before arrest if they fear a false complaint?',
+    act: 'Bharatiya Nagarik Suraksha Sanhita (BNSS 2023)',
+    section: 'Section 482 BNSS (Pre-Arrest Bail Protection)',
     verdict: 'binding',
     confidence: 98,
-    summary: 'High Court and Sessions Court possess concurrent jurisdiction to grant pre-arrest bail based on judicial discretion and material facts.',
-    bindingCitation: 'Gurbaksh Singh Sibbia vs State of Punjab (5-Judge Constitution Bench)',
-  },
-  {
-    id: 'quash',
-    label: '🏛️ FIR Quashing (482)',
-    query: 'What are the guidelines for quashing an FIR in matrimonial disputes?',
-    act: 'BNSS 2023 / CrPC 1973',
-    section: 'Section 528 BNSS / Section 482 CrPC',
-    verdict: 'supported',
-    confidence: 96,
-    summary: 'Inherent powers under Section 482 can be invoked to prevent abuse of court process where civil disputes or genuine settlements exist.',
-    bindingCitation: 'State of Haryana vs Bhajan Lal & B.S. Joshi vs State of Haryana',
-  },
-  {
-    id: 'cyber',
-    label: '🛡️ Cyber Fraud & Relief',
-    query: 'What immediate legal remedies exist for unauthorized UPI banking transactions?',
-    act: 'IT Act 2000 & RBI Master Circular',
-    section: 'Section 43A, 66D IT Act & RBI Circular DBR.No.Leg.BC.78',
-    verdict: 'statute',
-    confidence: 94,
-    summary: 'Zero liability for customers if unauthorized fraud is reported within 3 working days via national helpline 1930 / cybercrime portal.',
-    bindingCitation: 'RBI Mandate 2017 & Section 43A Information Technology Act',
+    summary: 'Yes. Both the Sessions Court and High Court have the power to grant anticipatory bail to protect innocent citizens from arbitrary or wrongful arrest.',
+    bindingCitation: 'Supreme Court Constitution Bench Guidelines on Personal Liberty',
   },
 ]
 
@@ -107,7 +107,7 @@ export function InteractiveHero() {
                 variant="secondary"
                 className="px-6 py-3.5 text-sm font-semibold border-white/20 hover:border-white/40"
               >
-                Explore 5-Stage Engine ⚡
+                See How It Works ✨
               </Button>
             </div>
 
@@ -138,16 +138,16 @@ export function InteractiveHero() {
                     <span className="flex h-3 w-3 rounded-full bg-red-500/80" />
                     <span className="flex h-3 w-3 rounded-full bg-amber-500/80" />
                     <span className="flex h-3 w-3 rounded-full bg-emerald-500/80" />
-                    <span className="ml-2 text-xs font-mono text-slate-400">TrustAgent™ Verification Terminal</span>
+                    <span className="ml-2 text-xs font-mono text-slate-300">Live AI Assistant Preview</span>
                   </div>
                   <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300 uppercase tracking-wider">
-                    ● Active Live
+                    ● Real-Time Demo
                   </span>
                 </div>
 
                 {/* Scenario Selector Pills */}
                 <div>
-                  <div className="text-[11px] text-slate-400 mb-2 font-medium">Try Live Legal Query Demo:</div>
+                  <div className="text-[11px] text-slate-400 mb-2 font-medium">Click a common doubt to test:</div>
                   <div className="flex flex-wrap gap-1.5">
                     {DEMO_SCENARIOS.map((s) => (
                       <button
@@ -167,7 +167,7 @@ export function InteractiveHero() {
 
                 {/* Query Bubble */}
                 <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs text-white">
-                  <span className="font-semibold text-amber-300 mr-1.5">User Query:</span>
+                  <span className="font-semibold text-amber-300 mr-1.5">Your Question:</span>
                   <span className="text-slate-200 leading-relaxed">"{selectedScenario.query}"</span>
                 </div>
 
@@ -182,25 +182,25 @@ export function InteractiveHero() {
                         ✓
                       </span>
                       <span className="font-semibold text-emerald-300 text-xs">
-                        Verified Legal Ratio
+                        Verified Answer
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-300">
-                      <span>Precision:</span>
+                      <span>Accuracy:</span>
                       <span>{selectedScenario.confidence}%</span>
                     </div>
                   </div>
 
                   {/* Summary Text */}
-                  <p className="text-slate-200 leading-relaxed text-[11.5px]">
+                  <p className="text-slate-200 leading-relaxed text-[12px] font-light">
                     {selectedScenario.summary}
                   </p>
 
                   {/* Pinpoint Grounded Citations */}
                   <div className="rounded-lg border border-white/10 bg-black/40 p-2.5 space-y-1.5">
                     <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="font-mono text-amber-300 uppercase">Statutory Grounding:</span>
-                      <span className="text-emerald-300">Supreme Court Precedent</span>
+                      <span className="font-mono text-amber-300 uppercase">Official Law & Precedent:</span>
+                      <span className="text-emerald-300">Government Verified</span>
                     </div>
                     <div className="text-[11px] font-medium text-white flex items-center gap-1.5">
                       <span>🏛️</span>

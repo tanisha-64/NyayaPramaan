@@ -6,7 +6,7 @@
 -- 1. Add status and filename to cases table if not present
 alter table cases add column if not exists filename text;
 alter table cases add column if not exists status text default 'processing';
--- status values: 'processing' | 'ready' | 'failed' | 'cancelled'
+-- status values: 'processing' | 'ready' | 'failed' | 'cancelled' | 'rejected'
 
 -- 2. Create session_documents table for linking multiple documents to a chat session
 create table if not exists session_documents (
@@ -47,3 +47,17 @@ as $$
   order by embedding <=> query_embedding
   limit match_count;
 $$;
+
+-- ==============================================================================
+-- 4. Progress tracking & rejection support (background processing + live UX)
+-- ==============================================================================
+-- Live progress: pages_processed / total_pages for frontend polling
+alter table cases add column if not exists pages_processed int default 0;
+alter table cases add column if not exists total_pages int default 0;
+
+-- Rejection reason: stored when classifier rejects a document in background
+alter table cases add column if not exists rejection_reason text;
+
+-- File URL: stored after background storage upload completes
+alter table cases add column if not exists file_url text;
+

@@ -22,17 +22,16 @@ export function TopNav() {
 
   if (user) {
     if (isAdmin) {
-      // Superadmin gets universal navigation
+      // Superadmin gets universal navigation with prominent Admin button
       links = [
-        { href: "/admin", label: "🛡️ Admin Console" },
-        { href: "/app/dashboard", label: "⚖️ Case Workspace" },
         { href: "/public/chat", label: "🧑‍🎓 Citizen Chat" },
+        { href: "/app/dashboard", label: "⚖️ Case Workspace" },
         { href: "/trust-verification", label: "Trust Engine" },
         { href: "/game", label: "Rights Game 🎮" },
         { href: "/quiz", label: "Daily Quiz" },
       ];
       primaryActionHref = "/admin";
-      primaryActionLabel = "Admin Console →";
+      primaryActionLabel = "🛡️ Admin Console →";
     } else if (role === "professional") {
       // Legal professionals
       links = [

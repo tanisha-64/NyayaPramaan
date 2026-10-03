@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { listCases, deleteCase, clearAllCases, CaseSummary } from '@/services/caseService'
 import { clearAllSessions, listSessions } from '@/services/chatService'
 
-type SettingsTab = 'documents' | 'data' | 'preferences'
+type SettingsTab = 'documents' | 'data' | 'preferences' | 'feedback'
 
 interface ChatSettingsModalProps {
   open: boolean
@@ -34,6 +34,12 @@ export function ChatSettingsModal({
   // Preferences
   const [languagePref, setLanguagePref] = useState('auto')
   const [audiencePref, setAudiencePref] = useState('citizen')
+
+  // Feedback
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
+  const [feedbackMsg, setFeedbackMsg] = useState('')
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
+  const [feedbackLoading, setFeedbackLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -95,12 +101,13 @@ export function ChatSettingsModal({
     setActionLoading(true)
     try {
       await clearAllSessions()
+    } catch (e) {
+      // If backend is unreachable, still clear local UI state
+      console.warn('[ChatSettingsModal] Backend unavailable for clear sessions, clearing local state only')
+    } finally {
       setConfirmClearChats(false)
       showToast('All chat conversations cleared')
       if (onChatsCleared) onChatsCleared()
-    } catch (e) {
-      showToast('Failed to clear chat sessions')
-    } finally {
       setActionLoading(false)
     }
   }
@@ -231,6 +238,17 @@ export function ChatSettingsModal({
           >
             <span>🎛️</span>
             <span>AI Preferences</span>
+          </button>
+          <button
+            onClick={() => setTab('feedback')}
+            className={`flex items-center gap-2 py-3 px-3 text-xs font-medium border-b-2 transition-all cursor-pointer ${
+              tab === 'feedback'
+                ? 'border-amber-400 text-amber-300 font-semibold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span>💬</span>
+            <span>Feedback</span>
           </button>
         </div>
 
@@ -498,6 +516,88 @@ export function ChatSettingsModal({
                   <span>Save Preferences</span>
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: PLATFORM FEEDBACK */}
+          {tab === 'feedback' && (
+            <div className="space-y-5">
+              {feedbackSubmitted ? (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3 text-center">
+                  <span className="text-4xl">🙏</span>
+                  <p className="text-sm font-semibold text-white">Thank you for your feedback!</p>
+                  <p className="text-xs text-slate-400">Your response helps us improve NyayaPramaan for all users.</p>
+                  <button
+                    onClick={() => { setFeedbackSubmitted(false); setFeedbackRating(null); setFeedbackMsg('') }}
+                    className="mt-2 rounded-xl border border-white/15 bg-white/[0.05] px-4 py-1.5 text-xs text-slate-300 hover:text-white cursor-pointer"
+                  >
+                    Submit Another Response
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-200 mb-3">
+                      How satisfied are you with NyayaPramaan?
+                    </label>
+                    <div className="flex gap-2 flex-wrap">
+                      {[
+                        { score: 5, label: '😍 Excellent', color: 'emerald' },
+                        { score: 4, label: '😊 Good', color: 'blue' },
+                        { score: 3, label: '😐 Neutral', color: 'slate' },
+                        { score: 2, label: '😕 Poor', color: 'amber' },
+                        { score: 1, label: '😞 Very Poor', color: 'red' },
+                      ].map((r) => (
+                        <button
+                          key={r.score}
+                          onClick={() => setFeedbackRating(r.score)}
+                          className={`rounded-xl border px-3 py-2 text-xs font-medium transition-all cursor-pointer ${
+                            feedbackRating === r.score
+                              ? 'border-amber-400 bg-amber-500/20 text-amber-200'
+                              : 'border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20'
+                          }`}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-200 mb-2">
+                      Any suggestions or comments? <span className="text-slate-500 font-normal">(Optional)</span>
+                    </label>
+                    <textarea
+                      value={feedbackMsg}
+                      onChange={(e) => setFeedbackMsg(e.target.value)}
+                      placeholder="Tell us what you think, what features you'd like, or any issues you faced..."
+                      rows={4}
+                      className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">{feedbackMsg.length}/500 characters</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!feedbackRating) { showToast('Please select a satisfaction rating'); return }
+                      setFeedbackLoading(true)
+                      // Save feedback to localStorage (can be sent to backend later)
+                      const existing = JSON.parse(localStorage.getItem('nyaya_feedback') || '[]')
+                      existing.push({ rating: feedbackRating, message: feedbackMsg, timestamp: new Date().toISOString() })
+                      localStorage.setItem('nyaya_feedback', JSON.stringify(existing))
+                      setTimeout(() => { setFeedbackLoading(false); setFeedbackSubmitted(true) }, 800)
+                    }}
+                    disabled={!feedbackRating || feedbackLoading}
+                    className="flex items-center gap-2 rounded-xl bg-amber-500/20 border border-amber-500/40 px-5 py-2.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer disabled:opacity-40"
+                  >
+                    {feedbackLoading ? (
+                      <><span className="animate-spin">⏳</span><span>Submitting...</span></>
+                    ) : (
+                      <><span>✓</span><span>Submit Feedback</span></>
+                    )}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

@@ -14,42 +14,42 @@ const COMPARISON_DATA: FeatureRow[] = [
     title: 'Statutory Grounding (BNS & IPC Dual-Mapping)',
     description: 'Accurately correlates new Bharatiya Nyaya Sanhita (BNS 2023) with legacy IPC/CrPC sections.',
     nyaya: { status: true, detail: 'Automated dual-statute cross-indexing with gazette verification' },
-    genericAI: { status: false, detail: 'Frequently invents obsolete or non-existent section numbers' },
+    genericAI: { status: false, detail: 'General AI frequently invents obsolete or non-existent section numbers' },
     traditionalSearch: { status: true, detail: 'Raw keyword search only; cannot correlate sections dynamically' },
   },
   {
     title: 'Post-Generation Citation Re-Verification',
     description: 'Every statement is broken into atomic claims and re-verified against the original Bare Act text.',
     nyaya: { status: true, detail: 'TrustAgent™ dual-pass verification with confidence score' },
-    genericAI: { status: false, detail: 'Zero verification; outputs ungrounded probabilistic text' },
+    genericAI: { status: false, detail: 'Zero post-generation verification; outputs ungrounded probabilistic text' },
     traditionalSearch: { status: false, detail: 'Does not generate synthesized answers or check legal claims' },
   },
   {
     title: 'Court Hierarchy & Precedent Strength',
     description: 'Identifies whether a judgment is Constitution Bench (Binding) or High Court (Persuasive).',
     nyaya: { status: true, detail: 'Tags binding ratio decidendi vs obiter dicta automatically' },
-    genericAI: { status: false, detail: 'No understanding of Indian judicial hierarchy' },
+    genericAI: { status: false, detail: 'No understanding of Indian court hierarchy and precedent binding rules' },
     traditionalSearch: { status: false, detail: 'Requires manual advocate reading and filtering' },
   },
   {
     title: 'Multi-Page Case Document OCR & Cross-Examination',
     description: 'Upload scanned High Court petitions, FIRs, and contracts to ask specific evidentiary questions.',
     nyaya: { status: true, detail: 'Page-level citation grounding with Tesseract OCR fallback' },
-    genericAI: { status: false, detail: 'Loses page precision and often hallucinates missing facts' },
+    genericAI: { status: false, detail: 'Loses page-level precision and often hallucinates missing evidentiary facts' },
     traditionalSearch: { status: false, detail: 'Cannot upload and query your private court case files' },
   },
   {
     title: 'Cryptographic SHA-256 Audit Trail',
     description: 'Immutable ledger of every query, answer, and verification event for judicial compliance.',
     nyaya: { status: true, detail: 'Blockchain-style cryptographic hash chain for evidence logs' },
-    genericAI: { status: false, detail: 'Ephemeral chat logs with zero tamper-evidence' },
+    genericAI: { status: false, detail: 'Ephemeral chat sessions with no cryptographic tamper-evidence' },
     traditionalSearch: { status: false, detail: 'No verifiable audit logs' },
   },
   {
     title: 'Automatic PII Redaction (Aadhaar, PAN, Phone)',
     description: 'Protects client privacy by sanitizing sensitive personally identifiable information.',
     nyaya: { status: true, detail: 'Output guardrails redact Aadhaar, PAN, emails, and phone numbers' },
-    genericAI: { status: false, detail: 'Stores and retains user data in training loops' },
+    genericAI: { status: false, detail: 'May retain and process user data in uncontrolled server pipelines' },
     traditionalSearch: { status: false, detail: 'Displays unredacted court records' },
   },
 ]
@@ -68,7 +68,7 @@ export function RealWorldComparison() {
             <span>⚖️ NyayaPramaan</span>
             <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-300">Verified</span>
           </div>
-          <div className="hidden sm:block sm:col-span-2 text-center text-slate-400">Generic LLMs (ChatGPT/Claude)</div>
+          <div className="hidden sm:block sm:col-span-2 text-center text-slate-400">Generic AI Platforms</div>
           <div className="hidden sm:block sm:col-span-2 text-center text-slate-400">Traditional Law Search</div>
         </div>
 

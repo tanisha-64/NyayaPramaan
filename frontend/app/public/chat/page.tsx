@@ -24,7 +24,10 @@ type Message = {
 type DocState = {
   caseId: string
   fileName: string
-  status: 'processing' | 'ready' | 'failed' | 'cancelled'
+  status: 'processing' | 'ready' | 'failed' | 'cancelled' | 'rejected'
+  pagesProcessed?: number
+  totalPages?: number
+  rejectionReason?: string
 }
 
 type PendingUpload = {
@@ -69,10 +72,18 @@ function CitizenChatContent() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
 
   const handleVoiceResult = useCallback((text: string) => {
-    setQuery((prev) => (prev ? `${prev} ${text}` : text))
+    // Clear any interim marker and append the final confirmed text
+    setQuery((prev) => {
+      const clean = prev.replace(/\s*⋯.*$/, '').trim()
+      return clean ? `${clean} ${text}` : text
+    })
   }, [])
 
-  const { listening, toggleListening } = useVoiceInput(handleVoiceResult)
+  const handleVoiceInterim = useCallback((_interim: string) => {
+    // interimText is read directly from the hook's state — no need to modify query
+  }, [])
+
+  const { listening, micStatus, micError, interimText, toggleListening } = useVoiceInput(handleVoiceResult, handleVoiceInterim)
 
   const refreshSessions = useCallback(async () => {
     try {
@@ -103,7 +114,7 @@ function CitizenChatContent() {
     }
   }, [messages.length, loading, scrollToBottom])
 
-  // Poll status for any document still "processing"
+  // Poll status for any document still "processing" — includes live progress tracking
   useEffect(() => {
     const processing = documents.filter((d) => d.status === 'processing')
     if (!processing.length) return
@@ -112,10 +123,31 @@ function CitizenChatContent() {
       for (const doc of processing) {
         try {
           const s = await getCaseStatus(doc.caseId)
-          if (s.status !== 'processing') {
-            setDocuments((prev) =>
-              prev.map((d) => (d.caseId === doc.caseId ? { ...d, status: s.status as any } : d))
-            )
+          setDocuments((prev) =>
+            prev.map((d) => {
+              if (d.caseId !== doc.caseId) return d
+              const updated: DocState = {
+                ...d,
+                status: s.status as any,
+                pagesProcessed: s.pages_processed ?? d.pagesProcessed,
+                totalPages: s.total_pages ?? d.totalPages,
+              }
+              // Handle rejected documents — show reason to user
+              if (s.status === 'rejected' && s.rejection_reason) {
+                updated.rejectionReason = s.rejection_reason
+              }
+              return updated
+            })
+          )
+          // Show rejection message in chat when document is rejected
+          if (s.status === 'rejected' && s.rejection_reason) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: `⚠️ Upload Notice for **"${doc.fileName}"**: ${s.rejection_reason}`,
+              },
+            ])
           }
         } catch {
           // ignore transient polling errors
@@ -249,12 +281,23 @@ function CitizenChatContent() {
       } catch (err: any) {
         setPendingUploads((prev) => prev.filter((p) => p.fileName !== file.name))
         if (err?.name !== 'AbortError' && !controller.signal.aborted) {
-          const detailMsg = err?.message || 'Failed to process document.'
+          const rawMsg: string = err?.message || 'Failed to process document.'
+          // Provide user-friendly messages for common errors
+          let detailMsg = rawMsg
+          if (rawMsg.includes('Cannot reach the server') || rawMsg.includes('fetch')) {
+            detailMsg = 'Backend server is currently unreachable. Please ensure the server is running and try again.'
+          } else if (rawMsg.includes('not appear to be a legal')) {
+            detailMsg = 'This file does not appear to be a legal document. Please upload court judgments, FIRs, affidavits, legal notices, statutes, contracts, or similar law-related files.'
+          } else if (rawMsg.includes('Unsupported file format')) {
+            detailMsg = rawMsg
+          } else if (rawMsg.includes('too large')) {
+            detailMsg = rawMsg
+          }
           setMessages((prev) => [
             ...prev,
             {
               role: 'assistant',
-              content: `⚠️ Upload Issue for "${file.name}": ${detailMsg}`,
+              content: `⚠️ Upload Notice for **"${file.name}"**: ${detailMsg}`,
             },
           ])
         }
@@ -533,6 +576,8 @@ function CitizenChatContent() {
                         ? 'border-[#B8925A]/35 bg-[#B8925A]/15 text-[#D4A368]'
                         : doc.status === 'ready'
                         ? 'border-emerald-500/35 bg-emerald-500/15 text-emerald-300'
+                        : doc.status === 'rejected'
+                        ? 'border-amber-500/35 bg-amber-500/15 text-amber-300'
                         : 'border-red-500/35 bg-red-500/15 text-red-300'
                     }`}
                   >
@@ -542,10 +587,14 @@ function CitizenChatContent() {
                       {doc.status === 'processing' ? (
                         <span className="flex items-center gap-1 text-[#B8925A]">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#B8925A] animate-pulse-dot" />
-                          Indexing...
+                          {doc.totalPages && doc.totalPages > 0
+                            ? `Processing ${doc.pagesProcessed ?? 0}/${doc.totalPages} pages`
+                            : 'Analyzing document...'}
                         </span>
                       ) : doc.status === 'ready' ? (
                         '✓ Ready'
+                      ) : doc.status === 'rejected' ? (
+                        '⚠ Not a legal document'
                       ) : (
                         'Failed'
                       )}
@@ -587,14 +636,34 @@ function CitizenChatContent() {
                   type="button"
                   onClick={toggleListening}
                   disabled={loading}
-                  className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all cursor-pointer ${
-                    listening
-                      ? 'bg-[#B8925A]/20 text-[#B8925A] border border-[#B8925A]/40 animate-pulse'
+                  title={
+                    micError === 'not-allowed'
+                      ? 'Microphone access denied. Click to try again — allow mic in browser settings.'
+                      : micError === 'not-supported'
+                      ? 'Voice input not supported in this browser. Use Chrome or Edge.'
+                      : micStatus === 'requesting'
+                      ? 'Requesting microphone access...'
+                      : listening
+                      ? 'Stop listening (click to stop)'
+                      : 'Click to start voice input (Hindi + English supported)'
+                  }
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-xl transition-all cursor-pointer ${
+                    micError
+                      ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30'
+                      : micStatus === 'requesting'
+                      ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse'
+                      : listening
+                      ? 'bg-[#B8925A]/20 text-[#B8925A] border border-[#B8925A]/40'
                       : 'text-slate-400 hover:bg-white/[0.08] hover:text-white'
                   }`}
-                  title={listening ? 'Stop Microphone' : 'Start Voice Input'}
                 >
-                  {listening ? '🔴' : '🎤'}
+                  {/* Animated ring when listening */}
+                  {listening && (
+                    <span className="absolute inset-0 rounded-xl border-2 border-[#B8925A]/60 animate-ping opacity-60 pointer-events-none" />
+                  )}
+                  <span className="text-sm">
+                    {micError ? '🚫' : micStatus === 'requesting' ? '⏳' : listening ? '🔴' : '🎤'}
+                  </span>
                 </button>
               </div>
 
@@ -609,13 +678,31 @@ function CitizenChatContent() {
                 }}
                 rows={1}
                 placeholder={
-                  hasProcessingDocs
+                  micStatus === 'requesting'
+                    ? '⏳ Requesting microphone permission...'
+                    : listening
+                    ? '🎤 Listening... speak now (Hindi or English)'
+                    : hasProcessingDocs
                     ? 'Processing attached document chunks...'
                     : 'Ask about IPC, BNS, court precedents, or attach any case file...'
                 }
                 disabled={loading}
-                className="max-h-32 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm text-slate-100 placeholder:text-slate-400 outline-none leading-relaxed"
+                className={`max-h-32 flex-1 resize-none bg-transparent px-2.5 py-2 text-sm outline-none leading-relaxed ${
+                  listening ? 'text-[#D4A368] placeholder:text-[#B8925A]/70' : 'text-slate-100 placeholder:text-slate-400'
+                }`}
               />
+
+              {/* Live interim speech preview */}
+              {listening && interimText && (
+                <div className="px-2.5 pb-1.5 flex items-center gap-2 text-xs text-[#B8925A]/80 italic">
+                  <span className="flex items-end gap-[2px] h-3">
+                    <span className="voice-bar w-0.5 rounded-full bg-[#B8925A]" style={{ height: '60%' }} />
+                    <span className="voice-bar-2 w-0.5 rounded-full bg-[#B8925A]" style={{ height: '100%' }} />
+                    <span className="voice-bar-3 w-0.5 rounded-full bg-[#B8925A]" style={{ height: '40%' }} />
+                  </span>
+                  <span className="truncate max-w-[300px]">{interimText}</span>
+                </div>
+              )}
 
               <div className="pb-0.5 pr-0.5">
                 <button
@@ -630,8 +717,45 @@ function CitizenChatContent() {
               </div>
             </div>
 
+            {/* Mic error banner */}
+            {micError && (
+              <div className="mt-2 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2 text-xs">
+                <span className="text-red-400">🚫</span>
+                <div className="flex-1 text-red-300">
+                  {micError === 'not-allowed' && (
+                    <span>
+                      Microphone access blocked.{' '}
+                      <strong>Chrome:</strong> Click the 🔒 lock icon in the address bar → Site settings → Allow Microphone. Then click the mic button again.
+                    </span>
+                  )}
+                  {micError === 'not-supported' && (
+                    <span>Voice input is not supported in this browser. Please use <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>.</span>
+                  )}
+                  {micError === 'network' && (
+                    <span>Voice recognition network error. Check your internet connection and try again.</span>
+                  )}
+                  {micError === 'unknown' && (
+                    <span>Could not start voice input. Please try again.</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => toggleListening()}
+                  className="rounded-lg border border-red-500/30 bg-red-500/15 px-2.5 py-1 text-xs text-red-300 hover:bg-red-500/25 cursor-pointer"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
             <div className="mt-2 flex items-center justify-between px-1 text-[11px] text-slate-400">
-              <span>NyayaPramaan AI • Multi-document citations • PDF, DOCX, Image, TXT</span>
+              {listening ? (
+                <span className="flex items-center gap-1.5 text-[#B8925A]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B8925A] animate-pulse" />
+                  Listening — speak clearly in Hindi or English. Click 🔴 to stop.
+                </span>
+              ) : (
+                <span>NyayaPramaan AI • Multi-document citations • PDF, DOCX, Image, TXT</span>
+              )}
               <span>Press Enter to send, Shift+Enter for new line</span>
             </div>
           </div>
