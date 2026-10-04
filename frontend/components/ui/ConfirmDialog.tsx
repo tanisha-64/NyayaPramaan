@@ -1,41 +1,35 @@
-export function ConfirmDialog({
-  open,
-  title,
-  message,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean
-  title: string
-  message: string
-  onConfirm: () => void
-  onCancel: () => void
+
+export function ConfirmDialog({ open, title, message, onConfirm, onCancel }: {
+
+  open: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void
+
 }) {
+
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-xl border border-white/[0.12] bg-[#141722] p-5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in duration-150">
-        <div className="flex items-center gap-2 text-slate-100">
-          <span className="text-sm">⚠️</span>
-          <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+
+      <div style={{ background: '#1C1C1E', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: 24, maxWidth: 360, width: '90%' }}>
+
+        <h3 style={{ margin: 0, fontSize: 16 }}>{title}</h3>
+
+        <p style={{ marginTop: 10, fontSize: 13, color: 'rgba(247,245,240,0.6)' }}>{message}</p>
+
+        <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+
+          <button onClick={onCancel} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#F7F5F0', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+
+          <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#B8862E', color: '#0A0A0B', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>Delete</button>
+
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-slate-400">{message}</p>
-        <div className="mt-5 flex items-center justify-end gap-2.5">
-          <button
-            onClick={onCancel}
-            className="rounded-lg border border-white/10 bg-white/[0.04] px-3.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] hover:text-white transition-all cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="rounded-lg bg-red-600/80 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-red-500 transition-all cursor-pointer shadow-sm"
-          >
-            Confirm
-          </button>
-        </div>
+
       </div>
+
     </div>
+
   )
+
 }
+
