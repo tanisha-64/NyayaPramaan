@@ -15,8 +15,7 @@ export function useVoiceInput(
   const recognitionRef = useRef<any>(null)
   const onResultRef = useRef(onResult)
   const onInterimRef = useRef(onInterim)
-  const shouldRestartRef = useRef(false)
-  const activeRef = useRef(false)
+  const isListeningRef = useRef(false)
 
   // Keep callbacks fresh
   useEffect(() => { onResultRef.current = onResult }, [onResult])
@@ -27,23 +26,21 @@ export function useVoiceInput(
     return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null
   }, [])
 
-  const cleanupRecognition = useCallback(() => {
+  const stopListening = useCallback(() => {
+    isListeningRef.current = false
     if (recognitionRef.current) {
-      try { recognitionRef.current.abort() } catch { /* ignore */ }
+      try {
+        recognitionRef.current.stop()
+      } catch {
+        try { recognitionRef.current.abort() } catch {}
+      }
       recognitionRef.current = null
     }
-  }, [])
-
-  const stopListening = useCallback(() => {
-    activeRef.current = false
-    shouldRestartRef.current = false
-    cleanupRecognition()
     setInterimText('')
     setMicStatus('idle')
-    setMicError(null)
-  }, [cleanupRecognition])
+  }, [])
 
-  const startListening = useCallback(async () => {
+  const startListening = useCallback(() => {
     const SpeechRecognition = getSpeechRecognition()
 
     if (!SpeechRecognition) {
@@ -52,117 +49,96 @@ export function useVoiceInput(
       return
     }
 
-    // Request mic permission explicitly first
-    setMicStatus('requesting')
-    setMicError(null)
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      // Permission granted — stop the test stream immediately
-      stream.getTracks().forEach((t) => t.stop())
-    } catch (permErr: any) {
-      setMicStatus('error')
-      setMicError('not-allowed')
-      return
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort() } catch {}
+      recognitionRef.current = null
     }
 
-    // Clean up any stale instance
-    cleanupRecognition()
-    activeRef.current = true
-
-    const createInstance = () => {
-      if (!activeRef.current) return
-
+    try {
       const recognition = new SpeechRecognition()
-      // Hindi + English support — works for Hinglish too
-      recognition.lang = 'hi-IN'
-      recognition.continuous = true          // keep listening, don't stop after one phrase
-      recognition.interimResults = true      // show live transcript as user speaks
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.lang = 'en-IN' // Supports English and Indian accents; also parses Hinglish
       recognition.maxAlternatives = 1
 
-      let finalBuffer = ''
-
       recognition.onstart = () => {
+        isListeningRef.current = true
         setMicStatus('listening')
+        setMicError(null)
         setInterimText('')
-        finalBuffer = ''
       }
 
       recognition.onresult = (event: any) => {
-        let interimAccum = ''
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i]
-          const transcript = result[0]?.transcript || ''
-          if (result.isFinal) {
-            finalBuffer += (finalBuffer ? ' ' : '') + transcript.trim()
-            // Emit final text immediately
-            onResultRef.current(finalBuffer.trim())
-            finalBuffer = ''
-            setInterimText('')
-            if (onInterimRef.current) onInterimRef.current('')
+        let interim = ''
+        let finalChunk = ''
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const res = event.results[i]
+          const transcript = res[0]?.transcript || ''
+          if (res.isFinal) {
+            finalChunk += transcript
           } else {
-            interimAccum += transcript
+            interim += transcript
           }
         }
-        if (interimAccum) {
-          setInterimText(interimAccum)
-          if (onInterimRef.current) onInterimRef.current(interimAccum)
+
+        if (finalChunk.trim()) {
+          onResultRef.current(finalChunk.trim())
+          setInterimText('')
+          if (onInterimRef.current) onInterimRef.current('')
+        } else if (interim) {
+          setInterimText(interim)
+          if (onInterimRef.current) onInterimRef.current(interim)
         }
       }
 
       recognition.onerror = (event: any) => {
         const err = event.error
-        if (err === 'aborted' || !activeRef.current) return
+        if (err === 'aborted' || !isListeningRef.current) return
         if (err === 'no-speech') {
-          // Normal silence — auto-restart
-          return
+          return // normal silence
         }
         if (err === 'not-allowed') {
           setMicStatus('error')
           setMicError('not-allowed')
-          activeRef.current = false
+          isListeningRef.current = false
           return
         }
         if (err === 'network') {
           setMicStatus('error')
           setMicError('network')
-          activeRef.current = false
+          isListeningRef.current = false
           return
         }
-        // For other errors (audio-capture etc.), try to restart silently
-        console.warn('[useVoiceInput] Speech recognition notice:', err)
+        console.warn('[useVoiceInput] Speech recognition event:', err)
       }
 
       recognition.onend = () => {
-        recognitionRef.current = null
-        setInterimText('')
-        // Auto-restart if still supposed to be listening
-        if (activeRef.current && shouldRestartRef.current) {
-          setTimeout(() => {
-            if (activeRef.current) createInstance()
-          }, 150)
+        if (isListeningRef.current) {
+          // Restart gracefully if user hasn't explicitly stopped
+          try {
+            recognition.start()
+          } catch {
+            setMicStatus('idle')
+            isListeningRef.current = false
+          }
         } else {
           setMicStatus('idle')
         }
       }
 
       recognitionRef.current = recognition
-      shouldRestartRef.current = true
-      try {
-        recognition.start()
-      } catch (e) {
-        console.warn('[useVoiceInput] Start failed:', e)
-        setMicStatus('error')
-        setMicError('unknown')
-        activeRef.current = false
-      }
+      recognition.start()
+    } catch (e: any) {
+      console.warn('[useVoiceInput] Direct start failed:', e)
+      setMicStatus('error')
+      setMicError('unknown')
+      isListeningRef.current = false
     }
-
-    createInstance()
-  }, [getSpeechRecognition, cleanupRecognition])
+  }, [getSpeechRecognition])
 
   const toggleListening = useCallback(() => {
-    if (micStatus === 'listening' || micStatus === 'requesting') {
+    if (micStatus === 'listening') {
       stopListening()
     } else {
       startListening()
@@ -172,16 +148,16 @@ export function useVoiceInput(
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      activeRef.current = false
-      shouldRestartRef.current = false
-      cleanupRecognition()
+      isListeningRef.current = false
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort() } catch {}
+        recognitionRef.current = null
+      }
     }
-  }, [cleanupRecognition])
-
-  const listening = micStatus === 'listening'
+  }, [])
 
   return {
-    listening,
+    listening: micStatus === 'listening',
     micStatus,
     micError,
     interimText,

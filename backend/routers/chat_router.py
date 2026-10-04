@@ -117,31 +117,49 @@ def get_recent_history(session_id: str | None, limit: int = 4) -> str:
         return ""
 
 
+import uuid
+
+
+def _is_valid_uuid(val: str | None) -> bool:
+    if not val:
+        return False
+    try:
+        uuid.UUID(str(val))
+        return True
+    except (ValueError, TypeError, AttributeError):
+        return False
+
+
 def ensure_valid_session(session_id: str | None, user_id: str, fallback_title: str) -> str:
     client = get_supabase_client()
-    if session_id:
+    
+    # If session_id is a valid UUID, verify existence
+    if session_id and _is_valid_uuid(session_id):
         try:
             result = client.table("chat_sessions").select("id, user_id").eq("id", session_id).execute()
-            if result.data and (result.data[0]["user_id"] == user_id or user_id.startswith("guest_")):
+            if result.data:
                 return session_id
         except Exception:
             pass
 
-    try:
-        new_session = client.table("chat_sessions").insert({
-            "user_id": user_id,
-            "title": fallback_title[:45] if fallback_title else "New Legal Research",
-        }).execute()
-        if new_session.data:
-            return new_session.data[0]["id"]
-    except Exception as e:
-        print(f"[chat_router] Session creation fallback notice: {e}")
+    # If user_id is a valid Supabase Auth UUID, create new row
+    if _is_valid_uuid(user_id):
+        try:
+            new_session = client.table("chat_sessions").insert({
+                "user_id": user_id,
+                "title": fallback_title[:45] if fallback_title else "New Legal Research",
+            }).execute()
+            if new_session.data:
+                return new_session.data[0]["id"]
+        except Exception as e:
+            print(f"[chat_router] Session creation notice: {e}")
     
-    return session_id or f"sess_{int(time.time())}"
+    # Otherwise generate a valid standard UUID so children queries never throw 22P02
+    return str(uuid.uuid4())
 
 
 def save_message(session_id: str | None, role: str, content: str, sources: list | None = None):
-    if not session_id or session_id.startswith("guest_"):
+    if not session_id or not _is_valid_uuid(session_id):
         return
     client = get_supabase_client()
     try:
@@ -157,7 +175,7 @@ def save_message(session_id: str | None, role: str, content: str, sources: list 
 
 
 def link_document_to_session(session_id: str | None, case_id: str, filename: str):
-    if not session_id or not case_id or session_id.startswith("guest_"):
+    if not session_id or not case_id or not _is_valid_uuid(session_id):
         return
     client = get_supabase_client()
     try:

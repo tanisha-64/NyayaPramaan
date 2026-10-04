@@ -4,6 +4,7 @@ export type UploadResponse = {
   case_id: string;
   filename: string;
   status: string;
+  total_pages?: number;
 };
 
 export type CaseStatus = {

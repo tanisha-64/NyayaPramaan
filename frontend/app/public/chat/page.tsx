@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
@@ -28,6 +28,14 @@ type Message = {
   mode?: 'professional' | 'student' | 'citizen'
 }
 
+type StoredSession = {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+  pinned?: boolean
+}
+
 const STARTER_PROMPTS = [
   {
     title: "Bharatiya Nyaya Sanhita (BNS)",
@@ -54,7 +62,7 @@ export default function LegalChatPage() {
   const [loading, setLoading] = useState(false)
   const [isSessionLoading, setIsSessionLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [sessions, setSessions] = useState<any[]>([])
+  const [sessions, setSessions] = useState<StoredSession[]>([])
   const [activeSession, setActiveSession] = useState<string | null>(null)
   const [isTemporary, setIsTemporary] = useState(false)
   const [personaMode, setPersonaMode] = useState<'professional' | 'student' | 'citizen'>('professional')
@@ -72,6 +80,7 @@ export default function LegalChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Voice speech input
   const handleVoiceResult = useCallback((text: string) => {
     setQuery((prev) => {
       const clean = prev.trim()
@@ -79,16 +88,53 @@ export default function LegalChatPage() {
     })
   }, [])
 
-  const { listening, toggleListening } = useVoiceInput(handleVoiceResult, () => {})
+  const { listening, toggleListening, interimText } = useVoiceInput(handleVoiceResult)
 
-  const refreshSessions = useCallback(async () => {
+  // Local storage storage key for sessions
+  const userStorageKey = useMemo(() => `np_sessions_${user?.id || 'guest_user'}`, [user?.id])
+
+  // Save session list to local storage
+  const saveLocalSessions = useCallback((newSessions: StoredSession[]) => {
+    if (typeof window === 'undefined') return
     try {
-      const list = await listSessions()
-      setSessions(Array.isArray(list) ? list : [])
-    } catch (err) {
-      console.error('Session refresh notice:', err)
-    }
+      localStorage.setItem(userStorageKey, JSON.stringify(newSessions))
+    } catch {}
+  }, [userStorageKey])
+
+  // Save messages for a session to local storage
+  const saveLocalMessages = useCallback((sessionId: string, msgs: Message[]) => {
+    if (typeof window === 'undefined' || !sessionId) return
+    try {
+      localStorage.setItem(`np_msgs_${sessionId}`, JSON.stringify(msgs))
+    } catch {}
   }, [])
+
+  // Load sessions from local storage + backend
+  const refreshSessions = useCallback(async () => {
+    let localList: StoredSession[] = []
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(userStorageKey)
+        if (raw) localList = JSON.parse(raw)
+      } catch {}
+    }
+
+    try {
+      const cloudList = await listSessions()
+      if (Array.isArray(cloudList) && cloudList.length > 0) {
+        // Merge cloud with local, avoiding duplicates
+        const cloudIds = new Set(cloudList.map((s) => s.id))
+        const merged = [...cloudList, ...localList.filter((s) => !cloudIds.has(s.id))]
+        setSessions(merged)
+        saveLocalSessions(merged)
+        return
+      }
+    } catch (err) {
+      console.warn('Cloud session list notice:', err)
+    }
+
+    setSessions(localList)
+  }, [userStorageKey, saveLocalSessions])
 
   useEffect(() => {
     refreshSessions()
@@ -140,7 +186,7 @@ export default function LegalChatPage() {
           // ignore transient polling error
         }
       }
-    }, 2000)
+    }, 1500)
 
     return () => clearInterval(interval)
   }, [composerDocs])
@@ -173,18 +219,34 @@ export default function LegalChatPage() {
     setIsTemporary(false)
     setComposerNotice(null)
     setIsSessionLoading(true)
+
+    // Check local storage first for instant load
+    let localMsgs: Message[] = []
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(`np_msgs_${id}`)
+        if (raw) localMsgs = JSON.parse(raw)
+      } catch {}
+    }
+
+    if (localMsgs.length > 0) {
+      setMessages(localMsgs)
+    }
+
     try {
       const { messages: msgs } = await getSessionMessages(id)
-      setMessages(
-        (msgs || []).map((m: any) => ({
+      if (msgs && msgs.length > 0) {
+        const loaded: Message[] = msgs.map((m: any) => ({
           role: m.role,
           content: m.content,
           sources: m.sources,
         }))
-      )
+        setMessages(loaded)
+        saveLocalMessages(id, loaded)
+      }
       setSuggestions([])
     } catch (err) {
-      console.error('Failed to load session:', err)
+      console.warn('Backend loadSession notice:', err)
     } finally {
       setIsSessionLoading(false)
     }
@@ -192,31 +254,32 @@ export default function LegalChatPage() {
 
   async function handleRename(id: string, title: string) {
     if (!title.trim()) return
-    setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, title: title.trim() } : s)))
+    const updated = sessions.map((s) => (s.id === id ? { ...s, title: title.trim(), updated_at: new Date().toISOString() } : s))
+    setSessions(updated)
+    saveLocalSessions(updated)
     try {
       await renameSession(id, title.trim())
-    } catch (err) {
-      console.error('Rename failed:', err)
-    }
-    refreshSessions()
+    } catch {}
   }
 
   async function handleTogglePin(id: string, pinned: boolean) {
-    setSessions((prev) =>
-      prev
-        .map((s) => (s.id === id ? { ...s, pinned } : s))
-        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
-    )
+    const updated = sessions
+      .map((s) => (s.id === id ? { ...s, pinned } : s))
+      .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0))
+    setSessions(updated)
+    saveLocalSessions(updated)
     try {
       await togglePin(id, pinned)
-    } catch (err) {
-      console.error('Toggle pin failed:', err)
-    }
-    refreshSessions()
+    } catch {}
   }
 
   async function handleDelete(id: string) {
-    setSessions((prev) => prev.filter((s) => s.id !== id))
+    const updated = sessions.filter((s) => s.id !== id)
+    setSessions(updated)
+    saveLocalSessions(updated)
+    if (typeof window !== 'undefined') {
+      try { localStorage.removeItem(`np_msgs_${id}`) } catch {}
+    }
     if (activeSession === id) {
       setActiveSession(null)
       setMessages([])
@@ -224,13 +287,10 @@ export default function LegalChatPage() {
     }
     try {
       await deleteSession(id)
-    } catch (err) {
-      console.error('Delete session failed:', err)
-    }
-    refreshSessions()
+    } catch {}
   }
 
-  // Handle File Selection: immediately show file inside composer
+  // Handle File Selection
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
@@ -260,7 +320,13 @@ export default function LegalChatPage() {
         setComposerDocs((prev) =>
           prev.map((d) =>
             d.caseId === tempId
-              ? { ...d, caseId: result.case_id, status: 'indexing', progress: 100 }
+              ? {
+                  ...d,
+                  caseId: result.case_id,
+                  status: 'indexing',
+                  progress: 100,
+                  totalPages: result.total_pages || d.totalPages || 1,
+                }
               : d
           )
         )
@@ -285,6 +351,12 @@ export default function LegalChatPage() {
     deleteDocument(caseId).catch(() => {})
   }
 
+  // Document processing state checks
+  const isAnyDocBusy = composerDocs.some(
+    (d) => d.status === 'uploading' || d.status === 'processing' || d.status === 'ocr' || d.status === 'indexing'
+  )
+  const hasRejectedDoc = composerDocs.some((d) => d.status === 'rejected')
+
   // Submit Query + Attached Documents
   async function sendQuery(textToSend?: string) {
     const text = (textToSend ?? query).trim()
@@ -292,9 +364,13 @@ export default function LegalChatPage() {
 
     setComposerNotice(null)
 
-    // Check if any attached doc is still rejected
-    const hasRejected = composerDocs.some((d) => d.status === 'rejected')
-    if (hasRejected) {
+    // Block submission if document is still indexing
+    if (isAnyDocBusy) {
+      setComposerNotice('Document is still indexing pages. Please wait until status is Ready before sending.')
+      return
+    }
+
+    if (hasRejectedDoc) {
       setComposerNotice('Please remove rejected non-legal files before sending your legal question.')
       return
     }
@@ -304,19 +380,18 @@ export default function LegalChatPage() {
       fileName: d.fileName,
       pageCount: d.totalPages || 1,
     }))
-    const activeCaseIds = composerDocs.filter((d) => d.status === 'ready' || d.status === 'indexing').map((d) => d.caseId)
+    const activeCaseIds = composerDocs.filter((d) => d.status === 'ready').map((d) => d.caseId)
 
-    // Append User Message with its attachments
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: 'user',
-        content: text,
-        attachedFiles: attachedForMessage.length ? attachedForMessage : undefined,
-      },
-    ])
+    const userMessage: Message = {
+      role: 'user',
+      content: text,
+      attachedFiles: attachedForMessage.length ? attachedForMessage : undefined,
+    }
 
-    // Clear composer input and composer attachments (they have moved to message bubble)
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
+
+    // Clear composer input and composer attachments
     setQuery('')
     setComposerDocs([])
     setSuggestions([])
@@ -327,48 +402,82 @@ export default function LegalChatPage() {
       textareaRef.current.style.height = 'auto'
     }
 
+    // Determine or generate current session ID
+    let currentSessionId = activeSession
+    if (!currentSessionId && !isTemporary) {
+      currentSessionId = `sess_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+      setActiveSession(currentSessionId)
+
+      // Add to session list immediately
+      const newSession: StoredSession = {
+        id: currentSessionId,
+        title: text.length > 38 ? `${text.slice(0, 35)}...` : text,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      const newSessionList = [newSession, ...sessions]
+      setSessions(newSessionList)
+      saveLocalSessions(newSessionList)
+    }
+
+    if (currentSessionId && !isTemporary) {
+      saveLocalMessages(currentSessionId, updatedMessages)
+    }
+
     queryAbortController.current = new AbortController()
 
     try {
       const result = await askQuestion(
         text,
         activeCaseIds,
-        activeSession ?? undefined,
+        currentSessionId ?? undefined,
         isTemporary,
         personaMode
       )
 
-      if (!isTemporary && result.session_id && result.session_id !== activeSession) {
-        setActiveSession(result.session_id)
-        refreshSessions()
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: result.answer,
+        conclusion: result.conclusion,
+        usefulness: result.usefulness,
+        sources: result.sources,
+        claims: result.claims,
+        verificationSummary: result.verification_summary,
+        qualityNote: result.quality_note,
+        departmentSuggestion: result.department_suggestion,
+        mode: personaMode,
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: result.answer,
-          conclusion: result.conclusion,
-          usefulness: result.usefulness,
-          sources: result.sources,
-          claims: result.claims,
-          verificationSummary: result.verification_summary,
-          qualityNote: result.quality_note,
-          departmentSuggestion: result.department_suggestion,
-          mode: personaMode,
-        },
-      ])
+      const finalMessages = [...updatedMessages, assistantMessage]
+      setMessages(finalMessages)
+
+      if (currentSessionId && !isTemporary) {
+        saveLocalMessages(currentSessionId, finalMessages)
+
+        // Update session title if first message
+        if (messages.length === 0) {
+          const autoTitle = text.length > 38 ? `${text.slice(0, 35)}...` : text
+          const updatedSessions = sessions.map((s) =>
+            s.id === currentSessionId ? { ...s, title: autoTitle, updated_at: new Date().toISOString() } : s
+          )
+          setSessions(updatedSessions)
+          saveLocalSessions(updatedSessions)
+        }
+      }
+
       setSuggestions(result.suggestions || [])
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: 'Unable to connect to the legal AI gateway. Please ensure the backend server is active and try again.',
-            isError: true,
-          },
-        ])
+        const errorMsg: Message = {
+          role: 'assistant',
+          content: 'Unable to connect to the legal AI gateway. Please ensure the backend server is active and try again.',
+          isError: true,
+        }
+        const errorMessages = [...updatedMessages, errorMsg]
+        setMessages(errorMessages)
+        if (currentSessionId && !isTemporary) {
+          saveLocalMessages(currentSessionId, errorMessages)
+        }
       }
     } finally {
       setLoading(false)
@@ -387,6 +496,10 @@ export default function LegalChatPage() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
+      if (isAnyDocBusy) {
+        setComposerNotice('Document is still indexing pages. Please wait until status is Ready before sending.')
+        return
+      }
       sendQuery()
     }
   }
@@ -603,6 +716,14 @@ export default function LegalChatPage() {
               </div>
             )}
 
+            {/* Live Voice Interim Speech Bubble */}
+            {listening && interimText && (
+              <div className="flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/40 px-3.5 py-1.5 text-xs text-indigo-300 animate-pulse">
+                <span>🎙️</span>
+                <span className="italic truncate">{interimText}...</span>
+              </div>
+            )}
+
             {/* Composer Notice / Error Alert */}
             {composerNotice && (
               <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-950/40 px-3.5 py-2 text-xs text-amber-200 animate-fadeIn">
@@ -673,15 +794,16 @@ export default function LegalChatPage() {
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value)
-                  // auto-expand height up to 140px
                   e.target.style.height = 'auto'
                   e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`
                 }}
                 onKeyDown={handleKeyDown}
                 rows={1}
                 placeholder={
-                  composerDocs.length > 0
-                    ? `Ask anything about ${composerDocs[0].fileName}...`
+                  isAnyDocBusy
+                    ? `Indexing attached document (${composerDocs[0]?.totalPages || 'multi'} pages)... please wait`
+                    : composerDocs.length > 0
+                    ? `Ask anything about ${composerDocs[0]?.fileName}...`
                     : 'Ask any Indian legal question, section comparison, or case law...'
                 }
                 className="max-h-[140px] min-h-[40px] flex-1 resize-none bg-transparent px-2 py-2 text-sm text-white placeholder-slate-400 outline-none leading-relaxed"
@@ -702,9 +824,9 @@ export default function LegalChatPage() {
                 <button
                   type="button"
                   onClick={() => sendQuery()}
-                  disabled={!query.trim() && composerDocs.length === 0}
+                  disabled={isAnyDocBusy || hasRejectedDoc || (!query.trim() && composerDocs.length === 0)}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-                  title="Send message"
+                  title={isAnyDocBusy ? 'Please wait for document indexing to complete' : 'Send message'}
                 >
                   ➔
                 </button>
@@ -712,7 +834,7 @@ export default function LegalChatPage() {
             </div>
 
             <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
-              <span>NyayaPramaan 2.0 • Strict Indian Legal Intelligence</span>
+              <span>NyayaPramaan • Strict Indian Legal Intelligence</span>
               <span>Press Shift + Enter for new line</span>
             </div>
           </div>

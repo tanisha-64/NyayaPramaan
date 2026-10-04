@@ -259,7 +259,18 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
         tmp.write(file_bytes)
         tmp_path = tmp.name
 
-    # 4. Create case record IMMEDIATELY with status="processing"
+    # 4. Instant page count extraction for accurate progress UI
+    estimated_pages = 1
+    if suffix == ".pdf":
+        try:
+            from pypdf import PdfReader
+            import io
+            pdf_reader = PdfReader(io.BytesIO(file_bytes))
+            estimated_pages = max(len(pdf_reader.pages), 1)
+        except Exception:
+            estimated_pages = 1
+
+    # 5. Create case record IMMEDIATELY with status="processing"
     client = get_supabase_client()
     try:
         result = client.table("cases").insert({
@@ -269,20 +280,21 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
             "filename": clean_filename,
             "status": "processing",
             "pages_processed": 0,
-            "total_pages": 0,
+            "total_pages": estimated_pages,
         }).execute()
         case_id = result.data[0]["id"]
     except Exception as e:
         print(f"[document_router] case insert notice: {e}")
         case_id = f"doc_{int(time.time())}"
 
-    # 5. Background processing
+    # 6. Background processing
     background_tasks.add_task(_process_in_background, tmp_path, case_id, suffix, file_bytes, clean_filename)
 
     return {
         "case_id": case_id,
         "filename": clean_filename,
         "status": "processing",
+        "total_pages": estimated_pages,
     }
 
 
