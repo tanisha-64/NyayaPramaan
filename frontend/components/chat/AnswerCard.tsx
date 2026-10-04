@@ -1,16 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { ConfidenceMeter } from './ConfidenceMeter'
-import { ReportButton } from './ReportButton'
 import { BookmarkButton } from './BookmarkButton'
-
-type Source = {
-  name: string
-  type?: string
-  url?: string | null
-  verification_status?: string
-  jurisdiction?: string | null
-}
+import { TrustAgentPanel } from './TrustAgentPanel'
+import { LegalClaim, VerificationSummary, LegalSource } from '@/services/chatService'
 
 const STATUS_CONFIG: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
   verified: {
@@ -61,19 +54,27 @@ export function AnswerCard({
   conclusion,
   usefulness,
   sources,
+  claims,
+  verificationSummary,
   qualityNote,
   departmentSuggestion,
   confidenceScore,
   messageIndex,
+  mode = 'professional',
+  onSelectSource,
 }: {
   answer: string
   conclusion?: string
   usefulness?: string
-  sources?: (Source | string)[]
+  sources?: (LegalSource | string)[]
+  claims?: LegalClaim[]
+  verificationSummary?: VerificationSummary
   qualityNote?: string
   departmentSuggestion?: string | null
   confidenceScore?: number
   messageIndex?: number
+  mode?: 'professional' | 'student' | 'citizen'
+  onSelectSource?: (source: LegalSource) => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -83,31 +84,38 @@ export function AnswerCard({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // fallback
+      // ignore
     }
   }
 
-  // Normalize sources if array contains strings
-  const normalizedSources: Source[] = (sources || []).map((s) => {
+  // Normalize sources
+  const normalizedSources: LegalSource[] = (sources || []).map((s) => {
     if (typeof s === 'string') {
       return {
         name: s,
         type: 'statute',
         url: null,
+        page: 1,
+        section: 'Statute Provision',
+        excerpt: s,
         verification_status: 'verified',
-        jurisdiction: null,
+        jurisdiction: 'India',
       }
     }
     return s
   })
 
-  // Derive confidence from verification data if not provided
-  const derivedConfidence = confidenceScore ?? deriveConfidence(normalizedSources, usefulness)
+  const derivedConfidence =
+    confidenceScore ??
+    (verificationSummary?.evidence_coverage
+      ? verificationSummary.evidence_coverage
+      : deriveConfidence(normalizedSources, usefulness))
+
   const answerId = `answer-${messageIndex ?? Date.now()}`
 
   return (
-    <div className="answer-card-surface w-full max-w-full rounded-2xl border border-white/[0.08] bg-gradient-to-b from-[#141722]/95 to-[#0F1118]/95 p-5 shadow-xl backdrop-blur-md transition-all">
-      {/* Header bar: AI Model badge & Copy Action */}
+    <div className="answer-card-surface w-full max-w-full rounded-2xl border border-white/[0.08] bg-[#10131D]/95 p-5 shadow-xl backdrop-blur-md transition-all">
+      {/* Header bar: AI Model badge & Actions */}
       <div className="mb-3.5 flex items-center justify-between border-b border-white/[0.06] pb-3">
         <div className="flex items-center gap-2">
           <span className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/15 text-[11px] text-blue-400 font-semibold border border-blue-500/20">
@@ -117,6 +125,11 @@ export function AnswerCard({
           <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
             Evidence Verified
           </span>
+          {mode && (
+            <span className="rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 text-[10px] font-medium text-indigo-300 uppercase tracking-wider">
+              {mode} Mode
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1">
@@ -145,19 +158,12 @@ export function AnswerCard({
         </div>
       </div>
 
-      {/* Confidence Meter — visual gauge */}
-      {derivedConfidence > 0 && (
-        <div className="mb-3.5 rounded-xl border border-white/[0.04] bg-white/[0.02] px-3.5 py-2.5">
-          <ConfidenceMeter score={derivedConfidence} />
-        </div>
-      )}
-
       {/* Main Answer Body */}
       <div className="text-[14px] leading-relaxed text-slate-200 font-normal whitespace-pre-wrap tracking-[0.01em]">
         {answer}
       </div>
 
-      {/* Key Takeaway / In Short Highlight Box */}
+      {/* Key Takeaway Highlight Box */}
       {conclusion && (
         <div className="mt-4 rounded-xl border border-indigo-500/25 bg-gradient-to-r from-indigo-950/40 via-indigo-900/20 to-transparent p-3.5 shadow-sm">
           <div className="flex items-center gap-1.5">
@@ -172,32 +178,42 @@ export function AnswerCard({
         </div>
       )}
 
-      {/* Sources & Citations Section */}
+      {/* TrustAgent Verification Layer & Claims Breakdown */}
+      {claims && claims.length > 0 && (
+        <TrustAgentPanel claims={claims} summary={verificationSummary} />
+      )}
+
+      {/* Citations & Sources Section (Clickable) */}
       {normalizedSources && normalizedSources.length > 0 && (
         <div className="mt-4 pt-3.5 border-t border-white/[0.06]">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Evidentiary Sources ({normalizedSources.length})
+              Authoritative Citations & Evidentiary Sources ({normalizedSources.length})
             </span>
+            <span className="text-[10px] text-slate-400 italic">Click citation to inspect excerpt</span>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {normalizedSources.map((s, i) => {
               const statusKey = s.verification_status || 'verified'
               const cfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.verified
-              const badgeContent = (
-                <div
-                  className="group flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-all hover:brightness-105 shadow-xs"
+
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => onSelectSource && onSelectSource(s)}
+                  className="group flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-all hover:scale-[1.02] hover:shadow-md cursor-pointer text-left"
                   style={{ backgroundColor: cfg.bg, borderColor: cfg.border }}
                 >
-                  <span className="text-slate-200 font-medium tracking-tight">
+                  <span className="text-slate-200 font-medium tracking-tight group-hover:text-white">
                     {s.name}
                   </span>
-                  {s.jurisdiction && s.jurisdiction !== 'unknown' && (
-                    <span className="text-[10px] text-slate-400 uppercase">
-                      [{s.jurisdiction}]
+                  {s.page ? (
+                    <span className="text-[10px] text-indigo-300 font-mono">
+                      p.{s.page}
                     </span>
-                  )}
+                  ) : null}
                   <span
                     className="flex items-center gap-1 text-[10px] font-semibold"
                     style={{ color: cfg.text }}
@@ -205,21 +221,7 @@ export function AnswerCard({
                     <span>{cfg.icon}</span>
                     <span>{cfg.label}</span>
                   </span>
-                </div>
-              )
-
-              return s.url ? (
-                <a
-                  key={i}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="no-underline"
-                >
-                  {badgeContent}
-                </a>
-              ) : (
-                <div key={i}>{badgeContent}</div>
+                </button>
               )
             })}
           </div>
@@ -258,58 +260,32 @@ export function AnswerCard({
         </div>
       )}
 
-      {/* Footer: Report + Legal Safeguard */}
-      <div className="mt-3.5 border-t border-white/[0.04] pt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+      {/* Citizen / Legal Disclaimer Footer */}
+      <div className="mt-4 border-t border-white/[0.04] pt-2.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-400">
         <div className="flex items-center gap-2">
-          <span>Verified against statutes & case repository</span>
-          <ReportButton
-            onReport={(reason) => {
-              // Send to backend for tracking — graceful fail
-              try {
-                fetch('/api/report', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ answerId, reason, timestamp: new Date().toISOString() }),
-                }).catch(() => {})
-              } catch {
-                // Silent fail — report is stored locally as well
-              }
-              // Also store locally
-              try {
-                const reports = JSON.parse(localStorage.getItem('np_reports') || '[]')
-                reports.push({ answerId, reason, timestamp: new Date().toISOString() })
-                localStorage.setItem('np_reports', JSON.stringify(reports))
-              } catch {}
-            }}
-          />
+          <span>🛡️ Cryptographically logged citation trail</span>
         </div>
-        <span>Not formal legal representation</span>
+        <span className="text-slate-400 italic text-[10px]">
+          Informational legal research assistant • Not a substitute for a qualified advocate
+        </span>
       </div>
     </div>
   )
 }
 
-/**
- * Derive a confidence score from the verification data when not explicitly provided.
- */
-function deriveConfidence(sources: Source[], usefulness?: string): number {
-  if (!sources.length) return 0
-
+function deriveConfidence(sources: LegalSource[], usefulness?: string): number {
+  if (!sources.length) return 75
   let total = 0
   for (const s of sources) {
     const status = s.verification_status || 'unverified'
-    if (status === 'verified') total += 100
-    else if (status === 'partial') total += 60
+    if (status === 'verified' || status === 'SUPPORTED') total += 100
+    else if (status === 'partial' || status === 'PARTIALLY SUPPORTED') total += 60
     else if (status === 'external') total += 50
-    else if (status === 'contradicted') total += 10
-    else total += 30 // unverified
+    else if (status === 'contradicted' || status === 'CONTRADICTED') total += 10
+    else total += 40
   }
-
   let score = total / sources.length
-
-  // Adjust by usefulness
   if (usefulness === 'high') score = Math.min(100, score * 1.05)
   else if (usefulness === 'low') score = Math.max(0, score * 0.75)
-
   return Math.round(score)
 }

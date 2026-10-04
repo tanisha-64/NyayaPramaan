@@ -7,10 +7,7 @@ from ai_core.llm_gateway import call_llm
 
 CLASSIFIER_MODEL = "groq/openai/gpt-oss-20b"
 
-REFUSAL_MESSAGE = (
-    "I specialize exclusively in Indian law, legal rights, court procedures, and case documents. "
-    "Please ask a legal or case-related question."
-)
+REFUSAL_MESSAGE = "I can only assist with legal research, legal documents and legal-domain questions."
 
 LEGAL_KEYWORDS = [
     "case", "court", "judge", "judgment", "police", "fir", "bail", "arrest",
@@ -38,7 +35,7 @@ def classify_intent(query: str) -> dict:
 
 domain: "legal" if related to Indian law, legal rights, court procedure, IPC/BNS/CrPC/BNSS statutes,
 cases, agreements, contracts, rights, or justice system -- in English, Hindi, or Hinglish.
-"out_of_domain" ONLY if completely unrelated to law (e.g., cooking recipes, gaming cheats, sports trivia, coding tutorials).
+"out_of_domain" ONLY if completely unrelated to law (e.g., cooking recipes, gaming cheats, sports trivia, coding tutorials, weather).
 
 audience: "professional" or "student_public"
 
@@ -62,12 +59,17 @@ JSON:"""
 
 AUDIENCE_INSTRUCTIONS = {
     "professional": (
-        "Write for a legal professional: use precise legal terminology, "
-        "cite exact section numbers, and include procedural nuance. Directly answer without filler or repetitive AI intros."
+        "PROFESSIONAL LEGAL MODE: Provide in-depth legal research with exact statutory sections, judicial doctrines (ratio decidendi, obiter dictum), precedents, procedural remedies, and evidentiary requirements. Be rigorous, structured, and precise."
+    ),
+    "student": (
+        "STUDENT ACADEMIC MODE: Focus on clear conceptual explanations, breakdown of legal elements (mens rea, actus reus, ingredient tests), landmark case law precedents, and comparative statutory analysis (e.g., IPC vs BNS)."
+    ),
+    "citizen": (
+        "CITIZEN PLAIN-LANGUAGE MODE: Explain the legal issue in clear, empathetic, non-jargon language. Outline the user's practical rights, step-by-step procedure (e.g., filing an FIR/complaint, sending a legal notice), and relevant authorities. Include an informational disclaimer."
     ),
     "student_public": (
-        "Write for a student or citizen: use simple, plain language, "
-        "briefly define any legal term you must use, and keep a clear, helpful tone. Directly answer without repetitive robotic disclaimers."
+        "Write in a clear, accessible, and structured manner: explain key legal terms, cite relevant statutes/sections, and provide actionable context."
     ),
 }
+
 

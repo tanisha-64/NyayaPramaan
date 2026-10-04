@@ -1,13 +1,12 @@
 """
 TrustAgent Step 2 -- Verification (4-level verdict, BATCHED)
-Verifies ALL claims in a SINGLE LLM call instead of one-call-per-claim --
-this dramatically reduces token/rate-limit pressure on free-tier APIs.
+Verifies ALL claims in a SINGLE LLM call with exact evidence citations.
 """
 from ai_core.llm_gateway import call_llm
 import json
 import re
 
-VALID_VERDICTS = ["supported", "partially_supported", "contradicted", "unverified"]
+VALID_VERDICTS = ["SUPPORTED", "PARTIALLY SUPPORTED", "CONTRADICTED", "INSUFFICIENT EVIDENCE"]
 
 
 def verify_claims_batch(claims: list[str], evidence: str) -> list[dict]:
@@ -16,17 +15,25 @@ def verify_claims_batch(claims: list[str], evidence: str) -> list[dict]:
         return []
 
     numbered_claims = "\n".join(f"{i+1}. {c}" for i, c in enumerate(claims))
-    prompt = f"""Verify EACH numbered claim below against the evidence.
-For each, choose exactly one verdict: "supported", "partially_supported",
-"contradicted", or "unverified" (evidence doesn't mention this topic at all).
+    prompt = f"""Verify EACH numbered claim below against the provided legal evidence.
+For each claim, choose exactly one status: "SUPPORTED", "PARTIALLY SUPPORTED", "CONTRADICTED", or "INSUFFICIENT EVIDENCE".
+Extract the exact supporting excerpt or mention (e.g. "Section 302 IPC", "Judgment Page 4", "FIR Paragraph 3").
 
-Respond with ONLY a JSON array, one object per claim, SAME ORDER as given:
-[{{"verdict": "supported", "confidence": 0, "reason": ""}}, ...]
+Respond with ONLY a JSON array of objects in the SAME ORDER:
+[
+  {{
+    "claim": "...",
+    "status": "SUPPORTED",
+    "evidence": "Exact excerpt or section/page reference from evidence",
+    "source": "Document or Statute name"
+  }}
+]
 
 CLAIMS:
 {numbered_claims}
 
-EVIDENCE: {evidence}"""
+LEGAL EVIDENCE:
+{evidence}"""
 
     raw = call_llm("groq/openai/gpt-oss-20b", prompt)
     cleaned = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
@@ -34,24 +41,52 @@ EVIDENCE: {evidence}"""
     try:
         results = json.loads(cleaned)
         sanitized = []
-        for r in results:
-            v = r.get("verdict")
-            if v not in VALID_VERDICTS:
-                v = "unverified"
-            sanitized.append({"verdict": v, "confidence": r.get("confidence", 0), "reason": r.get("reason", "")})
+        for i, r in enumerate(results):
+            raw_status = (r.get("status") or r.get("verdict") or "INSUFFICIENT EVIDENCE").upper().replace("_", " ")
+            if "PARTIAL" in raw_status:
+                status = "PARTIALLY SUPPORTED"
+            elif "SUPPORT" in raw_status:
+                status = "SUPPORTED"
+            elif "CONTRADICT" in raw_status:
+                status = "CONTRADICTED"
+            else:
+                status = "INSUFFICIENT EVIDENCE"
+            
+            sanitized.append({
+                "claim": r.get("claim") or (claims[i] if i < len(claims) else ""),
+                "status": status,
+                "evidence": r.get("evidence") or (r.get("reason") if status == "SUPPORTED" else "No direct evidence passage found"),
+                "source": r.get("source") or "Legal Knowledge Base / Case Record",
+            })
         while len(sanitized) < len(claims):
-            sanitized.append({"verdict": "unverified", "confidence": 0, "reason": "parse-mismatch"})
+            idx = len(sanitized)
+            sanitized.append({
+                "claim": claims[idx],
+                "status": "INSUFFICIENT EVIDENCE",
+                "evidence": "Could not locate explicit supporting evidence.",
+                "source": "Legal Knowledge Base",
+            })
         return sanitized[: len(claims)]
     except Exception:
-        return [{"verdict": "unverified", "confidence": 0, "reason": "Could not parse verification response"} for _ in claims]
+        return [
+            {
+                "claim": c,
+                "status": "INSUFFICIENT EVIDENCE",
+                "evidence": "Verification could not parse detailed claim citations.",
+                "source": "Legal Knowledge Base",
+            }
+            for c in claims
+        ]
 
 
 def summarize_verdicts(verdicts: list[dict]) -> str:
-    verdict_list = [v.get("verdict") for v in verdicts]
-    if "contradicted" in verdict_list:
+    statuses = [v.get("status", "").upper() for v in verdicts]
+    if "CONTRADICTED" in statuses:
         return "contradicted"
-    if "unverified" in verdict_list:
+    if "INSUFFICIENT EVIDENCE" in statuses or "UNVERIFIED" in statuses:
+        if any(s == "SUPPORTED" for s in statuses):
+            return "partially_supported"
         return "unverified"
-    if "partially_supported" in verdict_list:
+    if "PARTIALLY SUPPORTED" in statuses:
         return "partially_supported"
-    return "supported"
+    return "supported"
