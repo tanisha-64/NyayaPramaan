@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
 import { uploadDocument, getCaseStatus, deleteDocument, UploadResponse, validateFileType } from '@/services/documentService'
@@ -418,6 +419,15 @@ export default function LegalChatPage() {
         <header className="flex-shrink-0 border-b border-white/[0.08] bg-[#0A0D14]/90 backdrop-blur-2xl z-10">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-3.5">
             <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08] hover:text-white transition-all font-medium"
+                title="Return to Main Portal"
+              >
+                <span>←</span>
+                <span className="hidden sm:inline">Portal Home</span>
+              </Link>
+
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-[#B8925A]/30 via-blue-600/20 to-indigo-600/20 border border-[#B8925A]/30 text-sm shadow-inner font-bold">
                 ⚖️
               </div>
@@ -439,7 +449,28 @@ export default function LegalChatPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-1.5 mr-2">
+                <Link
+                  href="/quiz"
+                  className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-300 hover:bg-amber-500/20 transition-all"
+                >
+                  🎯 Quiz
+                </Link>
+                <Link
+                  href="/game"
+                  className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition-all"
+                >
+                  🎮 Rights Game
+                </Link>
+                <Link
+                  href="/news"
+                  className="rounded-lg border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-medium text-blue-300 hover:bg-blue-500/20 transition-all"
+                >
+                  📰 News
+                </Link>
+              </div>
+
               <button
                 onClick={handleToggleTemporary}
                 title="Temporary sessions are never saved"

@@ -297,17 +297,42 @@ export function ChatSidebar({
             </div>
           )}
 
-          {/* Case Workspace Quick Link */}
-          <Link
-            href="/app/dashboard"
-            className="flex items-center justify-between rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs text-slate-300 hover:border-[#B8925A]/40 hover:bg-white/[0.06] hover:text-white transition-all"
-          >
-            <div className="flex items-center gap-2">
-              <span>💼</span>
-              <span className="font-medium">Case Workspace</span>
+          {/* Portal Modules Quick Grid */}
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2 space-y-1">
+            <div className="px-1 text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              Explore Portal
             </div>
-            <span className="text-[10px] text-[#B8925A]">Explore →</span>
-          </Link>
+            <div className="grid grid-cols-2 gap-1 text-[11px]">
+              <Link
+                href="/quiz"
+                className="flex items-center gap-1.5 rounded-lg bg-white/[0.03] px-2 py-1.5 text-slate-300 hover:bg-white/[0.08] hover:text-amber-300 transition-all font-medium border border-transparent hover:border-amber-500/20"
+              >
+                <span>🎯</span>
+                <span>Legal Quiz</span>
+              </Link>
+              <Link
+                href="/game"
+                className="flex items-center gap-1.5 rounded-lg bg-white/[0.03] px-2 py-1.5 text-slate-300 hover:bg-white/[0.08] hover:text-emerald-300 transition-all font-medium border border-transparent hover:border-emerald-500/20"
+              >
+                <span>🎮</span>
+                <span>Rights Game</span>
+              </Link>
+              <Link
+                href="/news"
+                className="flex items-center gap-1.5 rounded-lg bg-white/[0.03] px-2 py-1.5 text-slate-300 hover:bg-white/[0.08] hover:text-blue-300 transition-all font-medium border border-transparent hover:border-blue-500/20"
+              >
+                <span>📰</span>
+                <span>Legal News</span>
+              </Link>
+              <Link
+                href="/app/dashboard"
+                className="flex items-center gap-1.5 rounded-lg bg-white/[0.03] px-2 py-1.5 text-slate-300 hover:bg-white/[0.08] hover:text-indigo-300 transition-all font-medium border border-transparent hover:border-indigo-500/20"
+              >
+                <span>💼</span>
+                <span>Cases</span>
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* Chat History List */}
