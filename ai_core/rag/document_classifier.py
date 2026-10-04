@@ -16,10 +16,7 @@ import re
 from ai_core.llm_gateway import call_llm
 
 REJECTION_MESSAGE = (
-    "This document does not appear to be a legal case document or "
-    "law-related study material. NyayaPramaan analyzes legal case files, "
-    "judgments, FIRs, affidavits, legal notices, contracts under dispute, "
-    "statutes, court orders, or law-student study materials. Please upload a relevant legal document."
+    "This document does not appear to be a legal document. NyayaPramaan accepts only law-related documents."
 )
 
 STRONG_LEGAL_SIGNALS = [
