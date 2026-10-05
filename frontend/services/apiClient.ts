@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
@@ -17,9 +17,10 @@ async function request<T>(path: string, options: RequestInit = {}, isUpload = fa
   const authH = await authHeaders();
   const headers = isUpload ? authH : { "Content-Type": "application/json", ...authH };
 
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
   let res: Response;
   try {
-    res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers: { ...headers, ...(options.headers || {}) } });
+    res = await fetch(`${API_BASE_URL}${cleanPath}`, { ...options, headers: { ...headers, ...(options.headers || {}) } });
   } catch {
     throw new Error("Cannot reach the server. Please check your connection and try again.");
   }

@@ -83,3 +83,31 @@ def test_rights_game_scenarios():
     assert "choices" in shuffled
     assert len(shuffled["choices"]) >= 3
     assert "title" in shuffled
+
+
+def test_cors_preflight_and_case_list_headers():
+    prod_origin = "https://nyaya-pramaan.vercel.app"
+    # 1. OPTIONS preflight to /case/list
+    preflight_resp = client.options(
+        "/case/list",
+        headers={
+            "Origin": prod_origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization, content-type",
+        },
+    )
+    assert preflight_resp.status_code == 200
+    assert preflight_resp.headers.get("access-control-allow-origin") == prod_origin
+    assert preflight_resp.headers.get("access-control-allow-credentials") == "true"
+
+    # 2. GET /case/list with prod origin (401 without auth, but MUST have CORS headers)
+    get_resp = client.get("/case/list", headers={"Origin": prod_origin})
+    assert get_resp.status_code == 401
+    assert get_resp.headers.get("access-control-allow-origin") == prod_origin
+    assert get_resp.headers.get("access-control-allow-credentials") == "true"
+
+    # 3. GET /health with prod origin
+    health_resp = client.get("/health", headers={"Origin": prod_origin})
+    assert health_resp.status_code == 200
+    assert health_resp.headers.get("access-control-allow-origin") == prod_origin
+
