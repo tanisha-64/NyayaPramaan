@@ -77,7 +77,7 @@ def general_legal_answer(query, model, audience, history=""):
 
     history_section = f"PREVIOUS MESSAGES (context only, never invent beyond this):\n{history}\n" if history else "(First message in this chat.)\n"
 
-    prompt = f"""You are a legal-information assistant for Indian law (IPC, BNS, CrPC, BNSS, civil law, court procedure).
+    prompt = f"""You are a legal-information assistant for Indian law (BNS 2023, BNSS 2023, BSA 2023, IPC historical, CrPC, civil law, court procedure).
 
 {LANGUAGE_INSTRUCTION}
 
@@ -91,15 +91,17 @@ def general_legal_answer(query, model, audience, history=""):
 
 
 
-CRITICAL: If asked about earlier messages, use ONLY the section above.
+CRITICAL LEGAL SAFETY RULES:
 
-Be precise with section numbers. If the question involves an emergency or
+1. Do NOT invent, guess, or hallucinate statutory section numbers, case citations, or penalties.
 
-urgent personal-safety matter, include the relevant official helpline
+2. If you cannot confirm an exact statutory section number with certainty, explicitly state: "I could not verify the exact statutory provision from the available legal sources."
 
-(Police 100/112, Women Helpline 181, Cyber Crime 1930, Child Helpline
+3. In criminal law, note that the Bharatiya Nyaya Sanhita (BNS), 2023 is in force from 1 July 2024, replacing the Indian Penal Code (IPC), 1860.
 
-1098, NALSA Legal Aid 15100) in your answer.
+4. If asked about earlier messages, use ONLY the section above.
+
+5. If the question involves an emergency or urgent personal-safety matter, include the relevant official helpline (Police 100/112, Women Helpline 181, Cyber Crime 1930, Child Helpline 1098, NALSA Legal Aid 15100).
 
 
 
@@ -265,9 +267,31 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
 
 
-    # ---- MODE A: a document is attached ----
+    intent = classify_intent(query)
 
-    if request.case_id:
+    if intent["domain"] == "out_of_domain":
+
+        save_message(session_id, "assistant", REFUSAL_MESSAGE)
+
+        return {"answer": REFUSAL_MESSAGE, "conclusion": REFUSAL_MESSAGE, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "mode": "refused"}
+
+
+
+    audience = intent.get("audience", "student_public")
+
+    query_mode = intent.get("query_mode", "GENERAL_LAW")
+
+    from_crag = False
+
+
+
+    # =========================================================================
+
+    # 1. MIXED MODE (Case document + General Law)
+
+    # =========================================================================
+
+    if request.case_id and query_mode == "MIXED":
 
         client = get_supabase_client()
 
@@ -279,25 +303,135 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
 
 
-        audience = "student_public"
+        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=3) or []
 
-        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=4)
+        law_matches = search_knowledge_base(query_vec, query, match_count=3) or []
+
+        if not is_retrieval_sufficient(law_matches):
+
+            ext = corrective_web_search(query)
+
+            if ext:
+
+                law_matches.append(ext)
+
+
+
+        case_text = "\n".join(c["chunk_text"] for c in chunk_matches) if chunk_matches else "(No direct case chunks matched)"
+
+        law_text = "\n".join(m.get("full_text", "") for m in law_matches) if law_matches else "(Statutory database match not found)"
+
+
+
+        evidence = f"=== UPLOADED CASE FACTS ({filename}) ===\n{case_text}\n\n=== APPLICABLE INDIAN STATUTORY LAW & PRECEDENTS ===\n{law_text}"
+
+
+
+        source_objects = []
+
+        for c in chunk_matches:
+
+            source_objects.append({"name": f"{filename} — Page {c['page_number']}", "type": "document", "url": None, "verification_status": "pending", "jurisdiction": None})
+
+        for m in law_matches:
+
+            if m.get("source_type") == "external_crag":
+
+                for link in m.get("source_links", [])[:1]:
+
+                    source_objects.append({"name": link.get("title", "Authoritative Source")[:60], "type": "web", "url": link.get("url"), "verification_status": "external", "jurisdiction": None})
+
+            else:
+
+                source_objects.append({"name": m.get("display_name") or m.get("case_name", "Statute"), "type": "statute" if "act_name" in m else "judgment", "url": None, "verification_status": "pending", "jurisdiction": m.get("jurisdiction_type")})
+
+
+
+        prompt_instructions = f"""You are an Indian legal assistant analyzing a question applying Indian law to facts in an uploaded document.
+
+{LANGUAGE_INSTRUCTION}
+
+{LENGTH_INSTRUCTION}
+
+{AUDIENCE_INSTRUCTIONS[audience]}
+
+
+
+{history}
+
+
+
+CRITICAL RULES:
+
+1. Distinguish clearly between:
+
+   - What the uploaded document facts state.
+
+   - What Indian statutory law requires (e.g. Limitation Act 1963 for Adverse Possession, BNS 2023, CrPC).
+
+   - The legal application and effect on this specific case.
+
+   - What remains unproven or pending trial/evidence.
+
+2. Do NOT invent, assume, or fabricate case facts, deeds, dates, or findings not present in the case evidence.
+
+
+
+EVIDENCE:
+
+{evidence}
+
+
+
+QUESTION: {query}
+
+
+
+ANSWER:"""
+
+        draft = call_llm(model, prompt_instructions)
+
+
+
+    # =========================================================================
+
+    # 2. CASE_SPECIFIC MODE (Uploaded document only)
+
+    # =========================================================================
+
+    elif request.case_id and (query_mode == "CASE_SPECIFIC" or any(k in query.lower() for k in ["is case", "mere case", "document", "pdf", "file", "uploaded", "plaintiff", "defendant", "petitioner"])):
+
+        client = get_supabase_client()
+
+        case_row = client.table("cases").select("filename").eq("id", request.case_id).execute()
+
+        filename = case_row.data[0]["filename"] if case_row.data else "document"
+
+        link_document_to_session(session_id, request.case_id, filename)
+
+
+
+        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=4) or []
 
         if not chunk_matches:
 
-            answer = (
-
-                "I could not find relevant content in the attached document for this "
-
-                "question. If you just uploaded it, it may still be indexing -- please "
-
-                "try again in a moment."
-
-            )
+            answer = f"I could not find relevant content in the attached document ({filename}) for this question. If you just uploaded it, please allow a moment for indexing."
 
             save_message(session_id, "assistant", answer)
 
-            return {"answer": answer, "conclusion": answer, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id}
+            return {"answer": answer, "conclusion": answer, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
+
+
+
+        top_similarity = chunk_matches[0].get("similarity") or chunk_matches[0].get("score") or 1.0
+
+        if top_similarity is not None and top_similarity < 0.20:
+
+            answer = f"I could not find sufficient supporting evidence in the uploaded document ({filename}) establishing this specific point."
+
+            save_message(session_id, "assistant", answer)
+
+            return {"answer": answer, "conclusion": answer, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
 
 
 
@@ -313,39 +447,69 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
         ]
 
-        primary_name = source_objects[0]["name"]
-
-        from_crag = False
 
 
+        prompt_instructions = f"""You are analyzing an uploaded Indian court/case document.
 
-    # ---- MODE B: no document ----
+{LANGUAGE_INSTRUCTION}
+
+{LENGTH_INSTRUCTION}
+
+{AUDIENCE_INSTRUCTIONS[audience]}
+
+
+
+{history}
+
+
+
+CRITICAL LEGAL EVIDENCE RULES:
+
+1. Answer ONLY from the explicit facts and documentary evidence mentioned in the Evidence below.
+
+2. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents (e.g. Sale Agreement Annexure-A, Register 2 deed, Probate Orders, utility bills, video evidence) or case findings that are not explicitly stated in the Evidence.
+
+3. If the Evidence does NOT mention supporting evidence for a fact, title, or claim asked by the user, you MUST explicitly state: "I could not find sufficient supporting evidence in the uploaded document establishing [the point]."
+
+4. Never state that a party has established legal title unless the document explicitly records that title finding.
+
+
+
+EVIDENCE FROM UPLOADED DOCUMENT:
+
+{evidence}
+
+
+
+CURRENT QUESTION: {query}
+
+
+
+ANSWER:"""
+
+        draft = call_llm(model, prompt_instructions)
+
+
+
+    # =========================================================================
+
+    # 3. GENERAL_LAW MODE (Statutes + Judgments + Filtered CRAG)
+
+    # =========================================================================
 
     else:
 
-        intent = classify_intent(query)
-
-        if intent["domain"] == "out_of_domain":
-
-            save_message(session_id, "assistant", REFUSAL_MESSAGE)
-
-            return {"answer": REFUSAL_MESSAGE, "conclusion": REFUSAL_MESSAGE, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "mode": "refused"}
-
-        audience = intent["audience"]
-
-
-
-        matches = search_knowledge_base(query_vec, query, match_count=3)
-
-        from_crag = False
+        matches = search_knowledge_base(query_vec, query, match_count=3) or []
 
         if not is_retrieval_sufficient(matches):
 
             external = corrective_web_search(query)
 
-            matches = [external] if external else []
+            if external:
 
-            from_crag = bool(external)
+                matches = [external]
+
+                from_crag = True
 
 
 
@@ -365,7 +529,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
                 for link in m.get("source_links", [{"title": m.get("display_name", "Web source"), "url": ""}])[:2]:
 
-                    source_objects.append({"name": link.get("title", "Web source")[:60], "type": "web",
+                    source_objects.append({"name": link.get("title", "Authoritative Source")[:60], "type": "web",
 
                                             "url": link.get("url") or None, "verification_status": "external", "jurisdiction": None})
 
@@ -377,19 +541,45 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
                                         "verification_status": "pending", "jurisdiction": m.get("jurisdiction_type")})
 
-        primary_name = source_objects[0]["name"] if source_objects else "Unknown"
+
+
+        prompt_instructions = f"""You are an Indian legal assistant.
+
+{LANGUAGE_INSTRUCTION}
+
+{LENGTH_INSTRUCTION}
+
+{AUDIENCE_INSTRUCTIONS[audience]}
 
 
 
-    history_section = f"PREVIOUS MESSAGES:\n{history}\n" if history else ""
+{history}
 
-    draft = call_llm(
 
-        model,
 
-        f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n\n{history_section}\nAnswer the CURRENT query using ONLY this evidence -- do not add outside information.\n\nEvidence: {evidence}\n\nCURRENT QUERY: {query}",
+CRITICAL RULES:
 
-    )
+1. Answer the query using ONLY the verified legal evidence below.
+
+2. Do NOT invent statutory section numbers or quote provisions from memory if not verified by the evidence.
+
+3. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is the current criminal code of India in force from 1 July 2024.
+
+
+
+EVIDENCE:
+
+{evidence}
+
+
+
+QUESTION: {query}
+
+
+
+ANSWER:"""
+
+        draft = call_llm(model, prompt_instructions)
 
 
 

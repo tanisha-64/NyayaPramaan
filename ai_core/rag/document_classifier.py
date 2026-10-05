@@ -77,11 +77,17 @@ STRONG_NON_LEGAL_SIGNALS = [
 
 
 
-def classify_document(text_sample: str) -> dict:
+def classify_document(text_sample: str, filename: str = "") -> dict:
 
-    lowered = text_sample.lower()
+    lowered = f"{filename} {text_sample}".lower()
 
     legal_hits = sum(1 for kw in STRONG_LEGAL_SIGNALS if kw in lowered)
+
+    fn_lowered = filename.lower()
+
+    fn_signals = ["case", "judgment", "order", "fir", "bail", "dispute", "suit", "appeal", "petition", "vs", "v.", "gopalan", "affidavit", "tribunal", "court", "act", "bns", "ipc", "crpc", "civil", "criminal"]
+
+    fn_hits = sum(1 for kw in fn_signals if kw in fn_lowered)
 
     non_legal_hits = sum(1 for kw in STRONG_NON_LEGAL_SIGNALS if kw in lowered)
 
@@ -89,13 +95,13 @@ def classify_document(text_sample: str) -> dict:
 
     # Loosened fast-path: 1+ strong legal signal (and no non-legal signals) is enough.
 
-    if legal_hits >= 1 and non_legal_hits == 0:
+    if (legal_hits >= 1 or fn_hits >= 1) and non_legal_hits == 0:
 
         return {"is_legal_relevant": True, "document_type": "case_file"}
 
 
 
-    if non_legal_hits >= 1 and legal_hits == 0:
+    if non_legal_hits >= 1 and legal_hits == 0 and fn_hits == 0:
 
         return {"is_legal_relevant": False, "document_type": "not_legal"}
 

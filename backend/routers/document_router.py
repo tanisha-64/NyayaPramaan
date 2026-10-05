@@ -79,89 +79,117 @@ def _background_index_pages(tmp_path: str, case_id: str, suffix: str):
 
 async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File(...), user=Depends(get_current_user)):
 
-    file_bytes = await file.read()
+    try:
 
-    suffix = os.path.splitext(file.filename)[1]
+        file_bytes = await file.read()
 
-
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-
-        tmp.write(file_bytes)
-
-        tmp_path = tmp.name
+        suffix = os.path.splitext(file.filename)[1]
 
 
 
-    # 1. Read the FULL document via Gemini FIRST -- reliable even for
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
 
-    #    scanned/old judgments (unlike a short raw-pypdf preview).
+            tmp.write(file_bytes)
 
-    case_text = read_case_file_with_gemini(tmp_path)
-
-
-
-    # 2. Classify on the FULL extracted text.
-
-    classification = classify_document(case_text[:4000])
-
-    if not classification["is_legal_relevant"]:
-
-        os.remove(tmp_path)
-
-        raise HTTPException(status_code=422, detail=REJECTION_MESSAGE)
+            tmp_path = tmp.name
 
 
 
-    # 3. Store original file + create case record.
+        # 1. Read document text
 
-    file_url = upload_case_file(file_bytes, file.filename)
-
-    client = get_supabase_client()
-
-    result = client.table("cases").insert({
-
-        "user_id": user.id, "filename": file.filename,
-
-        "case_text": case_text, "summary": "",
-
-    }).execute()
-
-    case_id = result.data[0]["id"]
+        case_text = read_case_file_with_gemini(tmp_path)
 
 
 
-    # 4. Fast synchronous summary + timeline (one Gemini/Groq call each).
+        # 2. Classify on extracted text + filename
 
-    summary = summarize_case(case_text)
+        classification = classify_document(case_text[:4000], filename=file.filename)
 
-    timeline = extract_timeline(case_text)
+        if not classification["is_legal_relevant"]:
 
-    client.table("cases").update({"summary": summary}).eq("id", case_id).execute()
+            if os.path.exists(tmp_path):
 
+                os.remove(tmp_path)
 
-
-    # 5. SLOW part (page-by-page embedding) -> background, response returns now.
-
-    background_tasks.add_task(_background_index_pages, tmp_path, case_id, suffix)
+            raise HTTPException(status_code=422, detail=REJECTION_MESSAGE)
 
 
 
-    return {
+        # 3. Store file + create case record
 
-        "case_id": case_id,
+        file_url = upload_case_file(file_bytes, file.filename)
 
-        "file_url": file_url,
+        client = get_supabase_client()
 
-        "filename": file.filename,
+        result = client.table("cases").insert({
 
-        "summary": summary,
+            "user_id": user.id, "filename": file.filename,
 
-        "timeline": timeline,
+            "case_text": case_text, "summary": "",
 
-        "document_type": classification["document_type"],
+        }).execute()
 
-    }
+        case_id = result.data[0]["id"]
+
+
+
+        # 4. Fast synchronous summary + timeline
+
+        try:
+
+            summary = summarize_case(case_text)
+
+        except Exception:
+
+            summary = "Summary generation in progress."
+
+
+
+        try:
+
+            timeline = extract_timeline(case_text)
+
+        except Exception:
+
+            timeline = ""
+
+
+
+        client.table("cases").update({"summary": summary}).eq("id", case_id).execute()
+
+
+
+        # 5. Background indexing
+
+        background_tasks.add_task(_background_index_pages, tmp_path, case_id, suffix)
+
+
+
+        return {
+
+            "case_id": case_id,
+
+            "file_url": file_url,
+
+            "filename": file.filename,
+
+            "summary": summary,
+
+            "timeline": timeline,
+
+            "document_type": classification["document_type"],
+
+        }
+
+    except HTTPException:
+
+        raise
+
+    except Exception as e:
+
+        print(f"[document_router ERROR] upload_case failed: {e}")
+
+        raise HTTPException(status_code=500, detail=f"Document processing error: {str(e)}")
 
 
 

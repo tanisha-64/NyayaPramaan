@@ -44,12 +44,13 @@ export function useVoiceInput(onResult: (text: string) => void) {
     recognition.onresult = (event: any) => onResult(event.results[0][0].transcript)
 
     recognition.onerror = (event: any) => {
-
       console.error('Speech recognition error:', event.error)
-
       setListening(false)
-
+      if (event.error === 'not-allowed') {
+        alert('Microphone permission is blocked. Please allow microphone access in your browser settings (click the lock/camera icon in the address bar).')
+      }
     }
+
 
     recognition.onend = () => setListening(false)
 
