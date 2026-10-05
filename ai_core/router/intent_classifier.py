@@ -1,322 +1,126 @@
-
-"""Intent Classifier — strict legal-domain guardrail + audience detection."""
-
+"""
+Intent Classifier — 4-way routing, THE CORE FIX for general-law questions
+being wrongly routed into document-context. Even when a document is
+attached, this decides whether the query is actually ABOUT the document,
+a GENERAL legal question, a MIX of both, or entirely out of scope.
+"""
 import json
-
 import re
-
 from ai_core.llm_gateway import call_llm
-
-
 
 CLASSIFIER_MODEL = "groq/openai/gpt-oss-20b"
 
-
-
 REFUSAL_MESSAGE = (
-
-    "I'm a legal-domain assistant and only answer questions related to "
-
-    "Indian law, legal rights, court procedure, or specific "
-
-    "cases/documents. Please ask me something related to law."
-
+    "I can assist only with legal research, legal documents, and "
+    "legal-domain questions."
 )
 
-
-
 AUDIENCE_INSTRUCTIONS = {
-
-    "professional": (
-
-        "Write for a legal professional: use precise legal terminology, "
-
-        "cite exact section numbers, and include procedural nuance."
-
-    ),
-
-    "student_public": (
-
-        "Write for a student or citizen: use simple, plain language, "
-
-        "briefly define any legal term you must use, and keep a friendly tone."
-
-    ),
-
+    "professional": "Write for a legal professional: precise terminology, exact section numbers, procedural nuance.",
+    "student_public": "Write for a student/citizen: simple plain language, briefly define legal terms.",
 }
 
+# Fast keyword pre-filter -- obvious general-law signals even when a doc is attached
+GENERAL_LAW_SIGNALS = [
+    "section", "bns ", "ipc ", "crpc", "bnss", "what is the punishment",
+    "which law", "which section", "legal definition of", "what does the law say",
+    "statute", "bare act", "constitution article", "fundamental right", "dhara",
+    "adverse possession", "bail", "fir", "punishment", "penalty", "offence",
+]
+DOCUMENT_REFERENCE_SIGNALS = [
+    "this case", "this document", "the uploaded", "in this file", "plaintiff",
+    "defendant", "petitioner", "respondent", "the commissioner", "this pdf",
+    "this judgment", "summarize this", "summary of this", "is this a case",
+    "uploaded pdf", "uploaded document", "uploaded case", "attached document",
+    "is document", "is case", "plaintiff's title", "plaintiff ka title",
+    "mere case", "mere uploaded", "is file me", "in this case", "petitioner's argument",
+]
+OUT_OF_DOMAIN_SIGNALS = [
+    "recipe", "cake", "bake", "poem", "poetry", "joke", "song", "lyrics",
+    "weather", "cricket", "ipl", "football", "movie", "actor", "actress",
+    "horoscope", "astrology", "bluetooth", "wifi", "gameplay", "gaming",
+    "reverse string", "javascript tutorial", "python script",
+]
 
 
+def classify_intent(query: str, has_document: bool = False) -> dict:
+    lowered = query.lower()
 
-
-def _heuristic_precheck(lowered: str) -> dict | None:
-
-    # 1. Non-legal / Out-of-domain signals
-
-    out_of_domain_words = [
-
-        "recipe", "cake", "bake", "poem", "poetry", "joke", "song", "lyrics",
-
-        "weather", "cricket", "ipl", "football", "movie", "actor", "actress",
-
-        "horoscope", "astrology", "bluetooth", "wifi", "gameplay", "gaming",
-
-        "reverse string", "javascript tutorial", "python script"
-
-    ]
-
-    has_legal_terms = any(w in lowered for w in ["court", "case", "law", "dhara", "section", "fir", "bail", "bns", "ipc", "crpc", "act", "rights", "petition", "judge", "advocate"])
-
-
-
-    if any(w in lowered for w in out_of_domain_words) and not has_legal_terms:
+    # Check out-of-domain signals first
+    has_legal_terms = any(w in lowered for w in [
+        "court", "case", "law", "dhara", "section", "fir", "bail", "bns",
+        "ipc", "crpc", "bnss", "bsa", "act", "rights", "petition", "judge", "advocate", "title"
+    ])
+    if any(w in lowered for w in OUT_OF_DOMAIN_SIGNALS) and not has_legal_terms:
         return {
-            "domain": "out_of_domain",
+            "label": "OUT_OF_DOMAIN",
             "query_mode": "OUT_OF_DOMAIN",
+            "domain": "out_of_domain",
             "requires_case_context": False,
             "requires_statutory_law": False,
             "jurisdiction": "India",
             "audience": "student_public",
         }
 
-
-
-
-    has_case_mention = any(k in lowered for k in [
-
-        "uploaded pdf", "uploaded document", "uploaded case", "attached document",
-
-        "this document", "is document", "is case", "plaintiff's title", "plaintiff ka title",
-
-        "mere case", "mere uploaded", "is file me", "in this case", "petitioner's argument"
-
-    ])
-
-
-
-    has_law_mention = any(k in lowered for k in [
-
-        "dhara", "section", "ipc", "bns", "crpc", "bnss", "bsa", "act", "law",
-
-        "adverse possession", "bail", "fir", "punishment", "penalty", "offence", "right"
-
-    ])
-
-
-
-    if has_case_mention and has_law_mention:
-
-        return {
-
-            "domain": "legal",
-
-            "query_mode": "MIXED",
-
-            "requires_case_context": True,
-
-            "requires_statutory_law": True,
-
-            "jurisdiction": "India",
-
-            "audience": "student_public",
-
-        }
-
-
-
-    if has_case_mention and not has_law_mention:
-
-        return {
-
-            "domain": "legal",
-
-            "query_mode": "CASE_SPECIFIC",
-
-            "requires_case_context": True,
-
-            "requires_statutory_law": False,
-
-            "jurisdiction": "India",
-
-            "audience": "student_public",
-
-        }
-
-
-
-    if has_law_mention and not has_case_mention:
-
-        # Check audience signal
-
-        is_pro = any(p in lowered for p in ["jurisdiction", "sub-section", "appellant", "respondent", "ratio decidendi", "obiter"])
-
-        return {
-
-            "domain": "legal",
-
-            "query_mode": "GENERAL_LAW",
-
-            "requires_case_context": False,
-
-            "requires_statutory_law": True,
-
-            "jurisdiction": "India",
-
-            "audience": "professional" if is_pro else "student_public",
-
-        }
-
-
-
-    return None
-
-
-
-
-
-def classify_intent(query: str) -> dict:
-
-    lowered = query.lower().strip()
-
-    pre = _heuristic_precheck(lowered)
-
-    if pre is not None:
-
-        return pre
-
-
-
-    prompt = f"""You are a query classifier for an Indian legal domain AI assistant.
-
-Classify this user question across domain, query_mode, and audience.
-
-
-
-Modes:
-
-- "CASE_SPECIFIC": refers specifically to an uploaded case/document, evidence, parties or facts in a document.
-
-- "GENERAL_LAW": asks general Indian legal questions (IPC, BNS, CrPC, BNSS, statutes, legal sections, definitions, rights, court procedures).
-
-- "MIXED": asks how general Indian law or sections apply to facts/disputes in an uploaded case.
-
-- "OUT_OF_DOMAIN": unrelated to law entirely (e.g., poems, cooking recipes, weather, generic entertainment).
-
-
-
-Audiences:
-
-- "professional": legal terminology or professional strategy.
-
-- "student_public": simple plain language / student / citizen.
-
-
-
-Respond with ONLY this JSON format:
-
-{{"domain": "legal", "query_mode": "GENERAL_LAW", "requires_case_context": false, "requires_statutory_law": true, "jurisdiction": "India", "audience": "student_public"}}
-
-
+    # Fast deterministic pre-filter (no LLM call -- instant, no quota used)
+    has_general_signal = any(kw in lowered for kw in GENERAL_LAW_SIGNALS)
+    has_doc_signal = any(kw in lowered for kw in DOCUMENT_REFERENCE_SIGNALS)
+
+    if not has_document:
+        if has_doc_signal and has_general_signal:
+            label = "MIXED"
+        elif has_doc_signal:
+            label = "CASE_SPECIFIC"
+        else:
+            label = "GENERAL_LAW"
+    elif has_general_signal and not has_doc_signal:
+        label = "GENERAL_LAW"  # e.g. "What is BNS Section 351?" even with a doc attached
+    elif has_doc_signal and not has_general_signal:
+        label = "CASE_SPECIFIC"
+    elif has_doc_signal and has_general_signal:
+        label = "MIXED"
+    else:
+        label = None  # ambiguous -- ask the LLM
+
+    is_pro = any(p in lowered for p in ["jurisdiction", "sub-section", "appellant", "respondent", "ratio decidendi", "obiter"])
+    audience = "professional" if is_pro else "student_public"
+
+    if label is None:
+        prompt = f"""Classify this legal question. The user {"HAS" if has_document else "has NOT"} attached a document to this chat.
+
+Respond with ONLY this JSON:
+{{"label": "CASE_SPECIFIC", "audience": "student_public"}}
+
+label options:
+- "CASE_SPECIFIC": the question is about facts/content of the attached document specifically (even short follow-ups like "and the dissent?" if document context exists).
+- "GENERAL_LAW": a general legal question (a statute, section, definition, procedure) NOT tied to the specific attached document's facts -- even if a document happens to be attached.
+- "MIXED": the question asks about the document's facts AND also invokes a general legal provision/concept that should be checked independently.
+- "OUT_OF_DOMAIN": not about law at all.
+
+audience: "professional" if legal-technical phrasing/strategy; else "student_public".
 
 QUESTION: {query}
 
-
-
 JSON:"""
+        try:
+            raw = call_llm(CLASSIFIER_MODEL, prompt)
+            cleaned = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
+            result = json.loads(cleaned)
+            label = result.get("label", "GENERAL_LAW")
+            audience = result.get("audience", audience)
+            if label not in ("CASE_SPECIFIC", "GENERAL_LAW", "MIXED", "OUT_OF_DOMAIN"):
+                label = "GENERAL_LAW"
+            if audience not in ("professional", "student_public"):
+                audience = "student_public"
+        except Exception:
+            label = "CASE_SPECIFIC" if has_document else "GENERAL_LAW"
 
-
-
-    try:
-
-        raw = call_llm(CLASSIFIER_MODEL, prompt)
-
-        cleaned = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
-
-        result = json.loads(cleaned)
-
-
-
-        domain = result.get("domain", "legal")
-
-        query_mode = result.get("query_mode", "GENERAL_LAW")
-
-        audience = result.get("audience", "student_public")
-
-
-
-        if domain not in ("legal", "out_of_domain"):
-
-            domain = pre["domain"] if pre else "legal"
-
-
-
-        if domain == "out_of_domain":
-
-            return {
-
-                "domain": "out_of_domain",
-
-                "query_mode": "OUT_OF_DOMAIN",
-
-                "requires_case_context": False,
-
-                "requires_statutory_law": False,
-
-                "jurisdiction": "India",
-
-                "audience": audience if audience in ("professional", "student_public") else "student_public",
-
-            }
-
-
-
-        if query_mode not in ("CASE_SPECIFIC", "GENERAL_LAW", "MIXED"):
-
-            query_mode = pre["query_mode"] if pre else "GENERAL_LAW"
-
-
-
-        req_case = True if query_mode in ("CASE_SPECIFIC", "MIXED") else False
-
-        req_law = True if query_mode in ("GENERAL_LAW", "MIXED") else False
-
-
-
-        return {
-
-            "domain": "legal",
-
-            "query_mode": query_mode,
-
-            "requires_case_context": req_case,
-
-            "requires_statutory_law": req_law,
-
-            "jurisdiction": "India",
-
-            "audience": audience if audience in ("professional", "student_public") else "student_public",
-
-        }
-
-    except Exception:
-
-        if pre:
-
-            return pre
-
-        return {
-
-            "domain": "legal",
-
-            "query_mode": "GENERAL_LAW",
-
-            "requires_case_context": False,
-
-            "requires_statutory_law": True,
-
-            "jurisdiction": "India",
-
-            "audience": "student_public",
-
-        }
-
+    return {
+        "label": label,
+        "query_mode": label,
+        "domain": "out_of_domain" if label == "OUT_OF_DOMAIN" else "legal",
+        "requires_case_context": label in ("CASE_SPECIFIC", "MIXED"),
+        "requires_statutory_law": label in ("GENERAL_LAW", "MIXED"),
+        "jurisdiction": "India",
+        "audience": audience,
+    }
