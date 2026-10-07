@@ -86,11 +86,18 @@ JSON:"""
         return []
 
 
-def get_recent_history(session_id, limit=4):
+def get_recent_history(session_id, current_case_id=None, limit=4):
     if not session_id:
         return ""
     client = get_supabase_client()
     try:
+        # Cross-document history isolation: verify session's case_id
+        if current_case_id:
+            sess = client.table("chat_sessions").select("case_id").eq("id", session_id).execute()
+            if sess.data:
+                sess_case_id = sess.data[0].get("case_id")
+                if sess_case_id and str(sess_case_id).lower() != str(current_case_id).lower():
+                    return ""
         result = (client.table("chat_messages").select("role, content")
                   .eq("session_id", session_id).order("created_at", desc=True).limit(limit).execute())
         msgs = list(reversed(result.data))
@@ -99,13 +106,16 @@ def get_recent_history(session_id, limit=4):
         return ""
 
 
-def ensure_valid_session(session_id, user_id, fallback_title):
+def ensure_valid_session(session_id, user_id, fallback_title, case_id=None):
     client = get_supabase_client()
     if session_id:
-        result = client.table("chat_sessions").select("id, user_id").eq("id", session_id).execute()
+        result = client.table("chat_sessions").select("id, user_id, case_id").eq("id", session_id).execute()
         if result.data and result.data[0]["user_id"] == user_id:
+            sess_case_id = result.data[0].get("case_id")
+            if case_id and sess_case_id and str(sess_case_id).lower() != str(case_id).lower():
+                client.table("chat_sessions").update({"case_id": case_id}).eq("id", session_id).execute()
             return session_id
-    new_session = client.table("chat_sessions").insert({"user_id": user_id, "title": fallback_title[:40]}).execute()
+    new_session = client.table("chat_sessions").insert({"user_id": user_id, "title": fallback_title[:40], "case_id": case_id}).execute()
     return new_session.data[0]["id"]
 
 
@@ -154,9 +164,9 @@ def _handle_ask(request: QueryRequest, user_id: str):
     if not safety["is_safe"]:
         return {"blocked": True, "reason": safety["reason"]}
 
-    session_id = ensure_valid_session(request.session_id, user_id, query)
+    session_id = ensure_valid_session(request.session_id, user_id, query, case_id=request.case_id)
     save_message(session_id, "user", query)
-    history = get_recent_history(session_id)
+    history = get_recent_history(session_id, current_case_id=request.case_id)
     model = choose_model(query)
 
     # ============================================================
@@ -175,17 +185,50 @@ def _handle_ask(request: QueryRequest, user_id: str):
     client = get_supabase_client()
     filename = None
     case_row = None
-    if has_document:
-        case_row = client.table("cases").select("filename, summary").eq("id", request.case_id).execute()
-        if case_row.data:
-            filename = case_row.data[0]["filename"]
-            link_document_to_session(session_id, request.case_id, filename)
+    doc_status = "ready"
+    case_text = ""
 
-    # ---- META-SUMMARY SHORTCUT: "summarize this" never needs semantic retrieval ----
+    if has_document:
+        case_row = client.table("cases").select("filename, summary, status, case_text").eq("id", request.case_id).execute()
+        if case_row.data:
+            row = case_row.data[0]
+            filename = row.get("filename") or "Uploaded Document"
+            doc_status = row.get("status") or "ready"
+            case_text = row.get("case_text") or ""
+            link_document_to_session(session_id, request.case_id, filename)
+        else:
+            if label in ("CASE_SPECIFIC", "MIXED"):
+                answer = "The requested document could not be found. Please select or re-upload a valid document."
+                save_message(session_id, "assistant", answer)
+                return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
+
+    # ---- Indexing Status Gates ----
+    if label in ("CASE_SPECIFIC", "MIXED") and has_document:
+        if doc_status == "processing":
+            answer = "Document is still being indexed. Please wait a moment and try again."
+            save_message(session_id, "assistant", answer)
+            return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "indexing_in_progress": True}
+        elif doc_status == "failed":
+            answer = "Document is not indexed correctly or indexing failed. Please re-upload the document."
+            save_message(session_id, "assistant", answer)
+            return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "indexing_failed": True}
+
+    # ---- META-SUMMARY SHORTCUT: "summarize this" uses ONLY exact case summary/text ----
     if label == "CASE_SPECIFIC" and has_document and is_meta_summary_query(query):
         stored_summary = case_row.data[0].get("summary", "") if case_row and case_row.data else ""
-        if stored_summary:
+        if stored_summary and stored_summary.strip() and stored_summary != "Summary generation in progress.":
             final = f"{stored_summary}\n\n[Source: {filename} — full document summary]"
+            save_message(session_id, "assistant", final, sources=[filename])
+            return {
+                "answer": final, "conclusion": None, "usefulness": "high", "verified": True,
+                "sources": [{"name": filename, "type": "document", "url": None, "verification_status": "verified", "jurisdiction": None}],
+                "session_id": session_id,
+            }
+        elif case_text:
+            from ai_core.rag.summarizer import summarize_case
+            generated_summary = summarize_case(case_text[:6000])
+            client.table("cases").update({"summary": generated_summary}).eq("id", request.case_id).execute()
+            final = f"{generated_summary}\n\n[Source: {filename} — full document summary]"
             save_message(session_id, "assistant", final, sources=[filename])
             return {
                 "answer": final, "conclusion": None, "usefulness": "high", "verified": True,
@@ -202,21 +245,30 @@ def _handle_ask(request: QueryRequest, user_id: str):
     # ---- Gather DOCUMENT evidence (only if label needs it) ----
     if label in ("CASE_SPECIFIC", "MIXED") and has_document:
         chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=5)
+        # Strict defensive guarantee: only keep chunks matching exact requested case_id
+        if request.case_id:
+            chunk_matches = [
+                c for c in chunk_matches
+                if "case_id" not in c or str(c.get("case_id", "")).lower() == str(request.case_id).lower()
+            ]
+
         if chunk_matches:
             top_sim = chunk_matches[0].get("similarity") or chunk_matches[0].get("score")
             if top_sim is not None and top_sim < 0.20 and label == "CASE_SPECIFIC":
-                answer = f"I could not find sufficient supporting evidence in the uploaded document ({filename}) establishing this specific point."
+                topic = query.strip()
+                answer = f"No supporting evidence was found in the uploaded document regarding {topic}."
                 save_message(session_id, "assistant", answer)
                 return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
 
             document_evidence = "\n".join(c["chunk_text"] for c in chunk_matches)
             document_sources = [
-                {"name": f"{filename} — Page {c['page_number']}", "type": "document", "url": None,
+                {"name": f"{filename} — Page {c.get('page_number', 1)}", "type": "document", "url": None,
                  "verification_status": "pending", "jurisdiction": None}
                 for c in chunk_matches
             ]
         elif label == "CASE_SPECIFIC":
-            answer = "I could not find relevant content in the attached document for this specific question. Try rephrasing, or this detail may not be covered in the document."
+            topic = query.strip()
+            answer = f"No supporting evidence was found in the uploaded document regarding {topic}."
             save_message(session_id, "assistant", answer)
             return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
 
@@ -252,20 +304,53 @@ def _handle_ask(request: QueryRequest, user_id: str):
     )
     source_objects = document_sources + general_sources
 
-    history_section = f"PREVIOUS MESSAGES:\n{history}\n" if history else ""
-    prompt_instructions = (
-        f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n\n"
-        f"{history_section}"
-        f"CRITICAL LEGAL EVIDENCE RULES:\n"
-        f"1. Answer the CURRENT query using ONLY the verified evidence below -- do not add outside information.\n"
-        f"2. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents or case findings that are not explicitly stated in the Evidence.\n"
-        f"3. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is in force in India from 1 July 2024.\n\n"
-        f"EVIDENCE:\n{combined_evidence}\n\n"
-        f"CURRENT QUERY: {query}\n\nANSWER:"
-    )
+    if label == "CASE_SPECIFIC":
+        history_section = f"CONVERSATION CONTEXT (Never invent case facts beyond the evidence below):\n{history}\n\n" if history else ""
+        prompt_instructions = (
+            f"You are NyayaPramaan, an evidence-grounded legal assistant for Indian case files.\n"
+            f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n\n"
+            f"{history_section}"
+            f"STRICT CASE-SPECIFIC EVIDENCE CONTRACT:\n"
+            f"1. Answer the CURRENT query using ONLY the verified evidence below -- do not add outside information or model memory.\n"
+            f"2. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents (such as sale deeds, probate orders, revenue records, tax receipts, utility bills, mutation certificates, affidavits, or commissioner reports) unless explicitly mentioned in the Evidence below.\n"
+            f"3. Do NOT extrapolate unstated details: if a document name or person is mentioned without further findings, state ONLY what is written in the Evidence.\n"
+            f"4. If the Evidence does NOT contain facts answering the query, reply EXACTLY:\n"
+            f"   'No supporting evidence was found in the uploaded document regarding {query}.'\n"
+            f"5. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is in force in India from 1 July 2024.\n\n"
+            f"EVIDENCE:\n{combined_evidence}\n\n"
+            f"CURRENT QUERY: {query}\n\nANSWER:"
+        )
+    else:
+        history_section = f"PREVIOUS MESSAGES:\n{history}\n" if history else ""
+        prompt_instructions = (
+            f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n\n"
+            f"{history_section}"
+            f"CRITICAL LEGAL EVIDENCE RULES:\n"
+            f"1. Answer the CURRENT query using ONLY the verified evidence below -- do not add outside information.\n"
+            f"2. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents or case findings that are not explicitly stated in the Evidence.\n"
+            f"3. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is in force in India from 1 July 2024.\n\n"
+            f"EVIDENCE:\n{combined_evidence}\n\n"
+            f"CURRENT QUERY: {query}\n\nANSWER:"
+        )
+
     draft = call_llm(model, prompt_instructions)
 
     overall, verdicts = _verify_and_label(draft, combined_evidence)
+
+    # Hard-stop: If in CASE_SPECIFIC mode and the claims are contradicted or completely unverified against document evidence
+    if label == "CASE_SPECIFIC" and overall in ("contradicted", "unverified") and len(verdicts) > 0:
+        refusal_ans = f"No supporting evidence was found in the uploaded document regarding {query.strip()}."
+        save_message(session_id, "assistant", refusal_ans)
+        return {
+            "answer": refusal_ans,
+            "conclusion": None,
+            "usefulness": "low",
+            "verified": False,
+            "sources": [],
+            "no_documentary_evidence_found": True,
+            "session_id": session_id,
+            "routing_label": label,
+        }
 
     if from_crag and overall in ("unverified", "contradicted"):
         return _general_fallback(query, model, audience, session_id, history)
@@ -320,6 +405,7 @@ def _general_fallback(query, model, audience, session_id, history):
         "verified": False,
         "sources": [],
         "mode": "general_knowledge",
+        "routing_label": "GENERAL_LAW",
         "model_used": model,
         "suggestions": suggestions,
         "session_id": session_id,

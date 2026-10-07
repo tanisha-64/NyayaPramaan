@@ -34,6 +34,8 @@ DOCUMENT_REFERENCE_SIGNALS = [
     "uploaded pdf", "uploaded document", "uploaded case", "attached document",
     "is document", "is case", "plaintiff's title", "plaintiff ka title",
     "mere case", "mere uploaded", "is file me", "in this case", "petitioner's argument",
+    "evidence", "prove", "proves", "allegation", "alleges", "alleged", "facts",
+    "record", "witness", "exhibit", "court order", "order date", "purchased",
 ]
 OUT_OF_DOMAIN_SIGNALS = [
     "recipe", "cake", "bake", "poem", "poetry", "joke", "song", "lyrics",

@@ -147,15 +147,28 @@ def insert_document_chunks_batch(case_id: str, pages: list[tuple[int, str]], emb
 
 
 
+import uuid
+
+
 def search_document_chunks(query_embedding: list[float], case_id: str, match_count: int = 5):
+    if not case_id:
+        return []
+    try:
+        # Validate UUID format
+        clean_case_id = str(uuid.UUID(str(case_id).strip()))
+    except (ValueError, AttributeError, TypeError):
+        return []
 
     client = get_supabase_client()
-
     result = client.rpc("match_document_chunks", {
-
-        "query_embedding": query_embedding, "target_case_id": case_id, "match_count": match_count,
-
+        "query_embedding": query_embedding, "target_case_id": clean_case_id, "match_count": match_count,
     }).execute()
 
-    return result.data
+    raw_data = result.data or []
+    # Strict defensive isolation check: guarantee chunks belong ONLY to the requested case_id
+    isolated_chunks = [
+        c for c in raw_data
+        if str(c.get("case_id", "")).lower() == clean_case_id.lower()
+    ]
+    return isolated_chunks
 

@@ -147,7 +147,8 @@ def test_unsupported_case_claim_no_evidence():
         
         res = _handle_ask(req, user_id="u1")
         assert res.get("no_documentary_evidence_found") is True
-        assert "could not find sufficient supporting evidence" in res["answer"].lower()
+        ans_lower = res["answer"].lower()
+        assert "no supporting evidence was found" in ans_lower or "could not find sufficient supporting evidence" in ans_lower
 
 
 def test_mixed_mode_retrieval_and_application():
