@@ -145,7 +145,7 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
         except Exception:
             timeline = ""
 
-        client.table("cases").update({"summary": summary, "timeline": timeline}).eq("id", case_id).execute()
+        client.table("cases").update({"summary": summary}).eq("id", case_id).execute()
 
         # 5. Background indexing with status tracking
         background_tasks.add_task(_background_index_pages, tmp_path, case_id, suffix, case_text)
@@ -169,7 +169,7 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
 @router.get("/{case_id}/status")
 def get_document_status(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = client.table("cases").select("status, summary, timeline, pages_processed, total_pages, rejection_reason").eq("id", case_id).eq("user_id", user.id).execute()
+    result = client.table("cases").select("status, summary, pages_processed, total_pages, rejection_reason").eq("id", case_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Document not found")
     row = result.data[0]

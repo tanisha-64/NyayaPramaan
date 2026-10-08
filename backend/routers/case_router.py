@@ -15,7 +15,7 @@ class NotesPayload(BaseModel):
 @router.get("/list")
 def list_cases(user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = (client.table("cases").select("id, summary, filename, status, created_at, notes")
+    result = (client.table("cases").select("id, summary, filename, status, created_at")
               .eq("user_id", user.id).order("created_at", desc=True).execute())
     return result.data
 

@@ -111,3 +111,53 @@ def test_cors_preflight_and_case_list_headers():
     assert health_resp.status_code == 200
     assert health_resp.headers.get("access-control-allow-origin") == prod_origin
 
+
+def test_document_upload_and_status_endpoint_success():
+    """Verify POST /document/upload creates a case record and returns 200 OK without 500 error."""
+    from unittest.mock import patch, MagicMock
+    from backend.auth.supabase_auth import get_current_user
+
+    class DummyUser:
+        id = "00000000-0000-0000-0000-000000000001"
+        email = "advocate@nyaya.org"
+
+    app.dependency_overrides[get_current_user] = lambda: DummyUser()
+
+    mock_client = MagicMock()
+    mock_client.table().insert().execute.return_value.data = [{"id": "mock-case-uuid"}]
+    mock_client.table().update().eq().execute.return_value.data = [{"id": "mock-case-uuid"}]
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
+        "status": "ready",
+        "summary": "Mock Case Summary",
+        "pages_processed": 5,
+        "total_pages": 5,
+        "rejection_reason": None,
+    }]
+
+    with patch("backend.routers.document_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.document_router.read_case_file_with_gemini", return_value="IN THE HIGH COURT OF DELHI. SUIT NO 100 OF 2024. Plaintiff vs Defendant."), \
+         patch("backend.routers.document_router.upload_case_file", return_value="https://supabase.co/storage/v1/case.pdf"), \
+         patch("backend.routers.document_router.summarize_case", return_value="Mock Summary"), \
+         patch("backend.routers.document_router.extract_timeline", return_value="2024: Suit filed"):
+
+        files = {"file": ("test_legal_case.pdf", b"%PDF-1.4 mock content", "application/pdf")}
+        resp = client.post("/document/upload", files=files)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["case_id"] == "mock-case-uuid"
+        assert data["status"] == "processing"
+        assert data["filename"] == "test_legal_case.pdf"
+        assert data["summary"] == "Mock Summary"
+        assert data["timeline"] == "2024: Suit filed"
+
+        # Verify status endpoint works as well without querying non-existent columns
+        status_resp = client.get("/document/mock-case-uuid/status")
+        assert status_resp.status_code == 200
+        status_data = status_resp.json()
+        assert status_data["status"] == "ready"
+        assert status_data["pages_processed"] == 5
+
+    app.dependency_overrides.clear()
+
+
