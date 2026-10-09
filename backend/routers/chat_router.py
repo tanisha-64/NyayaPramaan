@@ -1,10 +1,9 @@
 """
-Chat Router — 4-way routing fix: CASE_SPECIFIC uses only document chunks,
-GENERAL_LAW completely ignores the attached document and uses knowledge-
-base + CRAG, MIXED combines both with clearly separated evidence/sources,
-OUT_OF_DOMAIN refuses. Also: meta-summary-queries get the stored summary
-directly (no semantic-retrieval mismatch), and verification distinguishes
-genuine "unverified" from infrastructure parse-failures.
+Chat Router — Phase 2.1 Evidence Grounding & LLM-as-Judge Reliability.
+Guarantees distinct states: GROUNDED, PARTIALLY_GROUNDED, CONTRADICTED, NO_EVIDENCE_FOUND,
+RETRIEVAL_INSUFFICIENT, and VERIFICATION_PENDING.
+Ensures retrieval sufficiency is never conflated with 'No Evidence Found', and LLM-as-a-Judge
+evaluates claim-by-claim factual grounding.
 """
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -21,8 +20,8 @@ from ai_core.rag.self_rag import self_reflect
 from ai_core.llm_gateway import call_llm
 from ai_core.trustagent.claim_extractor import extract_claims
 from ai_core.trustagent.verifier import verify_claims_batch, summarize_verdicts
-from ai_core.evaluation.llm_judge import judge_answer
-from ai_core.trustagent.corrector import suggest_department_and_helpline
+from ai_core.evaluation.llm_judge import judge_answer, judge_claims_against_evidence, STATE_GROUNDED, STATE_PARTIALLY_GROUNDED, STATE_CONTRADICTED, STATE_NO_EVIDENCE_FOUND, STATE_RETRIEVAL_INSUFFICIENT, STATE_VERIFICATION_PENDING
+from ai_core.trustagent.corrector import suggest_department_and_helpline, filter_supported_claims_answer
 from trust_log.hash_chain import build_log_entry, get_last_hash, save_log_entry
 from backend.auth.supabase_auth import get_current_user
 
@@ -30,7 +29,19 @@ router = APIRouter()
 
 LANGUAGE_INSTRUCTION = "Detect whether the question is in English, Hindi, or Hinglish and respond in the SAME language/style."
 LENGTH_INSTRUCTION = "Match answer length to complexity: short and direct for simple questions, fuller (bullet points if listing multiple sections/penalties) for complex ones."
-VERDICT_LABEL = {"supported": "verified", "partially_supported": "partial", "contradicted": "contradicted", "unverified": "unverified", "verification_pending": "pending"}
+VERDICT_LABEL = {
+    "supported": "verified",
+    "partially_supported": "partial",
+    "contradicted": "contradicted",
+    "unverified": "unverified",
+    "verification_pending": "pending",
+    STATE_GROUNDED: "verified",
+    STATE_PARTIALLY_GROUNDED: "partial",
+    STATE_CONTRADICTED: "contradicted",
+    STATE_NO_EVIDENCE_FOUND: "no_evidence",
+    STATE_RETRIEVAL_INSUFFICIENT: "retrieval_insufficient",
+    STATE_VERIFICATION_PENDING: "pending",
+}
 
 META_SUMMARY_PATTERNS = [
     r"\bsummar(y|ize|ise)\b", r"\bwhat is this (document|file|pdf|case)\b",
@@ -47,6 +58,14 @@ class QueryRequest(BaseModel):
 def is_meta_summary_query(query: str) -> bool:
     lowered = query.lower()
     return any(re.search(p, lowered) for p in META_SUMMARY_PATTERNS)
+
+
+def is_hindi_or_hinglish(query: str) -> bool:
+    if re.search(r"[\u0900-\u097F]", query):
+        return True
+    hinglish_words = ["kya", "kaun", "kaunsa", "kaunse", "kaunsi", "hai", "hain", "mein", "me", "ne", "ko", "se", "diye", "diya", "btao", "batao", "kare", "karein", "rakha", "rakhi", "mera", "meri", "mere"]
+    lowered = query.lower()
+    return any(re.search(rf"\b{w}\b", lowered) for w in hinglish_words)
 
 
 def general_legal_answer(query, model, audience, history=""):
@@ -91,7 +110,6 @@ def get_recent_history(session_id, current_case_id=None, limit=4):
         return ""
     client = get_supabase_client()
     try:
-        # Cross-document history isolation: verify session's case_id
         if current_case_id:
             sess = client.table("chat_sessions").select("case_id").eq("id", session_id).execute()
             if sess.data:
@@ -137,8 +155,7 @@ def link_document_to_session(session_id, case_id, filename):
 def _verify_and_label(draft: str, evidence: str) -> tuple[str, list]:
     """Returns (overall_status, verdicts). overall_status is one of:
     supported / partially_supported / contradicted / unverified / verification_pending.
-    verification_pending means the VERIFIER ITSELF failed (infra issue) --
-    distinct from 'unverified' which means evidence genuinely doesn't support."""
+    verification_pending means the VERIFIER ITSELF failed (infra issue)."""
     claims, extraction_ok = extract_claims(draft)
     if not extraction_ok or not claims:
         return "verification_pending", []
@@ -169,10 +186,6 @@ def _handle_ask(request: QueryRequest, user_id: str):
     history = get_recent_history(session_id, current_case_id=request.case_id)
     model = choose_model(query)
 
-    # ============================================================
-    # CORE FIX: classify intent FIRST, regardless of whether a
-    # document is attached -- this decides the actual routing.
-    # ============================================================
     has_document = bool(request.case_id)
     intent = classify_intent(query, has_document)
     label = intent.get("label", intent.get("query_mode", "GENERAL_LAW"))
@@ -244,33 +257,69 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
     # ---- Gather DOCUMENT evidence (only if label needs it) ----
     if label in ("CASE_SPECIFIC", "MIXED") and has_document:
-        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=5)
-        # Strict defensive guarantee: only keep chunks matching exact requested case_id
+        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8)
         if request.case_id:
             chunk_matches = [
                 c for c in chunk_matches
                 if "case_id" not in c or str(c.get("case_id", "")).lower() == str(request.case_id).lower()
             ]
 
+        # Internal Diagnostics / Debugging
+        chunk_count = len(chunk_matches)
+        sim_scores = [c.get("similarity") or c.get("score") for c in chunk_matches]
+        page_numbers = [c.get("page_number", 1) for c in chunk_matches]
+        first_snippet = chunk_matches[0]["chunk_text"][:80] if chunk_matches else "N/A"
+        last_snippet = chunk_matches[-1]["chunk_text"][:80] if chunk_matches else "N/A"
+        top_sim = sim_scores[0] if sim_scores else None
+
+        print(f"[RETRIEVAL_DEBUG] case_id={request.case_id} chunks={chunk_count} top_sim={top_sim} pages={page_numbers}")
+
         if chunk_matches:
-            top_sim = chunk_matches[0].get("similarity") or chunk_matches[0].get("score")
-            if top_sim is not None and top_sim < 0.20 and label == "CASE_SPECIFIC":
+            # Check if all chunks are completely unrelated (e.g. cyber harassment query on a land record)
+            if top_sim is not None and top_sim < 0.15 and label == "CASE_SPECIFIC":
                 topic = query.strip()
                 answer = f"No supporting evidence was found in the uploaded document regarding {topic}."
                 save_message(session_id, "assistant", answer)
-                return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
+                return {
+                    "answer": answer,
+                    "conclusion": None,
+                    "verified": False,
+                    "sources": [],
+                    "usefulness": "low",
+                    "session_id": session_id,
+                    "no_documentary_evidence_found": True,
+                    "verdict_state": STATE_NO_EVIDENCE_FOUND,
+                }
 
-            document_evidence = "\n".join(c["chunk_text"] for c in chunk_matches)
+            document_evidence = "\n\n".join(
+                f"[Chunk #{i+1} (Page {c.get('page_number', 1)})]\n{c['chunk_text']}"
+                for i, c in enumerate(chunk_matches)
+            )
             document_sources = [
                 {"name": f"{filename} — Page {c.get('page_number', 1)}", "type": "document", "url": None,
                  "verification_status": "pending", "jurisdiction": None}
                 for c in chunk_matches
             ]
         elif label == "CASE_SPECIFIC":
-            topic = query.strip()
-            answer = f"No supporting evidence was found in the uploaded document regarding {topic}."
+            # If 0 chunks retrieved due to retrieval failure / insufficient coverage:
+            # Must distinguish RETRIEVAL_INSUFFICIENT from NO_EVIDENCE_FOUND
+            is_hindi = is_hindi_or_hinglish(query)
+            if is_hindi:
+                answer = "मैं इस प्रश्न का विश्वसनीय उत्तर देने के लिए पर्याप्त संबंधित अंश retrieve नहीं कर पाया।"
+            else:
+                answer = "I could not retrieve sufficient relevant passages from the document to reliably answer this question."
+            
             save_message(session_id, "assistant", answer)
-            return {"answer": answer, "conclusion": None, "verified": False, "sources": [], "usefulness": "low", "session_id": session_id, "no_documentary_evidence_found": True}
+            return {
+                "answer": answer,
+                "conclusion": None,
+                "verified": False,
+                "sources": [],
+                "usefulness": "low",
+                "session_id": session_id,
+                "retrieval_insufficient": True,
+                "verdict_state": STATE_RETRIEVAL_INSUFFICIENT,
+            }
 
     # ---- Gather GENERAL_LAW evidence (only if label needs it) ----
     if label in ("GENERAL_LAW", "MIXED"):
@@ -294,7 +343,6 @@ def _handle_ask(request: QueryRequest, user_id: str):
         elif label == "GENERAL_LAW":
             return _general_fallback(query, model, audience, session_id, history)
 
-    # If MIXED and genuinely nothing found anywhere, fall back to general knowledge
     if not document_evidence and not general_evidence:
         return _general_fallback(query, model, audience, session_id, history)
 
@@ -335,36 +383,62 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
     draft = call_llm(model, prompt_instructions)
 
-    overall, verdicts = _verify_and_label(draft, combined_evidence)
+    # ---------------- Step: Claim Extraction & LLM-as-Judge ----------------
+    claims, extraction_ok = extract_claims(draft)
+    
+    # LLM-as-a-Judge evaluates claims directly against evidence
+    if extraction_ok and claims:
+        judgment = judge_claims_against_evidence(query=query, evidence=combined_evidence, draft_answer=draft, claims=claims)
+    else:
+        judgment = judge_claims_against_evidence(query=query, evidence=combined_evidence, draft_answer=draft, claims=[])
 
-    # Hard-stop: If in CASE_SPECIFIC mode and the claims are contradicted or completely unverified against document evidence
-    if label == "CASE_SPECIFIC" and overall in ("contradicted", "unverified") and len(verdicts) > 0:
-        refusal_ans = f"No supporting evidence was found in the uploaded document regarding {query.strip()}."
-        save_message(session_id, "assistant", refusal_ans)
-        return {
-            "answer": refusal_ans,
-            "conclusion": None,
-            "usefulness": "low",
-            "verified": False,
-            "sources": [],
-            "no_documentary_evidence_found": True,
-            "session_id": session_id,
-            "routing_label": label,
-        }
+    verdict_state = judgment.get("overall_verdict", STATE_GROUNDED)
+    supported_claims = judgment.get("supported_claims", [])
+    unsupported_claims = judgment.get("unsupported_claims", [])
+    claim_verdicts = judgment.get("claim_verdicts", [])
 
-    if from_crag and overall in ("unverified", "contradicted"):
+    final_draft = draft
+
+    # Handle Case Specific Hard-Stop and Partial Grounding
+    if label == "CASE_SPECIFIC":
+        if verdict_state == STATE_GROUNDED:
+            # Fully supported
+            pass
+        elif verdict_state == STATE_PARTIALLY_GROUNDED:
+            # Some claims supported, some unverified: rewrite/filter to preserve verified claims only!
+            if supported_claims:
+                if unsupported_claims:
+                    final_draft = filter_supported_claims_answer(draft, supported_claims, unsupported_claims, combined_evidence, query)
+            else:
+                verdict_state = STATE_NO_EVIDENCE_FOUND
+
+        if verdict_state == STATE_NO_EVIDENCE_FOUND:
+            refusal_ans = f"No supporting evidence was found in the uploaded document regarding {query.strip()}."
+            save_message(session_id, "assistant", refusal_ans)
+            return {
+                "answer": refusal_ans,
+                "conclusion": None,
+                "usefulness": "low",
+                "verified": False,
+                "sources": [],
+                "no_documentary_evidence_found": True,
+                "verdict_state": STATE_NO_EVIDENCE_FOUND,
+                "session_id": session_id,
+                "routing_label": label,
+            }
+
+    if from_crag and verdict_state in (STATE_NO_EVIDENCE_FOUND, STATE_CONTRADICTED):
         return _general_fallback(query, model, audience, session_id, history)
 
     for s in source_objects:
         if s["verification_status"] == "pending":
-            s["verification_status"] = VERDICT_LABEL.get(overall, "unverified")
+            s["verification_status"] = VERDICT_LABEL.get(verdict_state, "verified" if verdict_state == STATE_GROUNDED else "partial")
 
-    final_answer = redact_pii(draft)
+    final_answer = redact_pii(final_draft)
 
     reflection = self_reflect(query, final_answer, combined_evidence)
-    judgment = judge_answer(query, final_answer, combined_evidence)
-    verified = (overall == "supported") and judgment["is_accurate"]
-    quality_note = "" if judgment["is_accurate"] else f"Quality-check note: {judgment['issue']}"
+    verified = (verdict_state in (STATE_GROUNDED, STATE_PARTIALLY_GROUNDED)) and judgment.get("is_accurate", True)
+    quality_note = "" if judgment.get("is_accurate", True) else f"Quality-check note: {judgment.get('issue', '')}"
 
     dept_info = suggest_department_and_helpline(query, call_llm) if label in ("GENERAL_LAW", "MIXED") else None
     suggestions = generate_suggestions(query, final_answer, model)
@@ -379,6 +453,8 @@ def _handle_ask(request: QueryRequest, user_id: str):
         "conclusion": conclusion_text,
         "usefulness": reflection.get("usefulness", "medium"),
         "verified": verified,
+        "verdict_state": verdict_state,
+        "claim_verdicts": claim_verdicts,
         "sources": source_objects,
         "quality_note": quality_note,
         "department_suggestion": dept_info,

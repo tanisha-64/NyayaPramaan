@@ -19,6 +19,9 @@ def mock_external_services():
          patch("backend.routers.chat_router.extract_claims", return_value=(["mock claim"], True)), \
          patch("backend.routers.chat_router.verify_claims_batch", return_value=([{"claim": "mock claim", "verdict": "supported", "confidence": 0.95}], True)), \
          patch("backend.routers.chat_router.judge_answer", return_value={"is_accurate": True, "is_helpful": True, "issue": ""}), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value={"overall_verdict": "GROUNDED", "is_accurate": True, "issue": "", "supported_claims": ["mock claim"], "unsupported_claims": [], "claim_verdicts": []}), \
+         patch("backend.routers.chat_router.self_reflect", return_value={"usefulness": "high", "conclusion": None, "conclusion_needed": False}), \
+         patch("backend.routers.chat_router.generate_suggestions", return_value=[]), \
          patch("trust_log.hash_chain.get_last_hash", return_value=""), \
          patch("trust_log.hash_chain.save_log_entry"):
         yield
@@ -89,8 +92,8 @@ def test_2_case_a_unrelated_query_no_leak_from_case_b():
          patch("backend.routers.chat_router.search_document_chunks", return_value=[]), \
          patch("ai_core.llm_gateway.call_llm", return_value=""):
         res = _handle_ask(req, user_id="u1")
-        assert res.get("no_documentary_evidence_found") is True
-        assert "no supporting evidence was found" in res["answer"].lower()
+        assert res.get("retrieval_insufficient") is True or res.get("no_documentary_evidence_found") is True
+        assert res.get("sources") == []
 
 
 def test_3_vector_store_defensive_isolation_filter():
@@ -124,7 +127,7 @@ def test_4_zero_chunks_and_indexing_status_gate():
         res_proc = _handle_ask(req_proc, user_id="u1")
         assert res_proc.get("indexing_in_progress") is True
 
-    # Ready status with 0 chunks returns no documentary evidence found
+    # Ready status with 0 chunks returns retrieval insufficient / no evidence
     mock_client_ready = _make_mock_client([{
         "id": case_id, "filename": "doc.pdf", "status": "ready", "summary": "Done.", "case_text": "Short."
     }])
@@ -132,8 +135,7 @@ def test_4_zero_chunks_and_indexing_status_gate():
          patch("backend.routers.chat_router.search_document_chunks", return_value=[]), \
          patch("ai_core.llm_gateway.call_llm", return_value=""):
         res_ready = _handle_ask(req_proc, user_id="u1")
-        assert res_ready.get("no_documentary_evidence_found") is True
-        assert "no supporting evidence was found" in res_ready["answer"].lower()
+        assert res_ready.get("retrieval_insufficient") is True or res_ready.get("no_documentary_evidence_found") is True
 
 
 def test_5_summary_isolation_case_a():

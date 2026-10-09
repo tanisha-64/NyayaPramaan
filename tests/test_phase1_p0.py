@@ -10,7 +10,17 @@ from ai_core.rag.document_reader import read_case_file_with_gemini
 from backend.routers.chat_router import general_legal_answer, _handle_ask, QueryRequest
 
 
-def test_aadhaar_and_pan_pii_redaction():
+@pytest.fixture(autouse=True)
+def mock_external_services():
+    with patch("backend.routers.chat_router._log"), \
+         patch("ai_core.rag.embeddings.embed_text", return_value=[0.1] * 768), \
+         patch("backend.routers.chat_router.embed_text", return_value=[0.1] * 768), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value={"overall_verdict": "GROUNDED", "is_accurate": True, "issue": "", "supported_claims": ["claim"], "unsupported_claims": [], "claim_verdicts": []}), \
+         patch("backend.routers.chat_router.self_reflect", return_value={"usefulness": "high", "conclusion": None, "conclusion_needed": False}), \
+         patch("backend.routers.chat_router.generate_suggestions", return_value=[]), \
+         patch("trust_log.hash_chain.get_last_hash", return_value=""), \
+         patch("trust_log.hash_chain.save_log_entry"):
+        yield
     """Requirement 1: Verify Aadhaar and PAN redaction while preserving phone & email."""
     text = "User Aadhaar 4532 9812 3456 and PAN ABCDE1234F with phone 9876543210 and email test@nyaya.org"
     redacted = redact_pii(text)

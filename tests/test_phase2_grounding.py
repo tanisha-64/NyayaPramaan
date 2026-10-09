@@ -1,12 +1,22 @@
 """
-Phase 2 — Case-Evidence Grounding & Hallucination Hard-Stop Regression Tests.
+Phase 2 & Phase 2.1 — Case-Evidence Grounding, LLM-as-Judge Reliability & Regression Tests.
 Guarantees that CASE_SPECIFIC questions answer ONLY from retrieved evidence,
-never invent unstated facts/documents, and refuse when evidence is absent.
+never invent unstated facts/documents, distinguish between 6 distinct verdict states,
+and never conflate retrieval insufficiency with 'no evidence found'.
 """
 import uuid
 import pytest
 from unittest.mock import patch, MagicMock
 from backend.routers.chat_router import _handle_ask, QueryRequest
+from ai_core.evaluation.llm_judge import (
+    STATE_GROUNDED,
+    STATE_PARTIALLY_GROUNDED,
+    STATE_CONTRADICTED,
+    STATE_NO_EVIDENCE_FOUND,
+    STATE_RETRIEVAL_INSUFFICIENT,
+    STATE_VERIFICATION_PENDING,
+    judge_claims_against_evidence,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -15,10 +25,16 @@ def mock_external_services():
     with patch("backend.routers.chat_router._log"), \
          patch("ai_core.rag.embeddings.embed_text", return_value=[0.1] * 768), \
          patch("backend.routers.chat_router.embed_text", return_value=[0.1] * 768), \
+         patch("backend.routers.chat_router.self_reflect", return_value={"usefulness": "high", "conclusion": None, "conclusion_needed": False}), \
+         patch("backend.routers.chat_router.generate_suggestions", return_value=[]), \
          patch("trust_log.hash_chain.get_last_hash", return_value=""), \
          patch("trust_log.hash_chain.save_log_entry"):
         yield
 
+
+# ==============================================================================
+# EXISTING PHASE 2 TESTS (Regressions)
+# ==============================================================================
 
 def test_phase2_test1_plaintiff_title_no_fabricated_deeds():
     """TEST 1: Query plaintiff title. The document mentions oral partition, no registered sale deed.
@@ -43,21 +59,29 @@ def test_phase2_test1_plaintiff_title_no_fabricated_deeds():
         "similarity": 0.85
     }]
 
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": ["Plaintiff claims ownership based on oral family settlement dated 12.04.2015"],
+        "unsupported_claims": [],
+        "claim_verdicts": [{"claim": "oral family settlement", "verdict": "SUPPORTED", "page_numbers": [3]}],
+    }
+
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
          patch("backend.routers.chat_router.search_document_chunks", return_value=case_chunks), \
-         patch("backend.routers.chat_router._verify_and_label", return_value=("supported", [{"verdict": "supported", "claim": "oral family settlement"}])), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["oral family settlement dated 12.04.2015"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment), \
          patch("backend.routers.chat_router.call_llm") as mock_llm:
         mock_llm.return_value = "According to Page 3, the plaintiff claims title based on an oral family settlement dated 12.04.2015 [land_dispute_suit.pdf — Page 3]."
         res = _handle_ask(req, user_id="u1")
 
-        # Verify prompt received the hard constraints
         all_prompts = " ".join(call[0][1] for call in mock_llm.call_args_list if len(call[0]) > 1)
         assert "STRICT CASE-SPECIFIC EVIDENCE CONTRACT" in all_prompts
         assert "STRICT NEGATIVE CONSTRAINT" in all_prompts
         assert "sale deeds" in all_prompts or "sale deed" in all_prompts
 
         assert "oral family settlement" in res["answer"]
-        # Must not fabricate registered deeds
         assert "registered sale deed" not in res["answer"].lower()
         assert res["sources"][0]["name"] == "land_dispute_suit.pdf — Page 3"
 
@@ -77,7 +101,6 @@ def test_phase2_test2_cyber_harassment_refusal_on_land_document():
         "case_text": "Agricultural plot survey numbers."
     }]
 
-    # Chunks are unrelated (low similarity)
     unrelated_chunks = [{
         "id": str(uuid.uuid4()),
         "case_id": case_id,
@@ -91,17 +114,16 @@ def test_phase2_test2_cyber_harassment_refusal_on_land_document():
          patch("backend.routers.chat_router.search_knowledge_base") as mock_kb:
         res = _handle_ask(req, user_id="u1")
 
-        # Must not call general knowledge base
         mock_kb.assert_not_called()
         assert res.get("no_documentary_evidence_found") is True
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
         assert "no supporting evidence was found" in res["answer"].lower()
         assert "cyber harassment" in res["answer"].lower()
         assert res["sources"] == []
 
 
 def test_phase2_test3_absent_topic_hard_stop_refusal():
-    """TEST 3: What evidence proves bribery? Absent from document.
-    Must return explicit no-evidence refusal."""
+    """TEST 3: What evidence proves bribery? When low similarity chunks return, reports no documentary evidence found."""
     case_id = str(uuid.uuid4())
     req = QueryRequest(query="What evidence proves bribery and corruption by the defendant?", case_id=case_id)
 
@@ -114,10 +136,19 @@ def test_phase2_test3_absent_topic_hard_stop_refusal():
         "case_text": "Monthly rent of 25000."
     }]
 
+    unrelated_chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 1,
+        "chunk_text": "Monthly tenancy agreement clauses.",
+        "similarity": 0.05
+    }]
+
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
-         patch("backend.routers.chat_router.search_document_chunks", return_value=[]):
+         patch("backend.routers.chat_router.search_document_chunks", return_value=unrelated_chunks):
         res = _handle_ask(req, user_id="u1")
         assert res.get("no_documentary_evidence_found") is True
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
         assert "no supporting evidence was found" in res["answer"].lower()
 
 
@@ -144,14 +175,25 @@ def test_phase2_test4_present_topic_strictly_grounded():
         "similarity": 0.92
     }]
 
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": ["monthly rent of Rs 40,000"],
+        "unsupported_claims": [],
+        "claim_verdicts": [{"claim": "monthly rent of Rs 40,000", "verdict": "SUPPORTED", "page_numbers": [2]}],
+    }
+
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
          patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
-         patch("backend.routers.chat_router._verify_and_label", return_value=("supported", [{"verdict": "supported", "claim": "Rs 40,000 rent"}])), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["monthly rent is Rs 40,000"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment), \
          patch("backend.routers.chat_router.call_llm") as mock_llm:
         mock_llm.return_value = "As per Page 2 of the lease deed, the monthly rent is Rs 40,000 payable on or before the 5th of every month."
         res = _handle_ask(req, user_id="u1")
         assert "40,000" in res["answer"]
         assert res["sources"][0]["name"] == "lease_deed.pdf — Page 2"
+        assert res.get("verdict_state") == STATE_GROUNDED
 
 
 def test_phase2_test5_general_law_with_document_attached():
@@ -183,7 +225,6 @@ def test_phase2_test5_general_law_with_document_attached():
         mock_llm.return_value = "Section 351 of the Bharatiya Nyaya Sanhita (BNS), 2023 defines the offence of assault."
         res = _handle_ask(req, user_id="u1")
 
-        # Crucial check: search_document_chunks was NOT called for pure GENERAL_LAW query
         mock_doc_search.assert_not_called()
         mock_kb.assert_called_once()
         assert "Bharatiya Nyaya Sanhita" in res["answer"]
@@ -192,7 +233,7 @@ def test_phase2_test5_general_law_with_document_attached():
 
 def test_phase2_test6_post_generation_hallucination_hard_stop():
     """TEST 6: Generator hallucinates unverified claims for a CASE_SPECIFIC query.
-    Verifier flags the claims as unverified. Post-generation hard stop intercepts and returns refusal."""
+    LLM Judge flags all claims as unverified. Post-generation hard stop intercepts and returns refusal."""
     case_id = str(uuid.uuid4())
     req = QueryRequest(query="What evidence proves the boundary wall was constructed in 1990?", case_id=case_id)
 
@@ -215,13 +256,387 @@ def test_phase2_test6_post_generation_hallucination_hard_stop():
 
     hallucinated_draft = "The plaintiff produced a 1990 municipal construction permit and tax receipts proving the wall was built in 1990."
 
+    mock_judgment = {
+        "overall_verdict": STATE_NO_EVIDENCE_FOUND,
+        "is_accurate": False,
+        "issue": "Municipal permit not found in evidence.",
+        "supported_claims": [],
+        "unsupported_claims": ["The plaintiff produced a 1990 municipal construction permit"],
+        "claim_verdicts": [{"claim": "1990 municipal permit", "verdict": "NOT_VERIFIABLE", "page_numbers": []}],
+    }
+
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
          patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
          patch("backend.routers.chat_router.call_llm", return_value=hallucinated_draft), \
-         patch("backend.routers.chat_router._verify_and_label", return_value=("unverified", [{"verdict": "unverified", "claim": "1990 municipal permit"}])):
+         patch("backend.routers.chat_router.extract_claims", return_value=(["1990 municipal permit"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
         res = _handle_ask(req, user_id="u1")
 
-        # Intercepted! Did NOT return the hallucinated municipal permit
         assert "municipal construction permit" not in res["answer"]
         assert res.get("no_documentary_evidence_found") is True
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
         assert "no supporting evidence was found" in res["answer"].lower()
+
+
+# ==============================================================================
+# PHASE 2.1 GOLDEN TEST SUITE (Tests A through G)
+# ==============================================================================
+
+def test_phase2_1_golden_test_a_gorakhram_plaintiff_evidence():
+    """GOLDEN TEST A:
+    Gorakhram PDF: 'Is case me plaintiff ne apne claim ko support karne ke liye kaunse evidence diye hain?'
+    Expected: letters (29/30 Aug 1929) + oral evidence/depositions (Laxmibai, Inderlal, Kanhaiyalal) + diamond ring + possession.
+    Verdict: GROUNDED / PARTIALLY_GROUNDED.
+    Must NOT refuse as 'no evidence found'."""
+    case_id = str(uuid.uuid4())
+    query = "Is case me plaintiff ne apne claim ko support karne ke liye kaunse evidence diye hain?"
+    req = QueryRequest(query=query, case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
+        "status": "ready",
+        "summary": "Mortgage and title dispute between Gorakhram Sadhuram and Laxmibai.",
+        "case_text": "Case concerning property mortgaged with letters of 29/30 Aug 1929 and depositions."
+    }]
+
+    gorakhram_chunks = [
+        {
+            "id": str(uuid.uuid4()),
+            "case_id": case_id,
+            "page_number": 2,
+            "chunk_text": "Plaintiff relied upon letters dated 29th and 30th August 1929 evidencing deposit of title deeds and equitable mortgage.",
+            "similarity": 0.88,
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "case_id": case_id,
+            "page_number": 3,
+            "chunk_text": "Oral evidence was adduced by the plaintiff Laxmibai and her husband Inderlal, confirming the transaction and delivery of the diamond ring.",
+            "similarity": 0.85,
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "case_id": case_id,
+            "page_number": 4,
+            "chunk_text": "Witness Kanhaiyalal (son of plaintiff) deposed regarding plaintiff's continuous possession, payment of municipal taxes, and structural repairs.",
+            "similarity": 0.82,
+        },
+    ]
+
+    draft_answer = (
+        "In this case, the plaintiff presented several key pieces of evidence to support her claim:\n"
+        "1. Documentary evidence: Letters dated 29th and 30th August 1929 confirming the equitable mortgage.\n"
+        "2. Oral depositions: Depositions of the plaintiff Laxmibai and her husband Inderlal regarding the transaction and handover of the diamond ring.\n"
+        "3. Witness evidence: Testimony of son Kanhaiyalal proving continuous possession, tax payments, and property repairs."
+    )
+
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": [
+            "Letters dated 29th and 30th August 1929",
+            "Depositions of Laxmibai and husband Inderlal regarding diamond ring",
+            "Evidence of son Kanhaiyalal proving possession, tax payments, and repairs",
+        ],
+        "unsupported_claims": [],
+        "claim_verdicts": [
+            {"claim": "Letters dated 29th and 30th August 1929", "verdict": "SUPPORTED", "page_numbers": [2]},
+            {"claim": "Depositions of Laxmibai and Inderlal", "verdict": "SUPPORTED", "page_numbers": [3]},
+            {"claim": "Son Kanhaiyalal evidence of possession and repairs", "verdict": "SUPPORTED", "page_numbers": [4]},
+        ],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=gorakhram_chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value=draft_answer), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(mock_judgment["supported_claims"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
+
+        res = _handle_ask(req, user_id="u1")
+
+        # Must NOT refuse
+        assert res.get("no_documentary_evidence_found") is not True
+        assert res.get("verdict_state") in (STATE_GROUNDED, STATE_PARTIALLY_GROUNDED)
+        assert res["verified"] is True
+
+        # Check factual coverage
+        ans = res["answer"]
+        assert "29th" in ans or "August 1929" in ans or "1929" in ans
+        assert "Laxmibai" in ans or "Inderlal" in ans
+        assert "diamond ring" in ans or "Kanhaiyalal" in ans or "possession" in ans
+        # Forbidden fabricated claims must be absent
+        assert "registered sale deed" not in ans.lower()
+        assert "probate certificate" not in ans.lower()
+
+
+def test_phase2_1_golden_test_b_gorakhram_cyber_harassment_refusal():
+    """GOLDEN TEST B:
+    Gorakhram PDF: 'What evidence proves cyber harassment?'
+    Expected: NO_EVIDENCE_FOUND only when retrieval coverage is sufficient.
+    Must return clear no-evidence finding, not retrieval insufficient."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What evidence proves cyber harassment in this case?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_vs_Laxmibai.pdf",
+        "status": "ready",
+        "summary": "1950 mortgage suit.",
+        "case_text": "1950 property mortgage suit."
+    }]
+
+    unrelated_chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 1,
+        "chunk_text": "Suit for declaration of mortgage rights.",
+        "similarity": 0.04
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=unrelated_chunks):
+
+        res = _handle_ask(req, user_id="u1")
+        assert res.get("no_documentary_evidence_found") is True
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
+        assert "no supporting evidence was found" in res["answer"].lower()
+        assert "cyber harassment" in res["answer"].lower()
+
+
+def test_phase2_1_golden_test_c_gorakhram_plaintiff_possession():
+    """GOLDEN TEST C:
+    Gorakhram PDF: 'What does the judgment say about the plaintiff's possession?'
+    Expected: Grounded in actual document pages (e.g. continuous possession, repair of premises)."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What does the judgment say about the plaintiff's possession?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_vs_Laxmibai.pdf",
+        "status": "ready",
+        "summary": "Mortgage suit.",
+        "case_text": "Plaintiff established actual continuous possession and paid all municipal assessments."
+    }]
+
+    chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 4,
+        "chunk_text": "The trial court found that the plaintiff remained in undisturbed physical possession of the mortgaged property and carried out periodic repairs.",
+        "similarity": 0.91
+    }]
+
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": ["Plaintiff remained in undisturbed physical possession and did repairs"],
+        "unsupported_claims": [],
+        "claim_verdicts": [{"claim": "undisturbed possession", "verdict": "SUPPORTED", "page_numbers": [4]}],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value="As per Page 4, the plaintiff remained in undisturbed physical possession of the property and carried out repairs."), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["undisturbed possession"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
+
+        res = _handle_ask(req, user_id="u1")
+        assert "undisturbed physical possession" in res["answer"]
+        assert res["verified"] is True
+        assert res.get("verdict_state") == STATE_GROUNDED
+        assert res["sources"][0]["name"] == "Gorakhram_vs_Laxmibai.pdf — Page 4"
+
+
+def test_phase2_1_golden_test_d_intentionally_unsupported_topic():
+    """GOLDEN TEST D:
+    An intentionally unsupported topic (e.g. offshore tax evasion).
+    Expected: NO_EVIDENCE_FOUND."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What evidence proves the defendant engaged in offshore tax evasion in Panama?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "civil_suit_1950.pdf",
+        "status": "ready",
+        "summary": "Civil suit.",
+        "case_text": "Dispute over domestic loan and mortgage."
+    }]
+
+    unrelated_chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 1,
+        "chunk_text": "Civil suit between local parties regarding mortgage of a shop.",
+        "similarity": 0.06
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=unrelated_chunks):
+
+        res = _handle_ask(req, user_id="u1")
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
+        assert res.get("no_documentary_evidence_found") is True
+        assert "no supporting evidence was found" in res["answer"].lower()
+
+
+def test_phase2_1_golden_test_e_simulated_retrieval_failure():
+    """GOLDEN TEST E:
+    Simulated retrieval failure (0 chunks returned due to retrieval error / empty match).
+    Expected: RETRIEVAL_INSUFFICIENT, NOT NO_EVIDENCE_FOUND."""
+    case_id = str(uuid.uuid4())
+    # Hindi/Hinglish query
+    req_hi = QueryRequest(query="Is case me plaintiff ne kya claim kiya hai?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "case_file.pdf",
+        "status": "ready",
+        "summary": "Case summary.",
+        "case_text": "Case text."
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=[]):
+
+        res_hi = _handle_ask(req_hi, user_id="u1")
+
+        # CRITICAL: Must be RETRIEVAL_INSUFFICIENT, NEVER NO_EVIDENCE_FOUND
+        assert res_hi.get("verdict_state") == STATE_RETRIEVAL_INSUFFICIENT
+        assert res_hi.get("retrieval_insufficient") is True
+        assert res_hi.get("no_documentary_evidence_found") is not True
+        assert "पर्याप्त संबंधित अंश retrieve नहीं कर पाया" in res_hi["answer"]
+
+    # English query
+    req_en = QueryRequest(query="What evidence supports the plaintiff's title?", case_id=case_id)
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=[]):
+
+        res_en = _handle_ask(req_en, user_id="u1")
+        assert res_en.get("verdict_state") == STATE_RETRIEVAL_INSUFFICIENT
+        assert res_en.get("retrieval_insufficient") is True
+        assert "could not retrieve sufficient relevant passages" in res_en["answer"]
+
+
+def test_phase2_1_golden_test_f_simulated_judge_infra_failure():
+    """GOLDEN TEST F:
+    Simulated judge/API/JSON failure.
+    Expected: VERIFICATION_PENDING, NOT NO_EVIDENCE_FOUND."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What evidence supports the plaintiff's claim?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "valid_case.pdf",
+        "status": "ready",
+        "summary": "Valid case.",
+        "case_text": "Plaintiff relied on letters of Aug 1929."
+    }]
+
+    chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 1,
+        "chunk_text": "Plaintiff produced letters of August 1929.",
+        "similarity": 0.85
+    }]
+
+    draft = "The plaintiff produced August 1929 letters to support her claim."
+
+    # Simulate Judge / Verifier failure
+    mock_infra_error = {
+        "claim_verdicts": [],
+        "overall_verdict": STATE_VERIFICATION_PENDING,
+        "is_accurate": True,
+        "issue": "API connection timeout",
+        "supported_claims": [],
+        "unsupported_claims": [],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value=draft), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["August 1929 letters"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_infra_error):
+
+        res = _handle_ask(req, user_id="u1")
+
+        # Must NEVER be NO_EVIDENCE_FOUND
+        assert res.get("verdict_state") == STATE_VERIFICATION_PENDING
+        assert res.get("no_documentary_evidence_found") is not True
+        assert res.get("verified") is False
+        assert "August 1929 letters" in res["answer"]
+
+
+def test_phase2_1_golden_test_g_hallucinated_draft_unsupported_claims_removed():
+    """GOLDEN TEST G:
+    Draft contains both a genuine supported claim (letters of Aug 1929)
+    AND hallucinated claims (registered sale deed, probate order, tax receipts).
+    Expected: PARTIALLY_GROUNDED, unsupported claims removed, supported claims retained."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What evidence supports the plaintiff's claim?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "mortgage_suit.pdf",
+        "status": "ready",
+        "summary": "Mortgage suit.",
+        "case_text": "Deposit of title deeds via letters dated 29 August 1929."
+    }]
+
+    chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 2,
+        "chunk_text": "Plaintiff established deposit of title deeds through letters dated 29 August 1929.",
+        "similarity": 0.89
+    }]
+
+    mixed_draft = (
+        "The plaintiff proved her claim by producing:\n"
+        "1. Letters dated 29 August 1929.\n"
+        "2. A registered sale deed executed in 1930.\n"
+        "3. A probate certificate issued by the High Court."
+    )
+
+    mock_judgment = {
+        "overall_verdict": STATE_PARTIALLY_GROUNDED,
+        "is_accurate": True,
+        "issue": "Registered sale deed and probate certificate are not mentioned in the evidence.",
+        "supported_claims": ["Letters dated 29 August 1929"],
+        "unsupported_claims": [
+            "A registered sale deed executed in 1930",
+            "A probate certificate issued by the High Court",
+        ],
+        "claim_verdicts": [
+            {"claim": "Letters dated 29 August 1929", "verdict": "SUPPORTED", "page_numbers": [2]},
+            {"claim": "A registered sale deed executed in 1930", "verdict": "NOT_VERIFIABLE", "page_numbers": []},
+            {"claim": "A probate certificate issued by the High Court", "verdict": "NOT_VERIFIABLE", "page_numbers": []},
+        ],
+    }
+
+    filtered_draft = "Based on the evidence, the plaintiff proved her claim through letters dated 29 August 1929 [mortgage_suit.pdf — Page 2]."
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value=mixed_draft), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["Letters dated 29 August 1929", "registered sale deed", "probate certificate"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment), \
+         patch("backend.routers.chat_router.filter_supported_claims_answer", return_value=filtered_draft):
+
+        res = _handle_ask(req, user_id="u1")
+
+        assert res.get("verdict_state") == STATE_PARTIALLY_GROUNDED
+        assert "29 August 1929" in res["answer"]
+        # Hallucinated items MUST be removed
+        assert "registered sale deed" not in res["answer"].lower()
+        assert "probate certificate" not in res["answer"].lower()

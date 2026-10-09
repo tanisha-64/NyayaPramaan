@@ -16,7 +16,7 @@ def verify_claims_batch(claims: list[str], evidence: str) -> tuple[list[dict], b
         return [], True
 
     numbered_claims = "\n".join(f"{i+1}. {c}" for i, c in enumerate(claims))
-    evidence_trimmed = evidence[:4000]  # keep prompt size manageable for reliable JSON output
+    evidence_trimmed = evidence[:12000]  # Allow full evidence chunks without premature truncation
 
     prompt = f"""Verify EACH numbered claim below against the evidence.
 For each, choose exactly one verdict: "supported", "partially_supported",
@@ -24,12 +24,13 @@ For each, choose exactly one verdict: "supported", "partially_supported",
 doesn't address this topic at all).
 
 Respond with ONLY a JSON array, one object per claim, SAME ORDER, no markdown fences:
-[{{"verdict": "supported", "confidence": 0}}, ...]
+[{{"verdict": "supported", "confidence": 0.9, "reason": "..."}}, ...]
 
 CLAIMS:
 {numbered_claims}
 
-EVIDENCE: {evidence_trimmed}"""
+EVIDENCE:
+{evidence_trimmed}"""
 
     try:
         raw = call_llm("groq/openai/gpt-oss-20b", prompt)
@@ -39,13 +40,23 @@ EVIDENCE: {evidence_trimmed}"""
             return [], False
 
         sanitized = []
-        for r in results:
-            v = r.get("verdict") if isinstance(r, dict) else None
+        for i, r in enumerate(results):
+            c_text = claims[i] if i < len(claims) else ""
+            v = r.get("verdict", "").lower() if isinstance(r, dict) else "unverified"
             if v not in VALID_VERDICTS:
-                v = "unverified"
-            sanitized.append({"verdict": v, "confidence": r.get("confidence", 0) if isinstance(r, dict) else 0})
+                if "partially" in v:
+                    v = "partially_supported"
+                elif "contradict" in v:
+                    v = "contradicted"
+                elif "support" in v:
+                    v = "supported"
+                else:
+                    v = "unverified"
+            conf = r.get("confidence", 0) if isinstance(r, dict) else 0
+            reason = r.get("reason", "") if isinstance(r, dict) else ""
+            sanitized.append({"claim": c_text, "verdict": v, "confidence": conf, "reason": reason})
         while len(sanitized) < len(claims):
-            sanitized.append({"verdict": "unverified", "confidence": 0})
+            sanitized.append({"claim": claims[len(sanitized)], "verdict": "unverified", "confidence": 0, "reason": ""})
         return sanitized[: len(claims)], True
     except Exception:
         return [], False  # verifier infra failed -- caller marks "verification_pending"
@@ -54,11 +65,25 @@ EVIDENCE: {evidence_trimmed}"""
 def summarize_verdicts(verdicts: list[dict]) -> str:
     if not verdicts:
         return "verification_pending"
-    verdict_list = [v.get("verdict") for v in verdicts]
-    if "contradicted" in verdict_list:
+    verdict_list = [v.get("verdict", "").lower() for v in verdicts]
+    
+    supported_count = sum(1 for v in verdict_list if v == "supported")
+    partial_count = sum(1 for v in verdict_list if v == "partially_supported")
+    contradicted_count = sum(1 for v in verdict_list if v == "contradicted")
+    unverified_count = sum(1 for v in verdict_list if v in ("unverified", "not_verifiable"))
+
+    total = len(verdict_list)
+
+    if supported_count == total:
+        return "supported"
+    if contradicted_count == total:
         return "contradicted"
-    if "unverified" in verdict_list:
+    if unverified_count == total:
         return "unverified"
-    if "partially_supported" in verdict_list:
+    
+    # Mixed results: if there is at least one supported/partially_supported claim,
+    # the answer is partially supported, NOT unverified or contradicted!
+    if supported_count + partial_count > 0:
         return "partially_supported"
-    return "supported"
+
+    return "unverified"
