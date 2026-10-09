@@ -640,3 +640,110 @@ def test_phase2_1_golden_test_g_hallucinated_draft_unsupported_claims_removed():
         # Hallucinated items MUST be removed
         assert "registered sale deed" not in res["answer"].lower()
         assert "probate certificate" not in res["answer"].lower()
+
+
+# ==============================================================================
+# PHASE 2.2 RETRIEVAL RESILIENCE & MULTI-STRATEGY TESTS
+# ==============================================================================
+
+def test_phase2_2_vector_store_multi_rpc_fallback():
+    """Verify search_document_chunks falls back to match_document_chunks_multi when match_document_chunks raises error."""
+    from ai_core.rag.vector_store import search_document_chunks
+    case_id = str(uuid.uuid4())
+    mock_client = MagicMock()
+
+    def mock_rpc(rpc_name, params):
+        mock_res = MagicMock()
+        if rpc_name == "match_document_chunks":
+            raise RuntimeError("function match_document_chunks does not exist")
+        elif rpc_name == "match_document_chunks_multi":
+            mock_res.execute.return_value.data = [
+                {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 2, "chunk_text": "Letters of 29 August 1929", "similarity": 0.88}
+            ]
+            return mock_res
+        mock_res.execute.return_value.data = []
+        return mock_res
+
+    mock_client.rpc.side_effect = mock_rpc
+    with patch("ai_core.rag.vector_store.get_supabase_client", return_value=mock_client):
+        chunks = search_document_chunks([0.1]*768, case_id=case_id)
+        assert len(chunks) == 1
+        assert chunks[0]["case_id"] == case_id
+        assert "29 August 1929" in chunks[0]["chunk_text"]
+
+
+def test_phase2_2_vector_store_direct_table_cosine_sim_fallback():
+    """Verify search_document_chunks falls back to direct table fetch + cosine similarity when all RPCs fail."""
+    from ai_core.rag.vector_store import search_document_chunks
+    case_id = str(uuid.uuid4())
+    mock_client = MagicMock()
+    mock_client.rpc.side_effect = RuntimeError("RPC connection error")
+
+    mock_table = MagicMock()
+    mock_table.select.return_value = mock_table
+    mock_table.eq.return_value = mock_table
+    mock_table.execute.return_value.data = [
+        {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 3, "chunk_text": "Laxmibai deposition regarding diamond ring", "embedding": [0.1]*768},
+        {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 4, "chunk_text": "Undisturbed physical possession", "embedding": [0.05]*768},
+    ]
+    mock_client.table.return_value = mock_table
+
+    with patch("ai_core.rag.vector_store.get_supabase_client", return_value=mock_client):
+        chunks = search_document_chunks([0.1]*768, case_id=case_id)
+        assert len(chunks) == 2
+        assert chunks[0]["case_id"] == case_id
+        assert "Laxmibai" in chunks[0]["chunk_text"]
+
+
+def test_phase2_2_chat_router_dynamic_case_text_chunking_fallback():
+    """Verify _handle_ask dynamically indexes case_text on-the-fly when document chunks were missing."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What does the judgment say about the plaintiff's possession?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_vs_Laxmibai.pdf",
+        "status": "ready",
+        "summary": "1950 mortgage suit.",
+        "case_text": "The plaintiff proved continuous undisturbed possession and structural repairs of the premises."
+    }]
+
+    search_calls = []
+
+    def mock_search_doc_chunks(query_vec, target_case_id, match_count=8):
+        search_calls.append(len(search_calls))
+        if len(search_calls) == 1:
+            return []  # Initial search has 0 chunks
+        # After on-the-fly indexing, returns newly indexed chunks
+        return [{
+            "id": str(uuid.uuid4()),
+            "case_id": target_case_id,
+            "page_number": 1,
+            "chunk_text": "The plaintiff proved continuous undisturbed possession and structural repairs of the premises.",
+            "similarity": 0.90,
+        }]
+
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": ["The plaintiff proved continuous undisturbed possession"],
+        "unsupported_claims": [],
+        "claim_verdicts": [{"claim": "undisturbed possession", "verdict": "SUPPORTED", "page_numbers": [1]}],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", side_effect=mock_search_doc_chunks), \
+         patch("ai_core.rag.document_chunker.chunk_text_into_pages", return_value=1), \
+         patch("backend.routers.chat_router.call_llm", return_value="The plaintiff proved continuous undisturbed possession."), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["The plaintiff proved continuous undisturbed possession"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
+
+        res = _handle_ask(req, user_id="u1")
+
+        assert res.get("verdict_state") == STATE_GROUNDED
+        assert "undisturbed possession" in res["answer"]
+        assert res.get("no_documentary_evidence_found") is not True
+        assert res.get("retrieval_insufficient") is not True
+

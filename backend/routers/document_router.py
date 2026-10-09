@@ -65,15 +65,17 @@ def _background_index_pages(tmp_path: str, case_id: str, suffix: str, case_text:
                 total_pages = len(reader.pages)
             except Exception:
                 total_pages = pages_indexed
+
+            # If local pypdf/OCR yielded 0 pages on scanned PDF, fallback to Gemini-extracted text
+            if pages_indexed == 0 and case_text and len(case_text.strip()) > 0:
+                from ai_core.rag.document_chunker import chunk_text_into_pages
+                pages_indexed = chunk_text_into_pages(case_text, case_id)
+                total_pages = max(1, pages_indexed)
         elif case_text and len(case_text.strip()) > 0:
             # Non-PDF text fallback chunking (e.g. .txt, .docx)
-            from ai_core.rag.embeddings import embed_texts_batch
-            from ai_core.rag.vector_store import insert_document_chunks_batch
-            chunks = [(1, case_text[:3000])]
-            embeddings = embed_texts_batch([case_text[:3000]])
-            insert_document_chunks_batch(case_id, chunks, embeddings)
-            pages_indexed = 1
-            total_pages = 1
+            from ai_core.rag.document_chunker import chunk_text_into_pages
+            pages_indexed = chunk_text_into_pages(case_text, case_id)
+            total_pages = max(1, pages_indexed)
 
         if pages_indexed > 0:
             client.table("cases").update({

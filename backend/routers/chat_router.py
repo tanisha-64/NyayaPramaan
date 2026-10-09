@@ -264,15 +264,31 @@ def _handle_ask(request: QueryRequest, user_id: str):
                 if "case_id" not in c or str(c.get("case_id", "")).lower() == str(request.case_id).lower()
             ]
 
-        # Internal Diagnostics / Debugging
-        chunk_count = len(chunk_matches)
-        sim_scores = [c.get("similarity") or c.get("score") for c in chunk_matches]
-        page_numbers = [c.get("page_number", 1) for c in chunk_matches]
-        first_snippet = chunk_matches[0]["chunk_text"][:80] if chunk_matches else "N/A"
-        last_snippet = chunk_matches[-1]["chunk_text"][:80] if chunk_matches else "N/A"
-        top_sim = sim_scores[0] if sim_scores else None
+        # Resilient on-the-fly indexing: If no chunks found in table but case_text exists in case record,
+        # chunk and embed case_text on-the-fly so live documents never fail retrieval.
+        if not chunk_matches and case_text and len(case_text.strip()) > 0:
+            try:
+                from ai_core.rag.document_chunker import chunk_text_into_pages
+                indexed_count = chunk_text_into_pages(case_text, request.case_id)
+                if indexed_count > 0:
+                    chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8)
+                    if request.case_id:
+                        chunk_matches = [
+                            c for c in chunk_matches
+                            if "case_id" not in c or str(c.get("case_id", "")).lower() == str(request.case_id).lower()
+                        ]
+            except Exception as e_idx:
+                print(f"[chat_router] On-the-fly chunk indexing failed: {e_idx}")
 
-        print(f"[RETRIEVAL_DEBUG] case_id={request.case_id} chunks={chunk_count} top_sim={top_sim} pages={page_numbers}")
+        # Safe Internal Diagnostics (Never log sensitive content or API keys)
+        chunk_count = len(chunk_matches)
+        top_sim = None
+        if chunk_matches:
+            top_sim = chunk_matches[0].get("similarity") if "similarity" in chunk_matches[0] else chunk_matches[0].get("score")
+        sim_scores = [round(float(c.get("similarity") if "similarity" in c else c.get("score", 1.0)), 3) for c in chunk_matches if ("similarity" in c or "score" in c)]
+        page_numbers = [c.get("page_number", 1) for c in chunk_matches]
+
+        print(f"[RETRIEVAL_DIAGNOSTICS] case_id={request.case_id} status={doc_status} chunks_returned={chunk_count} pages={page_numbers} top_sim={top_sim} scores={sim_scores}")
 
         if chunk_matches:
             # Check if all chunks are completely unrelated (e.g. cyber harassment query on a land record)
