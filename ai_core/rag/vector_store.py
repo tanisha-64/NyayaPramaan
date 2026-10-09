@@ -8,6 +8,7 @@ from supabase import create_client
 import os
 import uuid
 import json
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -111,7 +112,7 @@ def _cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def search_document_chunks(query_embedding: list[float], case_id: str, match_count: int = 8) -> list[dict]:
+def search_document_chunks(query_embedding: list[float], case_id: str, match_count: int = 8, query_text: str = "") -> list[dict]:
     if not case_id:
         return []
     try:
@@ -150,13 +151,18 @@ def search_document_chunks(query_embedding: list[float], case_id: str, match_cou
         except Exception as e2:
             print(f"[vector_store] match_document_chunks_multi RPC failed: {e2}")
 
-    # Strategy 3: Direct table fetch + local cosine similarity ranking fallback
+    # Strategy 3: Direct table fetch + local cosine similarity & hybrid ranking fallback
     if raw_data is None or len(raw_data) == 0:
         try:
             table_res = client.table("document_chunks").select("id, case_id, page_number, chunk_text, embedding").eq("case_id", clean_case_id).execute()
             rows = table_res.data or []
             if rows:
                 scored_rows = []
+                query_tokens = [w.lower() for w in re.findall(r'\w+', query_text)] if query_text else []
+                # Remove common stopwords
+                stop_words = {"what", "which", "where", "when", "does", "did", "the", "and", "for", "with", "this", "case", "file", "document", "hai", "hain", "kya", "me", "mein", "ne", "ko", "ke", "liye", "ka", "ki"}
+                meaningful_tokens = [t for t in query_tokens if t not in stop_words and len(t) > 2]
+
                 for r in rows:
                     emb = r.get("embedding")
                     if isinstance(emb, str):
@@ -164,15 +170,26 @@ def search_document_chunks(query_embedding: list[float], case_id: str, match_cou
                             emb = json.loads(emb)
                         except Exception:
                             emb = []
-                    score = _cosine_similarity(query_embedding, emb) if isinstance(emb, list) and emb else 0.0
+                    cos_sim = _cosine_similarity(query_embedding, emb) if isinstance(emb, list) and emb else 0.0
+                    
+                    # Lexical keyword score
+                    kw_score = 0.0
+                    chunk_lower = (r.get("chunk_text") or "").lower()
+                    if meaningful_tokens:
+                        hits = sum(1 for tok in meaningful_tokens if tok in chunk_lower)
+                        kw_score = hits / len(meaningful_tokens)
+
+                    combined_score = 0.75 * cos_sim + 0.25 * kw_score if meaningful_tokens else cos_sim
+
                     scored_rows.append({
                         "id": r.get("id"),
                         "case_id": r.get("case_id"),
                         "page_number": r.get("page_number", 1),
                         "chunk_text": r.get("chunk_text", ""),
-                        "similarity": score,
+                        "similarity": cos_sim,
+                        "score": combined_score,
                     })
-                scored_rows.sort(key=lambda x: x["similarity"], reverse=True)
+                scored_rows.sort(key=lambda x: x.get("score", x["similarity"]), reverse=True)
                 raw_data = scored_rows[:match_count]
                 rpc_used = "direct_table_cosine_sim"
         except Exception as e3:

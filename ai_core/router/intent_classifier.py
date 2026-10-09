@@ -36,6 +36,7 @@ DOCUMENT_REFERENCE_SIGNALS = [
     "mere case", "mere uploaded", "is file me", "in this case", "petitioner's argument",
     "evidence", "prove", "proves", "allegation", "alleges", "alleged", "facts",
     "record", "witness", "exhibit", "court order", "order date", "purchased",
+    "possession", "deposition",
 ]
 OUT_OF_DOMAIN_SIGNALS = [
     "recipe", "cake", "bake", "poem", "poetry", "joke", "song", "lyrics",
@@ -51,7 +52,8 @@ def classify_intent(query: str, has_document: bool = False) -> dict:
     # Check out-of-domain signals first
     has_legal_terms = any(w in lowered for w in [
         "court", "case", "law", "dhara", "section", "fir", "bail", "bns",
-        "ipc", "crpc", "bnss", "bsa", "act", "rights", "petition", "judge", "advocate", "title"
+        "ipc", "crpc", "bnss", "bsa", "act", "rights", "petition", "judge", "advocate", "title",
+        "evidence", "plaintiff", "possession", "suit", "harassment"
     ])
     if any(w in lowered for w in OUT_OF_DOMAIN_SIGNALS) and not has_legal_terms:
         return {
@@ -82,7 +84,9 @@ def classify_intent(query: str, has_document: bool = False) -> dict:
     elif has_doc_signal and has_general_signal:
         label = "MIXED"
     else:
-        label = None  # ambiguous -- ask the LLM
+        # If a document is attached and no explicit statutory section was requested,
+        # default to evaluating the attached document (CASE_SPECIFIC) rather than generic law.
+        label = "CASE_SPECIFIC" if has_document else None
 
     is_pro = any(p in lowered for p in ["jurisdiction", "sub-section", "appellant", "respondent", "ratio decidendi", "obiter"])
     audience = "professional" if is_pro else "student_public"

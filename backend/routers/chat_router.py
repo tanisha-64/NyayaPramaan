@@ -257,7 +257,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
 
     # ---- Gather DOCUMENT evidence (only if label needs it) ----
     if label in ("CASE_SPECIFIC", "MIXED") and has_document:
-        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8)
+        chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8, query_text=query)
         if request.case_id:
             chunk_matches = [
                 c for c in chunk_matches
@@ -271,7 +271,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
                 from ai_core.rag.document_chunker import chunk_text_into_pages
                 indexed_count = chunk_text_into_pages(case_text, request.case_id)
                 if indexed_count > 0:
-                    chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8)
+                    chunk_matches = search_document_chunks(query_vec, request.case_id, match_count=8, query_text=query)
                     if request.case_id:
                         chunk_matches = [
                             c for c in chunk_matches
@@ -376,11 +376,12 @@ def _handle_ask(request: QueryRequest, user_id: str):
             f"{history_section}"
             f"STRICT CASE-SPECIFIC EVIDENCE CONTRACT:\n"
             f"1. Answer the CURRENT query using ONLY the verified evidence below -- do not add outside information or model memory.\n"
-            f"2. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents (such as sale deeds, probate orders, revenue records, tax receipts, utility bills, mutation certificates, affidavits, or commissioner reports) unless explicitly mentioned in the Evidence below.\n"
-            f"3. Do NOT extrapolate unstated details: if a document name or person is mentioned without further findings, state ONLY what is written in the Evidence.\n"
-            f"4. If the Evidence does NOT contain facts answering the query, reply EXACTLY:\n"
+            f"2. For evidence, facts, possession, or document questions: identify and list EACH supported piece of evidence (e.g. letters, witness testimonies/depositions, physical items, possession, conduct, payments) clearly and separately with corresponding Page References (e.g. [Page X]).\n"
+            f"3. STRICT NEGATIVE CONSTRAINT: Do NOT invent, fabricate, or list standard legal documents (such as sale deeds, probate orders, revenue records, tax receipts, utility bills, mutation certificates, affidavits, or commissioner reports) unless explicitly mentioned in the Evidence below.\n"
+            f"4. Do NOT extrapolate unstated details: if a document name or person is mentioned without further findings, state ONLY what is written in the Evidence.\n"
+            f"5. If the Evidence does NOT contain facts answering the query, reply EXACTLY:\n"
             f"   'No supporting evidence was found in the uploaded document regarding {query}.'\n"
-            f"5. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is in force in India from 1 July 2024.\n\n"
+            f"6. Note that Bharatiya Nyaya Sanhita (BNS), 2023 is in force in India from 1 July 2024.\n\n"
             f"EVIDENCE:\n{combined_evidence}\n\n"
             f"CURRENT QUERY: {query}\n\nANSWER:"
         )

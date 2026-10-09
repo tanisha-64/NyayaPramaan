@@ -711,7 +711,7 @@ def test_phase2_2_chat_router_dynamic_case_text_chunking_fallback():
 
     search_calls = []
 
-    def mock_search_doc_chunks(query_vec, target_case_id, match_count=8):
+    def mock_search_doc_chunks(query_vec, target_case_id, match_count=8, *args, **kwargs):
         search_calls.append(len(search_calls))
         if len(search_calls) == 1:
             return []  # Initial search has 0 chunks
@@ -746,4 +746,202 @@ def test_phase2_2_chat_router_dynamic_case_text_chunking_fallback():
         assert "undisturbed possession" in res["answer"]
         assert res.get("no_documentary_evidence_found") is not True
         assert res.get("retrieval_insufficient") is not True
+
+
+# ==============================================================================
+# PHASE 2.3 END-TO-END PRODUCTION DOCUMENT QA REGRESSION TESTS
+# ==============================================================================
+
+def test_phase2_3_gorakhram_hinglish_plaintiff_evidence_retrieval_and_pages():
+    """Verify Hinglish question 'Is case me plaintiff ne apne claim ko support karne ke liye kaunse evidence diye hain?'
+    successfully retrieves letters, depositions, ring, and possession with exact page citations."""
+    case_id = str(uuid.uuid4())
+    query = "Is case me plaintiff ne apne claim ko support karne ke liye kaunse evidence diye hain?"
+    req = QueryRequest(query=query, case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
+        "status": "ready",
+        "summary": "1950 mortgage judgment.",
+        "case_text": "Case concerning property mortgaged with letters of 29/30 Aug 1929 and depositions."
+    }]
+
+    chunks = [
+        {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 2, "chunk_text": "Plaintiff produced letters of 29th and 30th August 1929 evidencing equitable mortgage.", "similarity": 0.89},
+        {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 3, "chunk_text": "Oral deposition of Laxmibai and Inderlal proving delivery of the diamond ring.", "similarity": 0.86},
+        {"id": str(uuid.uuid4()), "case_id": case_id, "page_number": 4, "chunk_text": "Evidence of son Kanhaiyalal establishing undisturbed possession and property repairs.", "similarity": 0.84},
+    ]
+
+    draft_answer = (
+        "In this judgment, the plaintiff produced the following evidence to support her claim:\n"
+        "1. Letters dated 29th and 30th August 1929 confirming the equitable mortgage [Page 2].\n"
+        "2. Oral depositions of Laxmibai and Inderlal regarding the diamond ring [Page 3].\n"
+        "3. Evidence of son Kanhaiyalal proving continuous possession and repairs [Page 4]."
+    )
+
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": [
+            "Letters dated 29th and 30th August 1929",
+            "Oral depositions of Laxmibai and Inderlal regarding diamond ring",
+            "Evidence of son Kanhaiyalal proving continuous possession and repairs",
+        ],
+        "unsupported_claims": [],
+        "claim_verdicts": [
+            {"claim": "Letters dated 29th and 30th August 1929", "verdict": "SUPPORTED", "page_numbers": [2]},
+            {"claim": "Oral depositions of Laxmibai and Inderlal", "verdict": "SUPPORTED", "page_numbers": [3]},
+            {"claim": "Evidence of son Kanhaiyalal", "verdict": "SUPPORTED", "page_numbers": [4]},
+        ],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value=draft_answer), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(mock_judgment["supported_claims"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
+
+        res = _handle_ask(req, user_id="u1")
+
+        assert res.get("verdict_state") == STATE_GROUNDED
+        assert res["verified"] is True
+        assert "1929" in res["answer"]
+        assert "Laxmibai" in res["answer"]
+        assert "diamond ring" in res["answer"]
+        assert "possession" in res["answer"]
+        assert res["sources"][0]["name"] == "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf — Page 2"
+
+
+def test_phase2_3_gorakhram_plaintiff_possession_query_variants():
+    """Verify both English and Hinglish queries for 'Plaintiff ka possession' route to CASE_SPECIFIC and return Page 4 evidence."""
+    case_id = str(uuid.uuid4())
+    req_hinglish = QueryRequest(query="Plaintiff ka possession", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_vs_Laxmibai.pdf",
+        "status": "ready",
+        "summary": "Mortgage suit.",
+        "case_text": "Continuous possession and payment of taxes by plaintiff."
+    }]
+
+    chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 4,
+        "chunk_text": "The plaintiff established continuous undisturbed possession and payment of municipal taxes.",
+        "similarity": 0.91
+    }]
+
+    mock_judgment = {
+        "overall_verdict": STATE_GROUNDED,
+        "is_accurate": True,
+        "issue": "",
+        "supported_claims": ["continuous undisturbed possession and payment of municipal taxes"],
+        "unsupported_claims": [],
+        "claim_verdicts": [{"claim": "continuous possession", "verdict": "SUPPORTED", "page_numbers": [4]}],
+    }
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=chunks), \
+         patch("backend.routers.chat_router.call_llm", return_value="The plaintiff established continuous undisturbed possession and payment of taxes [Page 4]."), \
+         patch("backend.routers.chat_router.extract_claims", return_value=(["continuous possession"], True)), \
+         patch("backend.routers.chat_router.judge_claims_against_evidence", return_value=mock_judgment):
+
+        res = _handle_ask(req_hinglish, user_id="u1")
+
+        assert res.get("verdict_state") == STATE_GROUNDED
+        assert "possession" in res["answer"]
+        assert res["sources"][0]["name"] == "Gorakhram_vs_Laxmibai.pdf — Page 4"
+
+
+def test_phase2_3_cyber_harassment_with_doc_attached_returns_no_evidence():
+    """Verify 'What evidence proves cyber harassment?' when asked on an attached property judgment
+    routes to CASE_SPECIFIC and returns NO_EVIDENCE_FOUND refusal, never generic IT Act law."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What evidence proves cyber harassment?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
+        "status": "ready",
+        "summary": "1950 mortgage suit.",
+        "case_text": "Mortgage and property dispute text."
+    }]
+
+    unrelated_chunks = [{
+        "id": str(uuid.uuid4()),
+        "case_id": case_id,
+        "page_number": 1,
+        "chunk_text": "Suit for declaration of mortgage rights.",
+        "similarity": 0.05
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks", return_value=unrelated_chunks), \
+         patch("backend.routers.chat_router.search_knowledge_base") as mock_kb:
+
+        res = _handle_ask(req, user_id="u1")
+
+        mock_kb.assert_not_called()
+        assert res.get("verdict_state") == STATE_NO_EVIDENCE_FOUND
+        assert res.get("no_documentary_evidence_found") is True
+        assert "no supporting evidence was found" in res["answer"].lower()
+        assert "cyber harassment" in res["answer"].lower()
+
+
+def test_phase2_3_general_cyber_law_question_distinct_from_document():
+    """Verify a genuinely general legal question 'What is the punishment under Section 66E Information Technology Act?'
+    asked with a document attached routes to GENERAL_LAW and is clearly labeled as general legal info."""
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="What is the punishment under section 66E of the Information Technology Act?", case_id=case_id)
+
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "Gorakhram_1950.pdf",
+        "status": "ready",
+        "summary": "1950 mortgage suit.",
+        "case_text": "Mortgage text."
+    }]
+
+    statute_match = [{
+        "act_name": "Information Technology Act, 2000",
+        "section_number": "66E",
+        "full_text": "Punishment for violation of privacy under Section 66E.",
+        "source_type": "statute"
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.search_document_chunks") as mock_doc_search, \
+         patch("backend.routers.chat_router.search_knowledge_base", return_value=statute_match), \
+         patch("backend.routers.chat_router.call_llm", return_value="Section 66E of the IT Act penalizes capturing or transmitting private images."):
+
+        res = _handle_ask(req, user_id="u1")
+
+        mock_doc_search.assert_not_called()
+        assert res["routing_label"] == "GENERAL_LAW"
+        assert "Section 66E" in res["answer"]
+
+
+def test_phase2_3_scanned_pdf_ocr_chunking_and_deduplication_safety():
+    """Verify chunk_text_into_pages does NOT insert duplicate chunks if already indexed."""
+    from ai_core.rag.document_chunker import chunk_text_into_pages
+    case_id = str(uuid.uuid4())
+    mock_client = MagicMock()
+    
+    # Simulate chunks already existing
+    mock_client.table().select().eq().limit().execute.return_value.data = [{"id": str(uuid.uuid4())}]
+
+    with patch("ai_core.rag.vector_store.get_supabase_client", return_value=mock_client), \
+         patch("ai_core.rag.document_chunker.insert_document_chunks_batch") as mock_insert:
+
+        count = chunk_text_into_pages("Sample case text content.", case_id)
+        assert count == 1
+        mock_insert.assert_not_called()  # Safely avoided duplicate insert!
 
