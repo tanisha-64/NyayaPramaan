@@ -20,7 +20,6 @@ from ai_core.rag.vector_store import (
     list_document_chunk_ids,
     delete_document_chunks,
     get_supabase_client,
-    invalidate_case_cache,
     PartialInsertError,
 )
 
@@ -250,17 +249,13 @@ def _insert_batch(case_id: str, chunks: list[tuple[int, str]]) -> list[str]:
     except PartialInsertError as e:
         _rollback(e.inserted_ids)
         raise
-    finally:
-        invalidate_case_cache(case_id)        # hybrid search keeps a short-lived per-case text index
 
 
-def _finish_swap(case_id: str, report: IndexReport, new_ids: list[str], old_ids: list[str]) -> None:
+def _finish_swap(report: IndexReport, new_ids: list[str], old_ids: list[str]) -> None:
     """Decides which index survives. Old rows are deleted only after the new ones are known-good."""
-    invalidate_case_cache(case_id)
     if report.chunks_inserted == 0:
         _rollback(new_ids)
         report.kept_previous_index = bool(old_ids)
-        invalidate_case_cache(case_id)
         return
     if report.failed_pages and old_ids:
         # Re-index was incomplete and a previous index exists: keep the previous one untouched.
@@ -320,7 +315,7 @@ def _index_case_text_locked(case_text: str, case_id: str, force: bool) -> IndexR
             report.error = f"{type(e).__name__}"
             print(f"[document_chunker] text batch failed for case {case_id}: {type(e).__name__}")
     report.pages_indexed = len(indexed_pages)
-    _finish_swap(case_id, report, new_ids, old_ids)
+    _finish_swap(report, new_ids, old_ids)
     if report.failed_pages:
         report.failed_pages = sorted(set(report.failed_pages))
     return report
@@ -406,7 +401,7 @@ def _index_pdf_locked(file_path: str, case_id: str) -> IndexReport:
             report.error = f"{type(e).__name__}"
             print(f"[document_chunker] pages {batch_start + 1}-{batch_end} failed for case {case_id}: {type(e).__name__}")
 
-    _finish_swap(case_id, report, new_ids, old_ids)
+    _finish_swap(report, new_ids, old_ids)
     return report
 
 

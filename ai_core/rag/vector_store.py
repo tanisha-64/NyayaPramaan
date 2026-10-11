@@ -14,6 +14,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class PartialInsertError(RuntimeError):
+    def __init__(self, message: str, inserted_ids: list[str]):
+        super().__init__(message)
+        self.inserted_ids = inserted_ids
+
+
 def get_supabase_client():
     return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])
 
@@ -95,10 +101,62 @@ def search_knowledge_base(query_embedding, query_text, match_count=5):
 # ---------------- Document chunks (single-document-per-conversation) ----------------
 
 def insert_document_chunks_batch(case_id: str, pages: list[tuple[int, str]], embeddings: list[list[float]]):
+    if len(pages) != len(embeddings):
+        raise ValueError("Each document chunk must have exactly one embedding")
+
     client = get_supabase_client()
     rows = [{"case_id": case_id, "page_number": p, "chunk_text": t, "embedding": e}
             for (p, t), e in zip(pages, embeddings)]
-    return client.table("document_chunks").insert(rows).execute()
+    response = client.table("document_chunks").insert(rows).execute()
+    inserted_rows = response.data or []
+    inserted_ids = [row["id"] for row in inserted_rows if row.get("id")]
+    if len(inserted_ids) != len(rows):
+        raise PartialInsertError(
+            f"Expected IDs for {len(rows)} inserted document chunks, received {len(inserted_ids)}",
+            inserted_ids,
+        )
+    return inserted_ids
+
+
+def count_document_chunks(case_id: str) -> int:
+    response = (
+        get_supabase_client()
+        .table("document_chunks")
+        .select("id", count="exact")
+        .eq("case_id", case_id)
+        .limit(1)
+        .execute()
+    )
+    if isinstance(response.count, int):
+        return response.count
+    return len(response.data or [])
+
+
+def list_document_chunk_ids(case_id: str) -> list[str]:
+    client = get_supabase_client()
+    chunk_ids = []
+    page_size = 1000
+    offset = 0
+    while True:
+        response = (
+            client.table("document_chunks")
+            .select("id")
+            .eq("case_id", case_id)
+            .order("id")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+        rows = response.data or []
+        chunk_ids.extend(row["id"] for row in rows if row.get("id"))
+        if len(rows) < page_size:
+            return chunk_ids
+        offset += page_size
+
+
+def delete_document_chunks(chunk_ids: list[str]):
+    if not chunk_ids:
+        return None
+    return get_supabase_client().table("document_chunks").delete().in_("id", chunk_ids).execute()
 
 
 def _cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
