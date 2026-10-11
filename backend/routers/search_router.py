@@ -1,24 +1,24 @@
 from typing import Optional, List
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from ai_core.rag.embeddings import embed_text
 from ai_core.rag.vector_store import search_knowledge_base
-from backend.rate_limit import limit_user
+from backend.auth.supabase_auth import get_current_user
 
 router = APIRouter()
 
 
 class SearchRequest(BaseModel):
-    query: str = Field(min_length=1, max_length=1000)      # bounded: the query is embedded by an external provider
-    match_count: int = Field(default=10, ge=1, le=50)
-    court: Optional[str] = Field(default=None, max_length=100)
+    query: str
+    match_count: int = 10
+    court: Optional[str] = None
     year_from: Optional[int] = None
     year_to: Optional[int] = None
     jurisdiction_type: Optional[str] = None  # "binding", "persuasive", or None for all
 
 
 @router.post("/precedents")
-def search_precedents(request: SearchRequest, user=Depends(limit_user("search"))):
+def search_precedents(request: SearchRequest, user=Depends(get_current_user)):
     query_vec = embed_text(request.query, task_type="RETRIEVAL_QUERY")
     # Retrieve candidates
     results = search_knowledge_base(query_vec, request.query, match_count=max(request.match_count * 2, 15))

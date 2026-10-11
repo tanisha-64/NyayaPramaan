@@ -26,3 +26,4 @@ def check_input_safety(query: str) -> dict:
             return {"is_safe": False, "reason": f"blocked pattern: '{pattern}'"}
 
     return {"is_safe": True, "reason": None}
+

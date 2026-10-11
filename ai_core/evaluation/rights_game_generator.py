@@ -221,4 +221,4 @@ JSON:"""
         return scenario
     except Exception as e:
         print(f"[rights_game_generator] LLM generation fallback: {e}")
-        return _shuffle_scenario(random.choice(matching))
+        return _shuffle_scenario(random.choice(matching))

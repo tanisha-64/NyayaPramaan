@@ -17,7 +17,6 @@ STATE_RETRIEVAL_INSUFFICIENT = "RETRIEVAL_INSUFFICIENT"
 STATE_VERIFICATION_PENDING = "VERIFICATION_PENDING"
 
 VALID_CLAIM_VERDICTS = {"SUPPORTED", "PARTIALLY_SUPPORTED", "CONTRADICTED", "NOT_VERIFIABLE"}
-JUDGE_ATTEMPTS = 2
 
 
 def judge_claims_against_evidence(
@@ -100,85 +99,90 @@ EVIDENCE:
 
 JSON:"""
 
-    last_error = ""
-    for _ in range(JUDGE_ATTEMPTS):
-        try:
-            raw = call_llm(JUDGE_MODEL, prompt)
-            cleaned = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
-            parsed = json.loads(cleaned)
+    try:
+        raw = call_llm(JUDGE_MODEL, prompt)
+        cleaned = re.sub(r"^```json\s*|\s*```$", "", raw.strip())
+        parsed = json.loads(cleaned)
 
-            raw_verdicts = parsed.get("claim_verdicts", [])
-            if not isinstance(raw_verdicts, list) or len(raw_verdicts) == 0:
-                continue
-
-            sanitized_verdicts = []
-            supported_claims = []
-            unsupported_claims = []
-
-            for idx, c in enumerate(claims):
-                matched = raw_verdicts[idx] if idx < len(raw_verdicts) and isinstance(raw_verdicts[idx], dict) else {}
-                v = str(matched.get("verdict", "NOT_VERIFIABLE")).strip().upper()
-                if v not in VALID_CLAIM_VERDICTS:
-                    v = "NOT_VERIFIABLE"
-
-                ev_ids = matched.get("evidence_ids", [])
-                page_nums = matched.get("page_numbers", [])
-                reason = matched.get("reason", "")
-
-                claim_obj = {
-                    "claim": c,
-                    "verdict": v,
-                    "evidence_ids": ev_ids if isinstance(ev_ids, list) else [],
-                    "page_numbers": page_nums if isinstance(page_nums, list) else [],
-                    "reason": reason,
-                }
-                sanitized_verdicts.append(claim_obj)
-
-                if v in ("SUPPORTED", "PARTIALLY_SUPPORTED"):
-                    supported_claims.append(c)
-                else:
-                    unsupported_claims.append(c)
-
-            # Compute overall state
-            verdict_values = [sv["verdict"] for sv in sanitized_verdicts]
-            all_supported = all(v == "SUPPORTED" for v in verdict_values)
-            all_contradicted = all(v == "CONTRADICTED" for v in verdict_values)
-            all_unsupported = all(v in ("NOT_VERIFIABLE", "CONTRADICTED") for v in verdict_values)
-            has_some_supported = any(v in ("SUPPORTED", "PARTIALLY_SUPPORTED") for v in verdict_values)
-
-            if all_supported:
-                overall = STATE_GROUNDED
-            elif all_contradicted:
-                overall = STATE_CONTRADICTED
-            elif has_some_supported:
-                overall = STATE_PARTIALLY_GROUNDED
-            elif all_unsupported:
-                overall = STATE_NO_EVIDENCE_FOUND
-            else:
-                overall = STATE_PARTIALLY_GROUNDED
-
-            is_accurate = bool(parsed.get("is_accurate", True)) and (overall in (STATE_GROUNDED, STATE_PARTIALLY_GROUNDED))
-
+        raw_verdicts = parsed.get("claim_verdicts", [])
+        if not isinstance(raw_verdicts, list) or (not raw_verdicts and "is_accurate" in parsed):
+            is_acc = bool(parsed.get("is_accurate", True))
+            overall_state = STATE_GROUNDED if is_acc else STATE_NO_EVIDENCE_FOUND
             return {
-                "claim_verdicts": sanitized_verdicts,
-                "overall_verdict": overall,
-                "is_accurate": is_accurate,
+                "claim_verdicts": [{"claim": c, "verdict": "SUPPORTED" if is_acc else "NOT_VERIFIABLE", "page_numbers": [], "evidence_ids": [], "reason": ""} for c in claims],
+                "overall_verdict": overall_state,
+                "is_accurate": is_acc,
                 "issue": parsed.get("issue", ""),
-                "supported_claims": supported_claims,
-                "unsupported_claims": unsupported_claims,
+                "supported_claims": claims if is_acc else [],
+                "unsupported_claims": [] if is_acc else claims,
             }
-        except Exception as e:
-            last_error = str(e)
-            continue
 
-    return {
-        "claim_verdicts": [],
-        "overall_verdict": STATE_VERIFICATION_PENDING,
-        "is_accurate": True,
-        "issue": f"Verification infrastructure encountered an error: {last_error}" if last_error else "Verification infrastructure encountered an error.",
-        "supported_claims": [],
-        "unsupported_claims": [],
-    }
+        sanitized_verdicts = []
+        supported_claims = []
+        unsupported_claims = []
+
+        for idx, c in enumerate(claims):
+            matched = raw_verdicts[idx] if idx < len(raw_verdicts) and isinstance(raw_verdicts[idx], dict) else {}
+            v = str(matched.get("verdict", "NOT_VERIFIABLE")).strip().upper()
+            if v not in VALID_CLAIM_VERDICTS:
+                v = "NOT_VERIFIABLE"
+
+            ev_ids = matched.get("evidence_ids", [])
+            page_nums = matched.get("page_numbers", [])
+            reason = matched.get("reason", "")
+
+            claim_obj = {
+                "claim": c,
+                "verdict": v,
+                "evidence_ids": ev_ids if isinstance(ev_ids, list) else [],
+                "page_numbers": page_nums if isinstance(page_nums, list) else [],
+                "reason": reason,
+            }
+            sanitized_verdicts.append(claim_obj)
+
+            if v in ("SUPPORTED", "PARTIALLY_SUPPORTED"):
+                supported_claims.append(c)
+            else:
+                unsupported_claims.append(c)
+
+        # Compute overall state
+        verdict_values = [sv["verdict"] for sv in sanitized_verdicts]
+        all_supported = all(v == "SUPPORTED" for v in verdict_values)
+        all_contradicted = all(v == "CONTRADICTED" for v in verdict_values)
+        all_unsupported = all(v in ("NOT_VERIFIABLE", "CONTRADICTED") for v in verdict_values)
+        has_some_supported = any(v in ("SUPPORTED", "PARTIALLY_SUPPORTED") for v in verdict_values)
+
+        if all_supported:
+            overall = STATE_GROUNDED
+        elif all_contradicted:
+            overall = STATE_CONTRADICTED
+        elif has_some_supported:
+            overall = STATE_PARTIALLY_GROUNDED
+        elif all_unsupported:
+            overall = STATE_NO_EVIDENCE_FOUND
+        else:
+            overall = STATE_PARTIALLY_GROUNDED
+
+        is_accurate = bool(parsed.get("is_accurate", True)) and (overall in (STATE_GROUNDED, STATE_PARTIALLY_GROUNDED))
+
+        return {
+            "claim_verdicts": sanitized_verdicts,
+            "overall_verdict": overall,
+            "is_accurate": is_accurate,
+            "issue": parsed.get("issue", ""),
+            "supported_claims": supported_claims,
+            "unsupported_claims": unsupported_claims,
+        }
+    except Exception as e:
+        # On JSON or API failure, must be VERIFICATION_PENDING, never NO_EVIDENCE_FOUND
+        return {
+            "claim_verdicts": [],
+            "overall_verdict": STATE_VERIFICATION_PENDING,
+            "is_accurate": True,
+            "issue": f"Verification infrastructure encountered an error: {str(e)}",
+            "supported_claims": [],
+            "unsupported_claims": [],
+        }
 
 
 def judge_answer(query: str, answer: str, evidence: str) -> dict:

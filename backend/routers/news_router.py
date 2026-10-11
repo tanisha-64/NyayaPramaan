@@ -1,6 +1,5 @@
 """News Router — Google-News-RSS-based, cached per day, multiple articles."""
-from fastapi import APIRouter, Depends
-from backend.rate_limit import limit_ip
+from fastapi import APIRouter
 from datetime import date
 from ai_core.evaluation.news_fetcher import fetch_legal_news
 from ai_core.rag.vector_store import get_supabase_client
@@ -8,7 +7,7 @@ from ai_core.rag.vector_store import get_supabase_client
 router = APIRouter()
 
 
-@router.get("/legal", dependencies=[Depends(limit_ip("public"))])
+@router.get("/legal")
 def get_legal_news():
     client = get_supabase_client()
     today = str(date.today())

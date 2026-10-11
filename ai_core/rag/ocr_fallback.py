@@ -16,3 +16,4 @@ def ocr_page(file_path: str, page_number: int) -> str:
     except Exception as e:
         print(f"[ocr_fallback] OCR unavailable or failed on page {page_number}: {e}")
         return ""
+

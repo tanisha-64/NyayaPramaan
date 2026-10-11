@@ -1,21 +1,15 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Depends
-from ai_core.rag.vector_store import get_supabase_client, invalidate_case_cache
+from ai_core.rag.vector_store import get_supabase_client
 from ai_core.timeline.extractor import extract_timeline
 from ai_core.llm_gateway import call_llm
-from ai_core.rag.summarizer import prepare_text_for_llm
 from backend.auth.supabase_auth import get_current_user
-from backend.rate_limit import limit_user
-from backend.security import get_owned_case, clean_uuid
 
 router = APIRouter()
 
 
-MAX_NOTES_CHARS = 20000
-
-
 class NotesPayload(BaseModel):
-    notes: str = Field(max_length=MAX_NOTES_CHARS)
+    notes: str
 
 
 @router.get("/list")
@@ -29,7 +23,7 @@ def list_cases(user=Depends(get_current_user)):
 @router.get("/{case_id}")
 def get_case(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = client.table("cases").select("*").eq("id", clean_uuid(case_id)).eq("user_id", user.id).execute()
+    result = client.table("cases").select("*").eq("id", case_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Case not found")
     case = result.data[0]
@@ -41,20 +35,18 @@ def get_case(case_id: str, user=Depends(get_current_user)):
 @router.put("/{case_id}/notes")
 def save_case_notes(case_id: str, payload: NotesPayload, user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = client.table("cases").update({"notes": payload.notes}).eq("id", clean_uuid(case_id)).eq("user_id", user.id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Case not found")
+    result = client.table("cases").update({"notes": payload.notes}).eq("id", case_id).eq("user_id", user.id).execute()
     return {"status": "success", "notes": payload.notes}
 
 
 @router.get("/{case_id}/brief")
-def generate_case_brief(case_id: str, user=Depends(limit_user("brief"))):     # one LLM call per request: rate-limited
+def generate_case_brief(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
-    result = client.table("cases").select("*").eq("id", clean_uuid(case_id)).eq("user_id", user.id).execute()
+    result = client.table("cases").select("*").eq("id", case_id).eq("user_id", user.id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Case not found")
     case = result.data[0]
-    case_text = (case.get("case_text") or "").replace(chr(12), chr(10))
+    case_text = case.get("case_text", "")
     if not case_text or len(case_text.strip()) < 50:
         return {
             "title": case.get("filename", "Case Brief"),
@@ -90,7 +82,7 @@ Structure your response in strict Markdown format with the following headings:
 [Final disposition, relief granted/dismissed]
 
 CASE TEXT:
-{prepare_text_for_llm(case_text)[:6000]}
+{case_text[:6000]}
 """
     try:
         brief_markdown = call_llm("groq/openai/gpt-oss-20b", prompt)
@@ -114,17 +106,13 @@ def clear_all_cases(user=Depends(get_current_user)):
         client.table("document_chunks").delete().in_("case_id", case_ids).execute()
         client.table("session_documents").delete().in_("case_id", case_ids).execute()
         client.table("cases").delete().eq("user_id", user.id).execute()
-        for _cid in case_ids:
-            invalidate_case_cache(_cid)
     return {"status": "success", "cleared_count": len(case_ids)}
 
 
 @router.delete("/{case_id}")
 def delete_case(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
-    cid = get_owned_case(client, case_id, user.id)["id"]     # ownership BEFORE any destructive call
-    client.table("document_chunks").delete().eq("case_id", cid).execute()
-    client.table("session_documents").delete().eq("case_id", cid).execute()
-    client.table("cases").delete().eq("id", cid).eq("user_id", user.id).execute()
-    invalidate_case_cache(cid)
-    return {"deleted": cid}
+    client.table("document_chunks").delete().eq("case_id", case_id).execute()
+    client.table("session_documents").delete().eq("case_id", case_id).execute()
+    client.table("cases").delete().eq("id", case_id).eq("user_id", user.id).execute()
+    return {"deleted": case_id}

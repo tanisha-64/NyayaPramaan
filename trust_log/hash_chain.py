@@ -45,22 +45,15 @@ def get_last_hash() -> str:
 
 
 
-def save_log_entry(log_entry: dict, query: str, response: str, verified: bool, model_used: str = None, user_id: str = None):
+def save_log_entry(log_entry: dict, query: str, response: str, verified: bool, model_used: str = None):
 
     client = get_supabase_client()
 
-    row = {
+    client.table("query_log").insert({
+
         "query": query, "response": response, "verified": verified, "model_used": model_used,
+
         "previous_hash": log_entry["previous_hash"], "entry_hash": log_entry["entry_hash"],
-    }
 
-    if user_id:
-        # user_id is stored beside (not inside) the hashed event, so existing chain verification is unchanged.
-        # The column comes from sql/proposed/003_query_log_user.sql; without it, fall back to the old row shape.
-        try:
-            client.table("query_log").insert({**row, "user_id": user_id}).execute()
-            return
-        except Exception:
-            pass
+    }).execute()
 
-    client.table("query_log").insert(row).execute()
