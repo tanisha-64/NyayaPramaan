@@ -20,13 +20,19 @@ AUDIENCE_INSTRUCTIONS = {
     "student_public": "Write for a student/citizen: simple plain language, briefly define legal terms.",
 }
 
-# Fast keyword pre-filter -- obvious general-law signals even when a doc is attached
-GENERAL_LAW_SIGNALS = [
-    "section", "bns ", "ipc ", "crpc", "bnss", "what is the punishment",
+# Fast keyword pre-filter -- obvious general-law signals even when a doc is attached.
+# Matched on WORD boundaries (see _has): substring matching made "fir" fire on "first"/"confirm" and "act" on "fact".
+# WEAK signals are common words that also appear in questions about the document itself ("what punishment did the
+# court impose?"); on their own they must not override a clear document reference.
+WEAK_GENERAL_SIGNALS = ["fir", "bail", "punishment", "what is the punishment", "penalty", "offence"]
+STRONG_GENERAL_SIGNALS = [
+    "section", "bns", "ipc", "crpc", "bnss", "bsa", "cpc",
     "which law", "which section", "legal definition of", "what does the law say",
     "statute", "bare act", "constitution article", "fundamental right", "dhara",
-    "adverse possession", "bail", "fir", "punishment", "penalty", "offence",
+    "adverse possession",
 ]
+GENERAL_LAW_SIGNALS = WEAK_GENERAL_SIGNALS + STRONG_GENERAL_SIGNALS
+GENERAL_CONCEPT_PHRASES = ["adverse possession"]
 DOCUMENT_REFERENCE_SIGNALS = [
     "this case", "this document", "the uploaded", "in this file", "plaintiff",
     "defendant", "petitioner", "respondent", "the commissioner", "this pdf",
@@ -37,25 +43,38 @@ DOCUMENT_REFERENCE_SIGNALS = [
     "evidence", "prove", "proves", "allegation", "alleges", "alleged", "facts",
     "record", "witness", "exhibit", "court order", "order date", "purchased",
     "possession", "deposition",
+    # added: questions that point at the document without saying "this case"
+    "the accused", "the appellant", "the complainant", "the judge", "the court held", "did the court",
+    "was convicted", "was acquitted", "was sentenced", "the order", "the judgment", "according to the document",
+    "in the document", "document me", "file me", "iss case", "is pdf", "the witnesses",
 ]
+# "page 3", "on p. 4": an explicit page reference is a document reference.
+_PAGE_REFERENCE = re.compile(r"\b(?:page|pg|p)\.?\s*\d+\b", re.IGNORECASE)
+# Phrases that ask for the LAW itself; they keep a weak general signal from being demoted.
+_LAW_ASK = re.compile(r"\b(provision|law|legal|under|kanoon|kaanoon|dhara|section|act)\b", re.IGNORECASE)
 OUT_OF_DOMAIN_SIGNALS = [
     "recipe", "cake", "bake", "poem", "poetry", "joke", "song", "lyrics",
     "weather", "cricket", "ipl", "football", "movie", "actor", "actress",
     "horoscope", "astrology", "bluetooth", "wifi", "gameplay", "gaming",
     "reverse string", "javascript tutorial", "python script",
 ]
+LEGAL_TERMS = [
+    "court", "case", "law", "dhara", "section", "fir", "bail", "bns", "ipc", "crpc", "bnss", "bsa", "act", "rights",
+    "petition", "judge", "advocate", "title", "evidence", "plaintiff", "possession", "suit", "harassment",
+]
+
+
+def _has(text: str, signals: list[str]) -> bool:
+    """True if any signal occurs as whole word(s) (a trailing plural 's' is allowed)."""
+    return any(re.search(rf"(?<!\w){re.escape(sig.strip())}s?(?!\w)", text) for sig in signals)
 
 
 def classify_intent(query: str, has_document: bool = False) -> dict:
     lowered = query.lower()
 
     # Check out-of-domain signals first
-    has_legal_terms = any(w in lowered for w in [
-        "court", "case", "law", "dhara", "section", "fir", "bail", "bns",
-        "ipc", "crpc", "bnss", "bsa", "act", "rights", "petition", "judge", "advocate", "title",
-        "evidence", "plaintiff", "possession", "suit", "harassment"
-    ])
-    if any(w in lowered for w in OUT_OF_DOMAIN_SIGNALS) and not has_legal_terms:
+    has_legal_terms = _has(lowered, LEGAL_TERMS)
+    if _has(lowered, OUT_OF_DOMAIN_SIGNALS) and not has_legal_terms:
         return {
             "label": "OUT_OF_DOMAIN",
             "query_mode": "OUT_OF_DOMAIN",
@@ -67,8 +86,18 @@ def classify_intent(query: str, has_document: bool = False) -> dict:
         }
 
     # Fast deterministic pre-filter (no LLM call -- instant, no quota used)
-    has_general_signal = any(kw in lowered for kw in GENERAL_LAW_SIGNALS)
-    has_doc_signal = any(kw in lowered for kw in DOCUMENT_REFERENCE_SIGNALS)
+    has_strong_general = _has(lowered, STRONG_GENERAL_SIGNALS)
+    has_weak_general = _has(lowered, WEAK_GENERAL_SIGNALS)
+    has_general_signal = has_strong_general or has_weak_general
+    # Legal CONCEPT phrases contain words that are also document-reference signals ("adverse possession" -> "possession").
+    # They must not make a pure law question look like a question about the open document.
+    doc_view = lowered
+    for phrase in GENERAL_CONCEPT_PHRASES:
+        doc_view = doc_view.replace(phrase, " ")
+    has_doc_signal = _has(doc_view, DOCUMENT_REFERENCE_SIGNALS) or bool(_PAGE_REFERENCE.search(doc_view))
+
+    if has_doc_signal and has_weak_general and not has_strong_general and not _LAW_ASK.search(lowered):
+        has_general_signal = False      # "what punishment did the court impose?" is about the document
 
     if not has_document:
         if has_doc_signal and has_general_signal:

@@ -1,0 +1,59 @@
+{
+  "name": "general_law_v1",
+  "description": "Routing, source-policy and legal-period checks for GENERAL legal questions. It contains NO gold answer texts: verifying what the law actually says needs a human legal reviewer reading the official text. What it fixes in advance is (a) which pipeline a question must be routed to, (b) which source classes are acceptable, and (c) which legal period the question implies.",
+  "reference_portals": {
+    "legislation": "https://www.indiacode.nic.in",
+    "supreme_court": "https://www.sci.gov.in",
+    "ecourts": "https://ecourts.gov.in",
+    "legal_aid": "https://nalsa.gov.in",
+    "note": "Landing pages only. Deep links to specific Acts must be confirmed by a person; none are asserted here."
+  },
+  "routing": [
+    {"id": "r01", "question": "What is the punishment for theft under BNS section 303?", "has_document": false, "expected": "GENERAL_LAW"},
+    {"id": "r02", "question": "What is BNS Section 351?", "has_document": true, "expected": "GENERAL_LAW", "note": "a document is open but the question is about the statute"},
+    {"id": "r03", "question": "What does section 420 IPC say?", "has_document": false, "expected": "GENERAL_LAW"},
+    {"id": "r04", "question": "Explain adverse possession in Indian law", "has_document": true, "expected": "GENERAL_LAW"},
+    {"id": "r05", "question": "What does the law say about bail in a non-bailable offence under BNSS?", "has_document": false, "expected": "GENERAL_LAW"},
+    {"id": "r06", "question": "What evidence did the plaintiff rely on?", "has_document": true, "expected": "CASE_SPECIFIC"},
+    {"id": "r07", "question": "Who is the appellant in this case?", "has_document": true, "expected": "CASE_SPECIFIC"},
+    {"id": "r08", "question": "Summarize this document", "has_document": true, "expected": "CASE_SPECIFIC"},
+    {"id": "r09", "question": "What punishment did the court impose?", "has_document": true, "expected": "CASE_SPECIFIC"},
+    {"id": "r10", "question": "what did the witnesses say in the document", "has_document": true, "expected": "CASE_SPECIFIC"},
+    {"id": "r11", "question": "What does section 303 BNS say and what did the court hold in this case?", "has_document": true, "expected": "MIXED"},
+    {"id": "r12", "question": "Which section applies to the offence alleged by the complainant and what is the statute?", "has_document": true, "expected": "MIXED"},
+    {"id": "r13", "question": "give me a chocolate cake recipe", "has_document": false, "expected": "OUT_OF_DOMAIN"},
+    {"id": "r14", "question": "who will win the IPL this year", "has_document": true, "expected": "OUT_OF_DOMAIN"},
+    {"id": "r15", "question": "What is the definition of cheating under the IPC?", "has_document": false, "expected": "GENERAL_LAW"},
+    {"id": "r16", "question": "Is there a legal definition of theft?", "has_document": false, "expected": "GENERAL_LAW"}
+  ],
+  "legal_period": [
+    {"id": "p01", "question": "What does BNS 2023 section 103 say about murder?", "expected_period": "unknown", "expects_note": true},
+    {"id": "p02", "question": "IPC 302 for an incident on 15 March 2023", "expected_period": "pre", "expects_note": true},
+    {"id": "p03", "question": "BNS section 103 for an incident on 5 August 2024", "expected_period": "post", "expects_note": true},
+    {"id": "p04", "question": "offences on 1 June 2024 and 2 August 2024 under IPC and BNS", "expected_period": "straddle", "expects_note": true},
+    {"id": "p05", "question": "IPC 420 punishment", "expected_period": "unknown", "expects_note": true},
+    {"id": "p06", "question": "What is the limitation period for a money suit?", "expected_period": "unknown", "expects_note": false},
+    {"id": "p07", "question": "CrPC section 438 anticipatory bail for a 2021 offence", "expected_period": "pre", "expects_note": true},
+    {"id": "p08", "question": "BNSS section 482 for an offence in 2025", "expected_period": "post", "expects_note": true}
+  ],
+  "source_policy": [
+    {"url": "https://www.indiacode.nic.in/handle/123456789/2062", "expected": "official"},
+    {"url": "https://main.sci.gov.in/judgment", "expected": "official"},
+    {"url": "https://nalsa.gov.in/lsams", "expected": "official"},
+    {"url": "https://www.livelaw.in/news", "expected": "secondary"},
+    {"url": "https://indiankanoon.org/doc/1/", "expected": "secondary"},
+    {"url": "https://indiacode.nic.in.evil.example/", "expected": "blocked"},
+    {"url": "https://evil.example/?u=https://indiacode.nic.in", "expected": "blocked"},
+    {"url": "https://en.wikipedia.org/wiki/Theft", "expected": "blocked"},
+    {"url": "https://www.quora.com/What-is-theft", "expected": "blocked"},
+    {"url": "https://example.com/legal", "expected": "blocked"}
+  ],
+  "privacy": [
+    {"text": "call me on 9876543210", "must_not_contain": "9876543210"},
+    {"text": "Aadhaar 2345 6789 0123", "must_not_contain": "2345 6789 0123"},
+    {"text": "PAN ABCDE1234F", "must_not_contain": "ABCDE1234F"},
+    {"text": "email me at a.b@example.org", "must_not_contain": "a.b@example.org"},
+    {"text": "CNR DLCT010012342019 and Case No. 118 of 2019 and Rs. 4,50,000", "must_preserve": ["DLCT010012342019", "118 of 2019", "Rs. 4,50,000"]},
+    {"text": "see page 3 paragraph 12 of the order dated 30 November 2021", "must_preserve": ["page 3", "paragraph 12", "30 November 2021"]}
+  ]
+}

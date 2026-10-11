@@ -1,0 +1,64 @@
+{
+  "name": "land_dispute_v1",
+  "description": "Fictional 5-page appellate judgment about a land dispute. All names, numbers and dates are invented. Written BEFORE the first evaluation run; questions were not edited after seeing results.",
+  "pages": [
+    "IN THE COURT OF THE ADDITIONAL DISTRICT JUDGE, SADAR. Civil Appeal No. 52 of 2022. Mahesh Yadav, appellant, versus Geeta Yadav, respondent. 1. This appeal arises from the judgment of the trial court dated 18 February 2022 in Original Suit No. 301 of 2018. 2. The appellant claims ownership of the plot bearing Khasra No. 412, village Nandpur, measuring 0.45 hectare. 3. The respondent is the appellant's sister-in-law.",
+    "4. The appellant produced a registered sale deed dated 9 August 2005 executed by Hari Prasad for a consideration of Rs. 3,20,000. 5. The appellant also produced khatauni entries for the years 2006 to 2016 showing his name as cultivator. 6. Two witnesses, PW-1 Dinesh and PW-2 Lakhan, proved the execution of the sale deed. 7. The land revenue receipts of 2012 and 2014 were marked as Exhibits A-3 and A-4.",
+    "8. The respondent relied on a registered will dated 22 April 2001 of her late father-in-law Ram Avtar. 9. DW-1, the respondent, admitted that the will was never probated. 10. DW-2, the village lekhpal, stated that the khatauni entries after 2006 stand in the name of the appellant. 11. The respondent paid a house tax of Rs. 1,150 in 2019, which relates to the residential house and not to the plot in dispute.",
+    "12. The trial court held that the will dated 22 April 2001 was proved. 13. This Court finds that the attesting witness to the will was not examined, and the will was therefore not proved under Section 68 of the Indian Evidence Act. 14. The sale deed dated 9 August 2005 is a registered document and the presumption of correctness applies. 15. The appellant's possession since 2005 is established by the khatauni entries.",
+    "16. The appeal is allowed. The judgment dated 18 February 2022 is set aside. 17. The suit of the respondent is dismissed with costs of Rs. 15,000. 18. The respondent shall not interfere with the appellant's possession. 19. Order pronounced on 27 September 2023. 20. The appeal was admitted on 4 May 2022, arguments were concluded on 11 July 2023 and judgment was reserved on that date."
+  ],
+  "questions": [
+    {"id": "q01", "category": "fact", "question": "What was the consideration paid under the sale deed?", "answerable": true, "expected_pages": [2]},
+    {"id": "q02", "category": "fact", "question": "Which plot is in dispute and how large is it?", "answerable": true, "expected_pages": [1]},
+    {"id": "q03", "category": "fact", "question": "On what date was the registered sale deed executed?", "answerable": true, "expected_pages": [2, 4]},
+    {"id": "q04", "category": "paraphrase", "question": "How much did the buyer pay Hari Prasad for the land?", "answerable": true, "expected_pages": [2]},
+    {"id": "q05", "category": "short", "question": "witnesses sale deed", "answerable": true, "expected_pages": [2]},
+    {"id": "q06", "category": "hinglish", "question": "sale deed ki kimat kitni thi?", "answerable": true, "expected_pages": [2]},
+    {"id": "q07", "category": "fact", "question": "Why was the will not accepted as proved?", "answerable": true, "expected_pages": [4]},
+    {"id": "q08", "category": "multi-page", "question": "What documents did the appellant rely on to prove possession?", "answerable": true, "expected_pages": [2, 4]},
+    {"id": "q09", "category": "fact", "question": "What did the village lekhpal state?", "answerable": true, "expected_pages": [3]},
+    {"id": "q10", "category": "fact", "question": "What costs were imposed on the respondent?", "answerable": true, "expected_pages": [5]},
+    {"id": "q11", "category": "fact", "question": "When was the order pronounced?", "answerable": true, "expected_pages": [5]},
+    {"id": "q12", "category": "paraphrase", "question": "What did the court decide at the end of the appeal?", "answerable": true, "expected_pages": [5]},
+    {"id": "q13", "category": "fact", "question": "Was the will ever probated?", "answerable": true, "expected_pages": [3]},
+    {"id": "q14", "category": "fact", "question": "What does Khasra No. 412 refer to?", "answerable": true, "expected_pages": [1]},
+    {"id": "q15", "category": "fact", "question": "What house tax did the respondent pay?", "answerable": true, "expected_pages": [3]},
+    {"id": "q16", "category": "multi-page", "question": "What was the trial court's view of the will and why did this Court differ?", "answerable": true, "expected_pages": [4]},
+    {"id": "q17", "category": "fact", "question": "On which date was the appeal admitted?", "answerable": true, "expected_pages": [5]},
+    {"id": "q18", "category": "hinglish", "question": "respondent ne kitna house tax diya?", "answerable": true, "expected_pages": [3]},
+    {"id": "u01", "category": "unanswerable", "question": "What was the name of the advocate who argued for the respondent?", "answerable": false, "hard_negative": true},
+    {"id": "u02", "category": "unanswerable", "question": "What compensation was awarded for the demolished shop?", "answerable": false},
+    {"id": "u03", "category": "unanswerable", "question": "What is the voter identity number of the appellant?", "answerable": false},
+    {"id": "u04", "category": "unanswerable", "question": "Did the High Court grant a stay order against this judgment?", "answerable": false, "hard_negative": true},
+    {"id": "u05", "category": "unanswerable", "question": "How many mango trees were growing on the plot?", "answerable": false},
+    {"id": "u06", "category": "unanswerable", "question": "Which bank financed the purchase?", "answerable": false}
+  ],
+  "followups": [
+    {"question": "and who sold it?", "history": [{"role": "user", "content": "What was the consideration paid under the sale deed?"}, {"role": "assistant", "content": "The consideration was Rs. 3,20,000 [Page 2]."}], "standalone": "Who executed the sale deed?", "expected_pages": [2]},
+    {"question": "which section was applied?", "history": [{"role": "user", "content": "Why was the will not accepted as proved?"}, {"role": "assistant", "content": "The attesting witness was not examined [Page 4]."}], "standalone": "Which section of the Indian Evidence Act was applied to the will?", "expected_pages": [4]},
+    {"question": "and what costs were awarded?", "history": [{"role": "user", "content": "When was the order pronounced?"}, {"role": "assistant", "content": "It was pronounced on 27 September 2023 [Page 5]."}], "standalone": "What costs were awarded to the appellant?", "expected_pages": [5]},
+    {"question": "uski kimat kitni thi?", "history": [{"role": "user", "content": "sale deed kisne execute kiya?"}, {"role": "assistant", "content": "Hari Prasad ne [Page 2]."}], "standalone": "Sale deed ki kimat kitni thi?", "expected_pages": [2]}
+  ],
+  "candidate_answers": [
+    {"id": "c01", "question_id": "q01", "kind": "good", "answer": "The sale deed was executed for a consideration of Rs. 3,20,000 [Page 2]."},
+    {"id": "c02", "question_id": "q01", "kind": "wrong_page", "answer": "The sale deed was executed for a consideration of Rs. 3,20,000 [Page 4]."},
+    {"id": "c03", "question_id": "q01", "kind": "hallucinated", "answer": "The consideration was Rs. 5,00,000 paid in cash before the sub-registrar [Page 2]."},
+    {"id": "c04", "question_id": "q07", "kind": "good", "answer": "The will was not proved under Section 68 of the Indian Evidence Act because the attesting witness was not examined [Page 4]."},
+    {"id": "c05", "question_id": "q07", "kind": "hallucinated", "answer": "The will was rejected because it was forged and the testator had died before signing it [Page 4]."},
+    {"id": "c06", "question_id": "q10", "kind": "good", "answer": "The suit of the respondent was dismissed with costs of Rs. 15,000 [Page 5]."},
+    {"id": "c07", "question_id": "q10", "kind": "wrong_page", "answer": "The suit of the respondent was dismissed with costs of Rs. 15,000 [Page 2]."},
+    {"id": "c08", "question_id": "q10", "kind": "hallucinated", "answer": "The respondent was ordered to pay Rs. 2,00,000 as damages and to vacate the village within a month [Page 5]."},
+    {"id": "c09", "question_id": "q11", "kind": "good", "answer": "The order was pronounced on 27 September 2023 [Page 5]."},
+    {"id": "c10", "question_id": "q13", "kind": "good", "answer": "No. DW-1 admitted that the will was never probated [Page 3]."}
+  ],
+  "timeline": [
+    {"date": "18 February 2022", "page": 1}, {"date": "9 August 2005", "page": 2}, {"date": "22 April 2001", "page": 3},
+    {"date": "22 April 2001", "page": 4}, {"date": "9 August 2005", "page": 4}, {"date": "18 February 2022", "page": 5}, {"date": "4 May 2022", "page": 5},
+    {"date": "11 July 2023", "page": 5}, {"date": "27 September 2023", "page": 5}
+  ],
+  "recorded_hearings": [],
+  "label_corrections": [
+    "After the first evaluation run, (22 April 2001, page 4) was added to `timeline`: the date appears in paragraph 12 and was omitted from the labels by mistake. The extractor had it right; the label was wrong. No other label was changed after seeing results."
+  ]
+}

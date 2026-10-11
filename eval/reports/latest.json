@@ -1,0 +1,706 @@
+{
+  "dataset": "land_dispute_v1",
+  "dataset_sha256": "3ce5d775172a1d2c",
+  "config": {
+    "k": 3,
+    "retriever": "bm25-offline-baseline",
+    "chunk_max_chars": 1200,
+    "chunk_overlap_chars": 150,
+    "abstain_coverage_threshold": 0.34,
+    "chunks": 5,
+    "pages_estimated": false
+  },
+  "counts": {
+    "questions": 24,
+    "answerable": 18,
+    "unanswerable": 6
+  },
+  "retrieval": {
+    "recall@3": 1.0,
+    "hit@3": 1.0,
+    "mrr": 0.9444,
+    "ndcg@3": 0.9545
+  },
+  "abstention": {
+    "correct_abstention_rate": 1.0,
+    "hard_negative_abstention_rate": 0.5,
+    "false_abstention_rate": 0.0,
+    "accuracy": 1.0
+  },
+  "citations": {
+    "good_answers_f1": 1.0,
+    "wrong_page_answers_precision": 0.0,
+    "wrong_page_answers_invalid_rate": 0.5,
+    "good_answers_invalid_rate": 0.0
+  },
+  "groundedness_proxy": {
+    "good_answers": 1.0,
+    "hallucinated_answers": 0.3333,
+    "unsupported_claim_rate_hallucinated": 0.6667,
+    "unsupported_claim_rate_good": 0.0
+  },
+  "per_question": [
+    {
+      "id": "q01",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        2,
+        4,
+        3
+      ],
+      "top_coverage": 0.75,
+      "abstained": false,
+      "expected_pages": [
+        2
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q02",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        1,
+        2
+      ],
+      "top_coverage": 0.667,
+      "abstained": false,
+      "expected_pages": [
+        1
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 0.5,
+      "ndcg": 0.6309297535714575
+    },
+    {
+      "id": "q03",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        2,
+        4,
+        3
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        2,
+        4
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q04",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        2,
+        1,
+        3
+      ],
+      "top_coverage": 0.6,
+      "abstained": false,
+      "expected_pages": [
+        2
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q05",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        2,
+        4,
+        1
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        2
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q06",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        2,
+        4,
+        1
+      ],
+      "top_coverage": 0.5,
+      "abstained": false,
+      "expected_pages": [
+        2
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q07",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        4,
+        2,
+        1
+      ],
+      "top_coverage": 0.5,
+      "abstained": false,
+      "expected_pages": [
+        4
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q08",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        4,
+        5,
+        2
+      ],
+      "top_coverage": 0.8,
+      "abstained": false,
+      "expected_pages": [
+        2,
+        4
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 0.9197207891481876
+    },
+    {
+      "id": "q09",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        1,
+        2
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        3
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q10",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        5,
+        3,
+        1
+      ],
+      "top_coverage": 0.667,
+      "abstained": false,
+      "expected_pages": [
+        5
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q11",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        5,
+        1,
+        2
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        5
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q12",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        1,
+        5,
+        4
+      ],
+      "top_coverage": 0.5,
+      "abstained": false,
+      "expected_pages": [
+        5
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 0.5,
+      "ndcg": 0.6309297535714575
+    },
+    {
+      "id": "q13",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        1,
+        2
+      ],
+      "top_coverage": 0.5,
+      "abstained": false,
+      "expected_pages": [
+        3
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q14",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        1,
+        2,
+        3
+      ],
+      "top_coverage": 0.667,
+      "abstained": false,
+      "expected_pages": [
+        1
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q15",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        5,
+        1
+      ],
+      "top_coverage": 0.75,
+      "abstained": false,
+      "expected_pages": [
+        3
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q16",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        4,
+        1,
+        2
+      ],
+      "top_coverage": 0.5,
+      "abstained": false,
+      "expected_pages": [
+        4
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q17",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        5,
+        1,
+        3
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        5
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "q18",
+      "answerable": true,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        5,
+        1
+      ],
+      "top_coverage": 1.0,
+      "abstained": false,
+      "expected_pages": [
+        3
+      ],
+      "recall": 1.0,
+      "hit": 1.0,
+      "rr": 1.0,
+      "ndcg": 1.0
+    },
+    {
+      "id": "u01",
+      "answerable": false,
+      "hard_negative": true,
+      "ranked_pages": [
+        3,
+        2,
+        5
+      ],
+      "top_coverage": 0.5,
+      "abstained": false
+    },
+    {
+      "id": "u02",
+      "answerable": false,
+      "hard_negative": false,
+      "ranked_pages": [
+        1,
+        2,
+        3
+      ],
+      "top_coverage": 0.0,
+      "abstained": true
+    },
+    {
+      "id": "u03",
+      "answerable": false,
+      "hard_negative": false,
+      "ranked_pages": [
+        1,
+        2,
+        5
+      ],
+      "top_coverage": 0.25,
+      "abstained": true
+    },
+    {
+      "id": "u04",
+      "answerable": false,
+      "hard_negative": true,
+      "ranked_pages": [
+        5,
+        1,
+        4
+      ],
+      "top_coverage": 0.286,
+      "abstained": true
+    },
+    {
+      "id": "u05",
+      "answerable": false,
+      "hard_negative": false,
+      "ranked_pages": [
+        3,
+        1,
+        2
+      ],
+      "top_coverage": 0.25,
+      "abstained": true
+    },
+    {
+      "id": "u06",
+      "answerable": false,
+      "hard_negative": false,
+      "ranked_pages": [
+        1,
+        2,
+        3
+      ],
+      "top_coverage": 0.0,
+      "abstained": true
+    }
+  ],
+  "candidate_answers": [
+    {
+      "id": "c01",
+      "kind": "good",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        2
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 1.0
+    },
+    {
+      "id": "c02",
+      "kind": "wrong_page",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "cited": [
+        4
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 0.0
+    },
+    {
+      "id": "c03",
+      "kind": "hallucinated",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        2
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 0.5
+    },
+    {
+      "id": "c04",
+      "kind": "good",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        4
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 1.0
+    },
+    {
+      "id": "c05",
+      "kind": "hallucinated",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        4
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 0.0
+    },
+    {
+      "id": "c06",
+      "kind": "good",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        5
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 1.0
+    },
+    {
+      "id": "c07",
+      "kind": "wrong_page",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "cited": [
+        2
+      ],
+      "invalid_citations": [
+        2
+      ],
+      "invalid_rate": 1.0,
+      "groundedness": 0.0
+    },
+    {
+      "id": "c08",
+      "kind": "hallucinated",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        5
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 0.5
+    },
+    {
+      "id": "c09",
+      "kind": "good",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        5
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 1.0
+    },
+    {
+      "id": "c10",
+      "kind": "good",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "cited": [
+        3
+      ],
+      "invalid_citations": [],
+      "invalid_rate": 0.0,
+      "groundedness": 1.0
+    }
+  ],
+  "hybrid": {
+    "hybrid_recall@3": 0.9722,
+    "hybrid_hit@3": 1.0,
+    "hybrid_mrr": 0.8796,
+    "hybrid_ndcg@3": 0.8892,
+    "semantic_only_recall@3": 0.9722,
+    "semantic_only_hit@3": 1.0,
+    "semantic_only_mrr": 0.8796,
+    "semantic_only_ndcg@3": 0.8892
+  },
+  "leakage": {
+    "cross_case_chunk_rate": 0.0,
+    "other_case_marker_hits": 0,
+    "chunks_checked": 72
+  },
+  "followups": {
+    "followups": 4,
+    "raw_recall@3": 1.0,
+    "rewritten_recall@3": 1.0,
+    "rewriter_gate_hit_rate": 1.0
+  },
+  "conflict": {
+    "both_pages_recall@3": 1.0,
+    "questions": 2
+  },
+  "failure_modes": {
+    "rpc_unavailable_recall@3": 0.9722,
+    "rpc_unavailable_hit@3": 1.0,
+    "rpc_unavailable_mrr": 0.9074,
+    "rpc_unavailable_ndcg@3": 0.9097,
+    "rpc_unavailable_cross_case_chunks": 0,
+    "rpc_unavailable_questions": 18,
+    "no_query_embedding_recall@3": 1.0,
+    "no_query_embedding_hit@3": 1.0,
+    "no_query_embedding_mrr": 0.9444,
+    "no_query_embedding_ndcg@3": 0.9545,
+    "no_query_embedding_cross_case_chunks": 0,
+    "no_query_embedding_questions": 18
+  },
+  "by_category": {
+    "fact": {
+      "semantic_only": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.9545,
+        "ndcg@3": 0.9664
+      },
+      "hybrid": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.9545,
+        "ndcg@3": 0.9664
+      }
+    },
+    "hinglish": {
+      "semantic_only": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.75,
+        "ndcg@3": 0.8155
+      },
+      "hybrid": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.75,
+        "ndcg@3": 0.8155
+      }
+    },
+    "multi-page": {
+      "semantic_only": {
+        "recall@3": 0.75,
+        "hit@3": 1.0,
+        "mrr": 1.0,
+        "ndcg@3": 0.8066
+      },
+      "hybrid": {
+        "recall@3": 0.75,
+        "hit@3": 1.0,
+        "mrr": 1.0,
+        "ndcg@3": 0.8066
+      }
+    },
+    "paraphrase": {
+      "semantic_only": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.6667,
+        "ndcg@3": 0.75
+      },
+      "hybrid": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.6667,
+        "ndcg@3": 0.75
+      }
+    },
+    "short": {
+      "semantic_only": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.5,
+        "ndcg@3": 0.6309
+      },
+      "hybrid": {
+        "recall@3": 1.0,
+        "hit@3": 1.0,
+        "mrr": 0.5,
+        "ndcg@3": 0.6309
+      }
+    }
+  },
+  "suite_limits": "Hashed bag-of-words stub embeddings, one small fictional case: a regression gate for fusion and isolation code, not a measurement of real embedding quality."
+}

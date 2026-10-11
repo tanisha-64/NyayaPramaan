@@ -47,32 +47,40 @@ def get_optional_user(authorization: str = Header(None)):
         return None
 
 
+_DEFAULT_ADMIN_EMAILS = "mitanisha74@gmail.com"
+
+
 def get_admin_emails() -> set[str]:
-    raw = os.getenv("ADMIN_EMAILS", "mitanisha74@gmail.com")
+    raw = os.getenv("ADMIN_EMAILS")
+    if raw is None:
+        # Legacy fallback kept so a missing env var does not silently lock the owner out. Set ADMIN_EMAILS in
+        # production so admin access is explicit configuration, not a value baked into source.
+        print("[auth] ADMIN_EMAILS is not set; using the built-in default admin list")
+        raw = _DEFAULT_ADMIN_EMAILS
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
 def get_user_effective_role(user) -> str:
     """
     Returns effective role: 'admin', 'professional', or 'public'.
-    Strictly verifies that ONLY whitelisted admin email addresses can have the 'admin' role.
+
+    'admin' requires BOTH a whitelisted email AND a confirmed email address. Without the confirmation check, anyone
+    could register the admin address on a project that allows unconfirmed sign-ups and be treated as admin.
+    user_metadata is writable by the user themself, so it can never grant 'admin'; 'professional' is
+    informational only and confers no privileges.
     """
     user_email = (getattr(user, "email", None) or "").strip().lower()
-    if user_email and user_email in get_admin_emails():
+    email_confirmed = bool(getattr(user, "email_confirmed_at", None) or getattr(user, "confirmed_at", None))
+    if user_email and email_confirmed and user_email in get_admin_emails():
         return "admin"
 
     user_meta = getattr(user, "user_metadata", {}) or {}
     role = user_meta.get("role", "public")
-    if role == "admin":
-        return "public"  # Block unauthorized admin escalation attempts
-    return role if role in ["public", "professional"] else "public"
+    return role if role == "professional" else "public"
 
 
 def require_role(user, allowed_roles: list[str]):
-    user_email = (getattr(user, "email", None) or "").strip().lower()
-    if user_email and user_email in get_admin_emails():
-        return "admin"
     role = get_user_effective_role(user)
     if role not in allowed_roles:
-        raise HTTPException(status_code=403, detail=f"Role '{role}' not permitted for this action")
+        raise HTTPException(status_code=403, detail="You do not have permission to perform this action")
     return role

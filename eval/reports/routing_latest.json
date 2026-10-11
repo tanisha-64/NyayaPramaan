@@ -1,0 +1,58 @@
+{
+  "dataset": {
+    "general_law": "general_law_v1",
+    "land_dispute": "land_dispute_v1"
+  },
+  "routing": {
+    "questions": 16,
+    "accuracy": 1.0,
+    "document_question_leak_rate": 0.0,
+    "general_misrouted_to_document_rate": 0.0,
+    "llm_calls_needed": 0,
+    "per_label": {
+      "GENERAL_LAW": {
+        "n": 7,
+        "correct": 7
+      },
+      "CASE_SPECIFIC": {
+        "n": 5,
+        "correct": 5
+      },
+      "MIXED": {
+        "n": 2,
+        "correct": 2
+      },
+      "OUT_OF_DOMAIN": {
+        "n": 2,
+        "correct": 2
+      }
+    },
+    "misses": []
+  },
+  "legal_period": {
+    "questions": 8,
+    "period_accuracy": 1.0,
+    "note_accuracy": 1.0,
+    "misses": []
+  },
+  "source_policy": {
+    "urls": 10,
+    "accuracy": 1.0,
+    "blocked_url_pass_rate": 0.0,
+    "misses": []
+  },
+  "privacy": {
+    "identifier_leak_rate": 0.0,
+    "legal_text_destroyed_rate": 0.0,
+    "cases": 6
+  },
+  "timeline": {
+    "expected_events": 9,
+    "extracted_events": 9,
+    "date_page_recall": 1.0,
+    "date_page_precision": 1.0,
+    "false_recorded_hearings": 0,
+    "missing": [],
+    "unexpected": []
+  }
+}

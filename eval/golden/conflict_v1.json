@@ -1,0 +1,13 @@
+{
+  "name": "conflict_v1",
+  "description": "Fictional case whose pages disagree on two facts. A reliable system must surface BOTH pages so the conflict is visible instead of silently picking one.",
+  "pages": [
+    "1. The complainant states that the agreement of lease was signed on 3 March 2018 in the presence of two witnesses. 2. The monthly rent agreed was Rs. 12,000.",
+    "3. The respondent states in his reply that the agreement of lease was signed on 5 April 2018 and not in March. 4. According to the respondent the monthly rent agreed was Rs. 9,000.",
+    "5. The Court notes that the originals of the lease were not produced by either party."
+  ],
+  "questions": [
+    {"id": "k01", "question": "On what date was the agreement of lease signed?", "answerable": true, "expected_pages": [1, 2]},
+    {"id": "k02", "question": "What was the monthly rent agreed in the lease?", "answerable": true, "expected_pages": [1, 2]}
+  ]
+}

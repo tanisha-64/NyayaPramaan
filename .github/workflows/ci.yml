@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # No credentials are provided on purpose. tests/conftest.py sets dummy keys, points Supabase at an unresolvable
+    # host and fails any test that tries to reach the network or the web-search client.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            constraints-ci.txt
+
+      - name: Install dependencies (pinned by constraints-ci.txt)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest -c constraints-ci.txt
+
+      - name: Unit, security and regression tests
+        run: python -m pytest -q -p no:cacheprovider
+
+      - name: RAG evaluation (offline, gated by eval/thresholds.json)
+        run: python -m ai_core.evaluation.rag_eval --check --out eval/reports
+
+      - name: Judge evaluation (offline lexical baseline; informational)
+        run: python -m ai_core.evaluation.judge_eval | tee eval/reports/judge_baseline.md
+
+      - name: Upload evaluation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-eval-report
+          path: |
+            eval/reports/latest.*
+            eval/reports/judge_baseline.md
+          if-no-files-found: warn

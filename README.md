@@ -111,36 +111,42 @@ sequenceDiagram
 
 ---
 
-## 🛡️ TrustAgent™ Claim Verification & Self-Reflection Flow
+## 🛡️ TrustAgent™ Claim Verification Flow
 
 ```mermaid
 flowchart TD
-    A[Raw Legal Answer from LLM] --> B[Atomic Claim Extractor]
-    B -->|Deconstructed Claims| C[Batch Citation & Statutory Verifier]
-    C --> D{Evidence Match Evaluation}
-    D -->|Direct Statutory Match| E[Mark: VERIFIED]
-    D -->|Contextual / Interpretive| F[Mark: PARTIAL]
-    D -->|Inconsistent with Statute| G[Mark: CONTRADICTED]
-    D -->|No Evidence Found| H[Mark: UNVERIFIED]
-    E & F & G & H --> I[LLM Judge & Confidence Scorer]
-    I --> J[Helpline & Department Recommendation Engine]
-    J --> K[PII Redactor & Hash Chain Logger]
-    K --> L[Structured Citational Response Delivered to Client]
+    A[Draft answer from retrieved evidence only] --> B[Claim extractor, up to 10 claims]
+    B -->|extraction failed or zero claims| P[VERIFICATION_PENDING: shown with a notice, never marked verified]
+    B --> C[LLM judge: each claim vs retrieved passages]
+    C --> D{Overall state}
+    D -->|all supported| G[GROUNDED]
+    D -->|some unsupported| E[Rewrite keeping supported claims]
+    E --> F[RE-VERIFY the rewrite]
+    F -->|still not grounded or verifier failed| H[Show only the individually supported claims]
+    F -->|grounded| G2[PARTIALLY_GROUNDED, corrected]
+    D -->|all contradicted| W[Answer withheld]
+    D -->|nothing supported| N[NO_EVIDENCE_FOUND: refusal]
+    G & G2 & H --> I[Citation check: cited pages must be among retrieved pages; bracketed invalid ones removed]
+    I --> J[trust_summary: claim_support_ratio and counts]
+    J --> K[PII redaction, hash-chain log, response]
 ```
+
+`trust_summary.claim_support_ratio = (supported + 0.5 x partially supported) / judged claims`. It measures claim
+support by an LLM judge over the retrieved passages; it is **not** a probability of correctness. Follow-up
+questions are rewritten into standalone queries from earlier turns of the same session and document; earlier
+answers are never given to the answer prompt as evidence.
 
 ---
 
-## 👥 Role-Based Access Control (RBAC) Matrix
+## 👥 Access control
 
-| Feature / Capability | Public Citizen (`public`) | Advocate / Researcher (`advocate`) | Super Administrator (`superadmin`) |
-| :--- | :---: | :---: | :---: |
-| **Legal AI Research & Q&A** | ✅ Public Knowledge Base | ✅ Case-Specific + Statutes | ✅ Universal Access |
-| **Case Document Ingestion** | Session Temporary | ✅ Persistent Workspaces | ✅ Universal All-User Records |
-| **Chronological Timeline & Briefs** | Basic | ✅ Advanced Dossier View | ✅ Advanced Dossier View |
-| **Rights Scenario Game & Quiz** | ✅ Full Access | ✅ Full Access | ✅ Full Access |
-| **Live Legal News Radar** | ✅ Full Access | ✅ Full Access | ✅ Full Access |
-| **Admin Control Panel & Metrics** | ❌ | ❌ | ✅ Full Operations Suite |
-| **Tamper-Evident SHA-256 Ledger** | ✅ Read & Verify | ✅ Read & Verify | ✅ Full Audit & Re-indexing |
+* Every case, document, chat session and message belongs to one user. The API checks ownership on every route
+  (`backend/security.py`); another user's id returns `404`, indistinguishable from a missing one.
+* Roles: `admin` (email in `ADMIN_EMAILS` **and** confirmed) can open the admin metrics; everyone else is `public`.
+  `user_metadata.role` is user-editable and never grants anything. There is no per-feature tiering beyond that.
+* The backend uses the Supabase service-role key (bypasses RLS), so database policies are defence in depth for the
+  public anon key: see `sql/proposed/002_security_rls.sql` (proposed, not applied automatically).
+* Upload limits: extension allowlist, PDF magic bytes, `MAX_UPLOAD_MB` (50), `MAX_CASES_PER_USER` (200).
 
 ---
 
@@ -339,6 +345,39 @@ NyayaPramaan/
 ├── supabase_schema_updates.sql # Database Migration Scripts
 └── README.md                   # Project Documentation
 ```
+
+---
+
+## 🧪 Testing & evaluation
+
+```bash
+python -m pytest -q                                   # unit + regression tests (real network access is blocked and fails the test)
+python -m ai_core.evaluation.rag_eval --check         # offline RAG metrics, gated by eval/thresholds.json
+python -m ai_core.evaluation.judge_eval               # claim-judge metrics (offline lexical baseline; add --live for the real LLM judge)
+RUN_INTEGRATION=1 python -m pytest tests/integration  # opt-in, real providers + keys (not run in CI)
+python eval/make_golden_pdf.py golden.pdf             # fictional 6-page PDF for live acceptance tests
+```
+
+* The offline evaluation runs the real chunker, a BM25 baseline, and **the production retrieval code**
+  (`search_document_chunks`: pgvector RPC chain, case isolation, hybrid semantic + lexical fusion) against an in-memory
+  Supabase with a deliberately case-filter-ignoring RPC and a similar distractor case. Metrics: Recall@K, Hit@K, MRR,
+  nDCG@K, citation precision/recall/invalid rate, unsupported-claim rate, correct/false abstention, hard negatives,
+  cross-case leakage, follow-up and conflicting-evidence retrieval, and a per-category breakdown (fact, paraphrase,
+  short, Hinglish, multi-page).
+* **Limits, stated plainly:** embeddings in the offline suites are a hashed bag-of-words stub, not Gemini; the dataset is
+  one small fictional case; the tokenizer was adjusted after inspecting early failures, so some numbers are optimistic.
+  It is a regression gate, not a measurement of real retrieval or answer quality. The LLM judge has **no accuracy figure
+  yet**: run `judge_eval --live` and `tests/integration` on staging and record the output.
+* CI (`.github/workflows/ci.yml`) installs with `constraints-ci.txt`, runs the tests, the evaluation gate and the
+  judge baseline, and uploads the reports. The test suite blocks all real network access and fails any test that tries.
+* Database changes live in `sql/proposed/` (not applied automatically) and read-only checks in `sql/diagnostics/`.
+  Order and sign-off steps: `docs/acceptance_runbook.md`. Background: `docs/phase0_retrieval_diagnosis.md`,
+  `docs/phase1_2_report.md`, `docs/phase3_6_report.md`, `docs/stage_a_e_report.md`.
+
+### Configuration (backend)
+`GEMINI_API_KEY`, `GROQ_API_KEY`, `OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAILS`, optional `MAX_UPLOAD_MB`, `MAX_CASES_PER_USER`, `STALE_PROCESSING_MINUTES`,
+`FRONTEND_URL`, `ALLOWED_ORIGINS`.
 
 ---
 

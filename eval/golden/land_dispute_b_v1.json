@@ -1,0 +1,10 @@
+{
+  "name": "land_dispute_b_v1",
+  "description": "Distractor case: a DIFFERENT fictional land dispute with deliberately overlapping vocabulary (sale deed, consideration, will, possession, costs). Used to test that retrieval for case A never surfaces case B. unique_markers appear only here.",
+  "unique_markers": ["Nandgaon", "Khasra No. 88", "Rs. 7,75,000", "Baldev Singh", "Rs. 40,000", "14 March 2021"],
+  "pages": [
+    "IN THE COURT OF THE CIVIL JUDGE, NANDGAON. Original Suit No. 77 of 2020. Baldev Singh, plaintiff, versus Kamla Devi, defendant. 1. The plaintiff claims the plot bearing Khasra No. 88, village Nandgaon, measuring 0.80 hectare, under a registered sale deed. 2. The defendant relies on a will.",
+    "3. The registered sale deed was executed for a consideration of Rs. 7,75,000. 4. The plaintiff's possession is proved by revenue receipts. 5. The defendant admitted that the will was not probated and the attesting witness was not examined.",
+    "6. The suit is decreed. 7. The defendant shall pay costs of Rs. 40,000 to the plaintiff. 8. Order pronounced on 14 March 2021. 9. The respondent shall not interfere with the plaintiff's possession."
+  ]
+}
