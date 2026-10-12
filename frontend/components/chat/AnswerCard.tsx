@@ -1,4 +1,13 @@
-type Source = { name: string; type: string; url: string | null; verification_status: string; jurisdiction: string | null }
+type Source = {
+  name: string
+  type: string
+  url: string | null
+  verification_status: string
+  jurisdiction: string | null
+  page?: number | null
+  section?: string
+  excerpt?: string
+}
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   verified: { bg: 'rgba(31,122,77,0.15)', text: '#2ECC71', label: '✅ Verified' },
@@ -15,14 +24,38 @@ const USEFULNESS_COLORS: Record<string, { bg: string; text: string }> = {
   low: { bg: 'rgba(184,86,46,0.15)', text: '#E06A47' },
 }
 
-export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNote, departmentSuggestion }: {
-  answer: string; conclusion?: string; usefulness?: string; sources?: Source[]; qualityNote?: string; departmentSuggestion?: string | null
+const VERDICT_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  GROUNDED: STATUS_COLORS.verified,
+  PARTIALLY_GROUNDED: STATUS_COLORS.partial,
+  CONTRADICTED: STATUS_COLORS.contradicted,
+  NO_EVIDENCE_FOUND: STATUS_COLORS.unverified,
+  RETRIEVAL_INSUFFICIENT: STATUS_COLORS.unverified,
+  VERIFICATION_PENDING: STATUS_COLORS.pending,
+}
+
+export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNote, departmentSuggestion, verified, verdictState }: {
+  answer: string
+  conclusion?: string
+  usefulness?: string
+  sources?: Source[]
+  qualityNote?: string
+  departmentSuggestion?: string | null
+  verified?: boolean
+  verdictState?: string
 }) {
+  const verification = verified === true
+    ? STATUS_COLORS.verified
+    : VERDICT_STYLES[verdictState || ''] || STATUS_COLORS.unverified
+
   return (
     <div style={{ maxWidth: '90%' }}>
       <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', fontSize: 14, whiteSpace: 'pre-wrap' }}>
         {answer}
       </div>
+
+      <span style={{ display: 'inline-flex', marginTop: 8, fontSize: 11, padding: '4px 10px', borderRadius: 14, background: verification.bg, color: verification.text }}>
+        Evidence status: {verification.label}
+      </span>
 
       {conclusion && (
         <div style={{ marginTop: 8, padding: '10px 14px', borderRadius: 8, background: 'rgba(43,92,224,0.1)', border: '1px solid rgba(43,92,224,0.25)' }}>
@@ -37,12 +70,29 @@ export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNot
             const style = STATUS_COLORS[s.verification_status] || STATUS_COLORS.unverified
             const content = (
               <span style={{ fontSize: 11, padding: '4px 10px', borderRadius: 14, background: style.bg, color: style.text, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                {s.name} {s.jurisdiction && s.jurisdiction !== 'unknown' && `(${s.jurisdiction})`} · {style.label}
+                {s.name || 'Source'} {s.jurisdiction && s.jurisdiction !== 'unknown' && `(${s.jurisdiction})`} · {style.label}
               </span>
             )
-            return s.url ? (
-              <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>{content}</a>
-            ) : (<span key={i}>{content}</span>)
+            return (
+              <div key={i} style={{ display: 'grid', gap: 4 }}>
+                {s.url ? (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>{content}</a>
+                ) : content}
+                {(s.page || s.section || s.excerpt) && (
+                  <details style={{ fontSize: 11, color: 'rgba(247,245,240,0.65)' }}>
+                    <summary style={{ cursor: 'pointer', padding: '2px 4px' }}>
+                      {s.page ? `Page ${s.page}` : s.section || 'Source details'}
+                    </summary>
+                    {s.section && <div style={{ padding: '4px 8px' }}>{s.section}</div>}
+                    {s.excerpt && (
+                      <blockquote style={{ margin: '2px 0 0', padding: '6px 8px', borderLeft: '2px solid rgba(91,140,255,0.6)', background: 'rgba(255,255,255,0.03)', whiteSpace: 'pre-wrap' }}>
+                        {s.excerpt}
+                      </blockquote>
+                    )}
+                  </details>
+                )}
+              </div>
+            )
           })}
         </div>
       )}

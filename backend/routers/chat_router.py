@@ -231,10 +231,20 @@ def _handle_ask(request: QueryRequest, user_id: str):
         stored_summary = case_row.data[0].get("summary", "") if case_row and case_row.data else ""
         if stored_summary and stored_summary.strip() and stored_summary != "Summary generation in progress.":
             final = f"{stored_summary}\n\n[Source: {filename} — full document summary]"
-            save_message(session_id, "assistant", final, sources=[filename])
+            summary_source = {
+                "name": filename,
+                "type": "document",
+                "url": None,
+                "verification_status": "unverified",
+                "jurisdiction": None,
+                "section": "Full-document summary",
+                "excerpt": stored_summary[:500],
+            }
+            save_message(session_id, "assistant", final, sources=[summary_source])
             return {
-                "answer": final, "conclusion": None, "usefulness": "high", "verified": True,
-                "sources": [{"name": filename, "type": "document", "url": None, "verification_status": "verified", "jurisdiction": None}],
+                "answer": final, "conclusion": None, "usefulness": "high", "verified": False,
+                "verdict_state": STATE_VERIFICATION_PENDING,
+                "sources": [summary_source],
                 "session_id": session_id,
             }
         elif case_text:
@@ -242,10 +252,20 @@ def _handle_ask(request: QueryRequest, user_id: str):
             generated_summary = summarize_case(case_text[:6000])
             client.table("cases").update({"summary": generated_summary}).eq("id", request.case_id).execute()
             final = f"{generated_summary}\n\n[Source: {filename} — full document summary]"
-            save_message(session_id, "assistant", final, sources=[filename])
+            summary_source = {
+                "name": filename,
+                "type": "document",
+                "url": None,
+                "verification_status": "unverified",
+                "jurisdiction": None,
+                "section": "Full-document summary",
+                "excerpt": generated_summary[:500],
+            }
+            save_message(session_id, "assistant", final, sources=[summary_source])
             return {
-                "answer": final, "conclusion": None, "usefulness": "high", "verified": True,
-                "sources": [{"name": filename, "type": "document", "url": None, "verification_status": "verified", "jurisdiction": None}],
+                "answer": final, "conclusion": None, "usefulness": "high", "verified": False,
+                "verdict_state": STATE_VERIFICATION_PENDING,
+                "sources": [summary_source],
                 "session_id": session_id,
             }
 
@@ -313,7 +333,8 @@ def _handle_ask(request: QueryRequest, user_id: str):
             )
             document_sources = [
                 {"name": f"{filename} — Page {c.get('page_number', 1)}", "type": "document", "url": None,
-                 "verification_status": "pending", "jurisdiction": None}
+                 "verification_status": "pending", "jurisdiction": None,
+                 "page": c.get("page_number"), "excerpt": c.get("chunk_text", "")[:500]}
                 for c in chunk_matches
             ]
         elif label == "CASE_SPECIFIC":
@@ -460,7 +481,7 @@ def _handle_ask(request: QueryRequest, user_id: str):
     dept_info = suggest_department_and_helpline(query, call_llm) if label in ("GENERAL_LAW", "MIXED") else None
     suggestions = generate_suggestions(query, final_answer, model)
 
-    save_message(session_id, "assistant", final_answer, sources=[s["name"] for s in source_objects])
+    save_message(session_id, "assistant", final_answer, sources=source_objects)
     _log(query, final_answer, model, verified)
 
     conclusion_text = reflection.get("conclusion") if reflection.get("conclusion_needed", True) else None

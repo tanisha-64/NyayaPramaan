@@ -22,19 +22,40 @@ export type Source = {
   url: string | null;
   verification_status: string;
   jurisdiction: string | null;
-  page?: number;
+  page?: number | null;
   section?: string;
   excerpt?: string;
 };
 
 export type LegalSource = Source;
 
+export type ChatSession = {
+  id: string;
+  title: string;
+  updated_at: string;
+  pinned: boolean;
+};
+
+export type ChatHistoryMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: unknown;
+};
+
+export type ChatSessionMessages = {
+  messages: ChatHistoryMessage[];
+  case_id: string | null;
+  case_filename: string | null;
+  documents?: { case_id: string; filename: string }[];
+};
+
 export type ChatResponse = {
   answer: string;
   conclusion?: string;
   usefulness?: string;
-  verified: boolean;
-  sources: Source[];
+  verified?: boolean;
+  verdict_state?: string;
+  sources?: Source[];
   claims?: LegalClaim[];
   verification_summary?: VerificationSummary;
   quality_note?: string;
@@ -49,7 +70,6 @@ export function askQuestion(
   caseIdOrIds?: string | string[],
   sessionId?: string,
   temporary?: boolean,
-  mode?: string
 ) {
   const caseId = Array.isArray(caseIdOrIds) ? caseIdOrIds[0] : caseIdOrIds;
   return apiPost<ChatResponse>("/chat/ask", {
@@ -59,14 +79,14 @@ export function askQuestion(
   });
 }
 
-export function createSession(title = "New Chat") { return apiPost<any>("/chat/sessions", { title }); }
-export function listSessions() { return apiGet<any[]>("/chat/sessions"); }
+export function createSession(title = "New Chat") { return apiPost<ChatSession>("/chat/sessions", { title }); }
+export function listSessions() { return apiGet<ChatSession[]>("/chat/sessions"); }
 export function getSessionMessages(sessionId: string) {
-  return apiGet<{ messages: any[]; case_id: string | null; case_filename: string | null; documents?: { case_id: string; filename: string }[] }>(`/chat/sessions/${sessionId}/messages`);
+  return apiGet<ChatSessionMessages>(`/chat/sessions/${sessionId}/messages`);
 }
-export function renameSession(sessionId: string, title: string) { return apiPatch(`/chat/sessions/${sessionId}`, { title }); }
-export function togglePin(sessionId: string, pinned: boolean) { return apiPatch(`/chat/sessions/${sessionId}`, { pinned }); }
-export function deleteSession(sessionId: string) { return apiDelete(`/chat/sessions/${sessionId}`); }
+export function renameSession(sessionId: string, title: string) { return apiPatch<{ updated: boolean }>(`/chat/sessions/${sessionId}`, { title }); }
+export function togglePin(sessionId: string, pinned: boolean) { return apiPatch<{ updated: boolean }>(`/chat/sessions/${sessionId}`, { pinned }); }
+export function deleteSession(sessionId: string) { return apiDelete<{ deleted: boolean }>(`/chat/sessions/${sessionId}`); }
 export function clearAllSessions() {
   return apiDelete<{ status: string; cleared_sessions: number }>("/chat/sessions/clear/all");
 }

@@ -3,17 +3,42 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useVoiceInput } from '@/hooks/useVoiceInput'
-import { uploadDocument, UploadResponse } from '@/services/documentService'
-import { askQuestion, listSessions, getSessionMessages, renameSession, deleteSession, togglePin } from '@/services/chatService'
+import { uploadDocument, UploadResponse, getCaseStatus } from '@/services/documentService'
+import { askQuestion, listSessions, getSessionMessages, renameSession, deleteSession, togglePin, ChatSession, Source } from '@/services/chatService'
 import { AnswerCard } from '@/components/chat/AnswerCard'
 import { TypingIndicator } from '@/components/chat/TypingIndicator'
 import { ChatSidebar } from '@/components/chat/ChatSidebar'
 
 type Message = {
   role: 'user' | 'assistant'; content: string; attachedFileName?: string
-  conclusion?: string; usefulness?: string; sources?: any[]; qualityNote?: string; departmentSuggestion?: string | null
+  conclusion?: string; usefulness?: string; sources?: Source[]; qualityNote?: string; departmentSuggestion?: string | null
+  verified?: boolean; verdictState?: string
 }
 type ActiveDoc = { caseId: string; fileName: string }
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
+function normalizeSources(sources: unknown): Source[] {
+  if (!Array.isArray(sources)) return []
+  return sources.map((value): Source => {
+    if (typeof value === 'string') {
+      return { name: value, type: 'document', url: null, verification_status: 'unverified', jurisdiction: null }
+    }
+    const source = value as Record<string, unknown>
+    return {
+      name: typeof source.name === 'string' ? source.name : 'Source',
+      type: typeof source.type === 'string' ? source.type : 'document',
+      url: typeof source.url === 'string' ? source.url : null,
+      verification_status: typeof source.verification_status === 'string' ? source.verification_status : 'unverified',
+      jurisdiction: typeof source.jurisdiction === 'string' ? source.jurisdiction : null,
+      page: typeof source.page === 'number' ? source.page : null,
+      section: typeof source.section === 'string' ? source.section : undefined,
+      excerpt: typeof source.excerpt === 'string' ? source.excerpt : undefined,
+    }
+  })
+}
 
 export default function PublicChat() {
   const { user, loading: authLoading, signOut } = useAuth()
@@ -27,18 +52,60 @@ export default function PublicChat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
-  const [sessions, setSessions] = useState<any[]>([])
+  const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSession, setActiveSession] = useState<string | null>(null)
   const [isTemporary, setIsTemporary] = useState(false)
 
   const [activeDoc, setActiveDoc] = useState<ActiveDoc | null>(null)
   const [uploadingFileName, setUploadingFileName] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [documentIndexing, setDocumentIndexing] = useState(false)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { listening, startListening, micError } = useVoiceInput((text) => setQuery((prev) => (prev ? prev + ' ' + text : text)))
 
   useEffect(() => { if (user) refreshSessions() }, [user])
+
+  useEffect(() => {
+    if (!activeDoc || !documentIndexing) return
+
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
+    let attempts = 0
+
+    const checkStatus = async () => {
+      try {
+        const status = await getCaseStatus(activeDoc.caseId)
+        if (cancelled) return
+        if (status.status === 'ready') {
+          setDocumentIndexing(false)
+          return
+        }
+        if (status.status === 'failed') {
+          setDocumentIndexing(false)
+          setUploadError(status.rejection_reason || 'Document indexing failed. Please upload it again.')
+          return
+        }
+        if (attempts++ >= 60) {
+          setDocumentIndexing(false)
+          setUploadError('Document indexing is taking longer than expected. Please wait a little and try again.')
+          return
+        }
+        timer = setTimeout(checkStatus, 1500)
+      } catch (error) {
+        if (cancelled) return
+        console.error('Could not check document indexing status:', error)
+        setDocumentIndexing(false)
+        setUploadError('Could not check document indexing status. Please try again.')
+      }
+    }
+
+    void checkStatus()
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [activeDoc, documentIndexing])
 
   async function refreshSessions() {
     try {
@@ -49,14 +116,14 @@ export default function PublicChat() {
 
   function handleNewChat() {
     setActiveSession(null); setMessages([]); setSuggestions([])
-    setIsTemporary(false); setActiveDoc(null); setUploadError(null)
+    setIsTemporary(false); setActiveDoc(null); setUploadError(null); setDocumentIndexing(false)
   }
 
   function handleToggleTemporary() {
     const next = !isTemporary
     setIsTemporary(next)
     if (next) {
-      setActiveSession(null); setMessages([]); setSuggestions([]); setActiveDoc(null)
+      setActiveSession(null); setMessages([]); setSuggestions([]); setActiveDoc(null); setDocumentIndexing(false)
     }
   }
 
@@ -64,7 +131,11 @@ export default function PublicChat() {
     setActiveSession(id); setIsTemporary(false); setUploadError(null)
     try {
       const { messages: msgs, case_id, case_filename } = await getSessionMessages(id)
-      setMessages(msgs.map((m: any) => ({ role: m.role, content: m.content, sources: m.sources })))
+      setMessages(msgs.map((m) => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content,
+        sources: normalizeSources(m.sources),
+      })))
       setActiveDoc(case_id && case_filename ? { caseId: case_id, fileName: case_filename } : null)
       setSuggestions([])
     } catch (err) { console.error(err) }
@@ -82,12 +153,14 @@ export default function PublicChat() {
     const file = e.target.files?.[0]
     if (!file) return
     setUploadError(null)
+    setDocumentIndexing(false)
     setUploadingFileName(file.name)
     try {
       const result: UploadResponse = await uploadDocument(file)
       setActiveDoc({ caseId: result.case_id, fileName: result.filename })
-    } catch (err: any) {
-      setUploadError(err?.message || "This document couldn't be processed. Please try a different legal document.")
+      setDocumentIndexing(result.status === 'processing')
+    } catch (err: unknown) {
+      setUploadError(getErrorMessage(err, "This document couldn't be processed. Please try a different legal document."))
     }
     setUploadingFileName(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -95,10 +168,11 @@ export default function PublicChat() {
 
   function clearActiveDocument() {
     setActiveDoc(null)
+    setDocumentIndexing(false)
   }
 
   async function sendQuery(text: string) {
-    if (!text.trim() || loading) return
+    if (!text.trim() || loading || documentIndexing) return
 
     setMessages((prev) => [...prev, { role: 'user', content: text, attachedFileName: activeDoc?.fileName }])
     setQuery(''); setSuggestions([]); setLoading(true)
@@ -112,10 +186,11 @@ export default function PublicChat() {
         role: 'assistant', content: result.answer, conclusion: result.conclusion,
         usefulness: result.usefulness, sources: result.sources,
         qualityNote: result.quality_note, departmentSuggestion: result.department_suggestion,
+        verified: result.verified, verdictState: result.verdict_state,
       }])
       setSuggestions(result.suggestions || [])
-    } catch (err: any) {
-      setMessages((prev) => [...prev, { role: 'assistant', content: err?.message || 'Something went wrong. Please try again.' }])
+    } catch (err: unknown) {
+      setMessages((prev) => [...prev, { role: 'assistant', content: getErrorMessage(err, 'Something went wrong. Please try again.') }])
     }
     setLoading(false)
   }
@@ -176,6 +251,8 @@ export default function PublicChat() {
                       sources={m.sources}
                       qualityNote={m.qualityNote}
                       departmentSuggestion={m.departmentSuggestion}
+                      verified={m.verified}
+                      verdictState={m.verdictState}
                     />
                   </div>
                 )}
@@ -209,6 +286,12 @@ export default function PublicChat() {
               </div>
             )}
 
+            {documentIndexing && (
+              <div role="status" style={{ marginBottom: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(43,92,224,0.08)', border: '1px solid rgba(43,92,224,0.2)', fontSize: 12, color: '#8CAEFF' }}>
+                📄 Indexing document pages for follow-up questions...
+              </div>
+            )}
+
             {uploadError && (
               <div style={{ marginBottom: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(224,106,71,0.1)', border: '1px solid rgba(224,106,71,0.3)', fontSize: 12, color: '#E06A47' }}>
                 ⚠️ {uploadError}
@@ -236,6 +319,7 @@ export default function PublicChat() {
             </button>
             <textarea
               value={query}
+              disabled={documentIndexing}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -247,7 +331,7 @@ export default function PublicChat() {
               placeholder="Ask a legal question..."
               style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.03)', color: '#F7F5F0', resize: 'none' }}
             />
-            <button onClick={() => sendQuery(query)} disabled={loading} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#B8925A', color: '#0A0A0B', fontWeight: 500, cursor: loading ? 'default' : 'pointer', opacity: loading ? 0.6 : 1 }}>
+            <button onClick={() => sendQuery(query)} disabled={loading || documentIndexing} style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: '#B8925A', color: '#0A0A0B', fontWeight: 500, cursor: loading || documentIndexing ? 'default' : 'pointer', opacity: loading || documentIndexing ? 0.6 : 1 }}>
               Ask
             </button>
           </div>

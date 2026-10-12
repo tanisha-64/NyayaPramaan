@@ -84,6 +84,41 @@ def test_phase2_test1_plaintiff_title_no_fabricated_deeds():
         assert "oral family settlement" in res["answer"]
         assert "registered sale deed" not in res["answer"].lower()
         assert res["sources"][0]["name"] == "land_dispute_suit.pdf — Page 3"
+        assert res["sources"][0]["page"] == 3
+        assert "oral family settlement" in res["sources"][0]["excerpt"]
+
+
+@pytest.mark.parametrize("query", ["What happened in 1941?", "Give all the dates of hearing"])
+def test_short_followups_with_attached_document_use_case_context(query):
+    from ai_core.router.intent_classifier import classify_intent
+
+    result = classify_intent(query, has_document=True)
+
+    assert result["label"] == "CASE_SPECIFIC"
+    assert result["requires_case_context"] is True
+
+
+def test_document_summary_is_not_mislabeled_as_verified():
+    case_id = str(uuid.uuid4())
+    req = QueryRequest(query="summary btao iski", case_id=case_id)
+    mock_client = MagicMock()
+    mock_client.table().select().eq().execute.return_value.data = [{
+        "id": case_id,
+        "filename": "judgment.pdf",
+        "status": "ready",
+        "summary": "The court dismissed the appeal.",
+        "case_text": "Full judgment text.",
+    }]
+
+    with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
+         patch("backend.routers.chat_router.ensure_valid_session", return_value="session-1"), \
+         patch("backend.routers.chat_router.get_recent_history", return_value=""), \
+         patch("backend.routers.chat_router.save_message"):
+        result = _handle_ask(req, user_id="u1")
+
+    assert result["verified"] is False
+    assert result["sources"][0]["verification_status"] == "unverified"
+    assert result["sources"][0]["section"] == "Full-document summary"
 
 
 def test_phase2_test2_cyber_harassment_refusal_on_land_document():
@@ -944,4 +979,3 @@ def test_phase2_3_scanned_pdf_ocr_chunking_and_deduplication_safety():
         count = chunk_text_into_pages("Sample case text content.", case_id)
         assert count == 1
         mock_insert.assert_not_called()  # Safely avoided duplicate insert!
-
