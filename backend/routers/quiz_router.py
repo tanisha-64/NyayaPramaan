@@ -22,8 +22,8 @@ def get_todays_quiz():
     questions = generate_daily_quiz()
     if questions:
         try:
-            client.table("daily_quiz").upsert({"quiz_date": today, "questions": questions}).execute()
+            client.table("daily_quiz").upsert({"quiz_date": today, "questions": questions}, on_conflict="quiz_date").execute()
         except Exception as e:
             print(f"[quiz_router] Cache save notice: {e}")
 
-    return questions
+    return questions
