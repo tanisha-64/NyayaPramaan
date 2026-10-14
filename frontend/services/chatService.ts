@@ -51,10 +51,13 @@ export type ChatSessionMessages = {
 
 export type ChatResponse = {
   answer: string;
+  error?: boolean;
+  request_id?: string;
   conclusion?: string;
   usefulness?: string;
   verified?: boolean;
   verdict_state?: string;
+  claim_verdicts?: { claim: string; verdict: string; page_numbers: number[]; reason?: string }[];
   sources?: Source[];
   claims?: LegalClaim[];
   verification_summary?: VerificationSummary;

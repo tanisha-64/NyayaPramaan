@@ -1,107 +1,81 @@
-
 """
+llm_gateway.py  (FULL REPLACEMENT)  ->  ai_core/llm_gateway.py
 
-LLM Gateway — 3-tier automatic fallback (Gemini -> Groq -> OpenRouter) with
-
-lightweight response caching.
-
+Same public API as before: call_llm(model, prompt) -> str.
+Changes:
+  * hard timeout + no litellm retries  -> a stuck provider no longer freezes the chat
+  * iterative fallback (no recursion), no time.sleep(2)
+  * thread-safe bounded cache (max 256) -> safe for the parallel post-steps
+  * LLM_FAIL_TEXT constant + is_llm_failure() so callers can tell
+    "all providers down" from a real answer (so it is never verified/saved as an answer)
+  * models are env-configurable (providers retire models often)
 """
+import hashlib
+import os
+import threading
+from collections import OrderedDict
 
 import litellm
-
-import os
-
-import time
-
-import hashlib
-
 from dotenv import load_dotenv
 
-
-
 load_dotenv()
+for _k in ("GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY"):
+    os.environ[_k] = os.getenv(_k, "")
 
-os.environ["GEMINI_API_KEY"] = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini/gemini-3.6-flash")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "groq/openai/gpt-oss-20b")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/deepseek/deepseek-r1:free")
+LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "30"))
 
-os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY", "")
-
-os.environ["OPENROUTER_API_KEY"] = os.getenv("OPENROUTER_API_KEY", "")
-
-
-
-_cache: dict[str, str] = {}
-
-
+LLM_FAIL_TEXT = "I'm currently experiencing high demand across providers. Please try again in a moment."
 
 FALLBACK_CHAIN = {
-
-    "gemini": ["groq/openai/gpt-oss-20b", "openrouter/deepseek/deepseek-r1:free"],
-
-    "groq": ["gemini/gemini-3.6-flash", "openrouter/deepseek/deepseek-r1:free"],
-
-    "openrouter": ["gemini/gemini-3.6-flash", "groq/openai/gpt-oss-20b"],
-
+    "gemini": [GROQ_MODEL, OPENROUTER_MODEL],
+    "groq": [GEMINI_MODEL, OPENROUTER_MODEL],
+    "openrouter": [GROQ_MODEL, GEMINI_MODEL],
 }
 
-
-
+_CACHE_MAX = 256
+_cache: "OrderedDict[str, str]" = OrderedDict()
+_lock = threading.Lock()
 
 
 def _provider(model: str) -> str:
-
     return model.split("/")[0]
 
 
-
-
-
 def _cache_key(model: str, prompt: str) -> str:
-
     return hashlib.sha256(f"{model}:{prompt}".encode()).hexdigest()
 
 
+def is_llm_failure(text: str) -> bool:
+    return (text or "").strip() == LLM_FAIL_TEXT
 
 
-
-def call_llm(model: str, prompt: str, _tried: set | None = None) -> str:
-
+def call_llm(model: str, prompt: str, _tried=None) -> str:
     key = _cache_key(model, prompt)
+    with _lock:
+        if key in _cache:
+            _cache.move_to_end(key)
+            return _cache[key]
 
-    if key in _cache:
-
-        return _cache[key]
-
-
-
-    _tried = _tried or set()
-
-    _tried.add(model)
-
-
-
-    try:
-
-        response = litellm.completion(model=model, messages=[{"role": "user", "content": prompt}])
-
-        result = response["choices"][0]["message"]["content"]
-
-        _cache[key] = result
-
-        return result
-
-    except Exception:
-
-        provider = _provider(model)
-
-        for fallback_model in FALLBACK_CHAIN.get(provider, []):
-
-            if fallback_model not in _tried:
-
-                print(f"[llm_gateway] {model} unavailable -> trying {fallback_model}")
-
-                return call_llm(fallback_model, prompt, _tried)
-
-        time.sleep(2)
-
-        return "I'm currently experiencing high demand across providers. Please try again in a moment."
-
+    order = [model] + [m for m in FALLBACK_CHAIN.get(_provider(model), []) if m != model]
+    for m in order:
+        try:
+            resp = litellm.completion(
+                model=m,
+                messages=[{"role": "user", "content": prompt}],
+                timeout=LLM_TIMEOUT,
+                num_retries=0,
+            )
+            result = resp["choices"][0]["message"]["content"] or ""
+            if not result.strip():
+                raise ValueError("empty completion")
+            with _lock:
+                _cache[key] = result
+                while len(_cache) > _CACHE_MAX:
+                    _cache.popitem(last=False)
+            return result
+        except Exception as e:  # noqa: BLE001
+            print(f"[llm_gateway] {m} unavailable ({type(e).__name__}) -> next")
+    return LLM_FAIL_TEXT

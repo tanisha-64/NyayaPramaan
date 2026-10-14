@@ -1,55 +1,28 @@
-
 """
-
 Document Router — THE CORE FIX:
-
-1. Classification now runs on the FULL Gemini-extracted text (not a short
-
-   local preview), so genuine scanned/old judgments are no longer
-
-   falsely rejected.
-
-2. Heavy page-by-page chunking/embedding runs as a background task, so
-
-   large (100+ page) documents respond fast instead of blocking the request.
-
-3. Summary + timeline are generated synchronously (fast, one Gemini call
-
-   each) so the user gets a usable response quickly.
-
+1. Classification now runs on the FULL Gemini-extracted text (not a short local preview), so genuine scanned/old judgments are no longer falsely rejected.
+2. Heavy page-by-page chunking/embedding runs as a background task, so large (100+ page) documents respond fast instead of blocking the request.
+3. Summary + timeline are generated synchronously (fast, one Gemini call each) so the user gets a usable response quickly.
 """
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, BackgroundTasks
-
 import tempfile
-
 import os
 
-
-
 from ai_core.rag.document_reader import read_case_file_with_gemini
-
 from ai_core.rag.summarizer import summarize_case
-
 from ai_core.timeline.extractor import extract_timeline
-
 from ai_core.rag.vector_store import get_supabase_client
-
 from ai_core.rag.document_chunker import chunk_and_index_pdf
-
 from ai_core.rag.document_classifier import classify_document, REJECTION_MESSAGE
-
 from backend.db.supabase_storage import upload_case_file
-
 from backend.auth.supabase_auth import get_current_user
 
-
+# Naye Domain Gate aur LLM imports
+from ai_core.router.domain_gate import is_legal_document
+from ai_core.llm_gateway import call_llm
 
 router = APIRouter()
-
-
-
-
 
 def _background_index_pages(tmp_path: str, case_id: str, suffix: str, case_text: str = ""):
     """Runs AFTER the response has been sent -- indexes pages for Q&A and updates status."""
@@ -114,6 +87,17 @@ async def upload_case(background_tasks: BackgroundTasks, file: UploadFile = File
 
         # 1. Read document text
         case_text = read_case_file_with_gemini(tmp_path)
+        
+        # ----------------------------------------------------
+        # NEW LEGAL DOMAIN GATE CHECK
+        # ----------------------------------------------------
+        if not case_text or not is_legal_document(case_text, lambda p: call_llm("groq/openai/gpt-oss-20b", p)):
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            raise HTTPException(
+                status_code=422, 
+                detail="Only legal documents (judgments, petitions, FIRs, notices, contracts, acts, law assignments) are accepted."
+            )
 
         # 2. Classify on extracted text + filename
         classification = classify_document(case_text[:4000], filename=file.filename)
@@ -188,7 +172,9 @@ def get_document_status(case_id: str, user=Depends(get_current_user)):
 @router.delete("/{case_id}")
 def delete_document(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()
+    owned = client.table("cases").select("id").eq("id", case_id).eq("user_id", user.id).execute()
+    if not owned.data:
+        raise HTTPException(status_code=404, detail="Document not found")
     client.table("document_chunks").delete().eq("case_id", case_id).execute()
     client.table("cases").delete().eq("id", case_id).eq("user_id", user.id).execute()
     return {"deleted": case_id}
-
