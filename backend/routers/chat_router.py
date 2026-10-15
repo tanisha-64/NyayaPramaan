@@ -1,21 +1,6 @@
-"""
-What changed vs your version (everything else is kept):
- 1. Document follow-ups: HYBRID retrieval = pgvector RPC  +  lexical search over cases.case_text,
-    fused with RRF. If the RPC/embeddings fail, lexical still answers. Missing index is
-    self-healed in a background thread (no waiting for the user).
- 2. Date / hearing / year questions are answered by exact extraction from the document
-    (no LLM, instant, every line is a verbatim sentence + page).
- 3. Sources contract: only pages actually used are listed, de-duplicated, always with a
-    non-empty `name`, `page` (or `section`), `excerpt` and a real verification_status.
-    Old code marked EVERYTHING "unverified" when the judge returned no page numbers.
- 4. Ownership check on the case row (user can only read their own documents).
- 5. Speed: self-reflect + suggestions + department run in parallel; summary/date paths use no LLM.
- 6. If every LLM provider is down we return an honest "try again" (never verified/saved as an answer).
- 7. Cleaner, chat-like answers (STYLE_GUIDE + tidy_answer).
-"""
 """Chat Router -> backend/routers/chat_router.py
 Hybrid (vector + lexical) document retrieval, exact date extraction, law-only gate, vetted web sources,
-owner-checked cases, parallel post-steps, honest LLM-down handling, chat-style answers."""
+owner-checked cases, parallel post-steps, honest LLM-down handling, chat-style answers, multi-question messages."""
 from fastapi import APIRouter, Depends, Response
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
@@ -38,7 +23,8 @@ from ai_core.rag.web_evidence import web_evidence
 from ai_core.rag.self_rag import self_reflect
 from ai_core.rag.case_text_fallback import search_case_text, answer_date_question, content_tokens
 from ai_core.router.domain_gate import greeting_reply
-from ai_core.rag.statutes import explicit_lookup, find_sections, statute_sources, statute_text
+from ai_core.rag.statutes import explicit_lookup, find_sections, statute_sources, statute_text, statute_evidence
+from ai_core.router.multi_question import split_questions, merge_answers
 from ai_core.formatting.grounding import ground_answer
 from ai_core.llm_gateway import call_llm, is_llm_failure
 from ai_core.formatting.answer_style import STYLE_GUIDE, tidy_answer
@@ -55,6 +41,7 @@ from backend.auth.supabase_auth import get_current_user
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+_ctx = threading.local()  # quiet=True while one part of a multi-question message runs (saved once, merged)
 
 # Owner column in `cases` (set CASE_OWNER_COLUMN="" only if your table has none; then fix the schema).
 CASE_OWNER_COLUMN = os.getenv("CASE_OWNER_COLUMN", "user_id")
@@ -159,7 +146,7 @@ def ensure_valid_session(session_id, user_id, fallback_title, case_id=None):
 
 
 def save_message(session_id, role, content, sources=None):
-    if not session_id:
+    if not session_id or getattr(_ctx, "quiet", False):
         return
     client = get_supabase_client()
     client.table("chat_messages").insert(
@@ -376,7 +363,9 @@ def _plain(key: str, query: str) -> str:
 def ask_legal_question(request: QueryRequest, response: Response, user=Depends(get_current_user)):
     request_id, t0 = uuid.uuid4().hex[:12], time.perf_counter()
     try:
-        result = _handle_ask(request, user.id, request_id=request_id)
+        parts = split_questions(request.query)
+        result = (_handle_multi(request, user.id, parts, request_id) if len(parts) > 1
+                  else _handle_ask(request, user.id, request_id=request_id))
         result["request_id"] = request_id
         result["latency_ms"] = int((time.perf_counter() - t0) * 1000)
         logger.info("chat ask done request_id=%s routing=%s verdict=%s sources=%d ms=%d", request_id,
@@ -388,6 +377,33 @@ def ask_legal_question(request: QueryRequest, response: Response, user=Depends(g
         response.status_code = 500
         return {"answer": "Something went wrong. Please try again.", "verified": False,
                 "sources": [], "error": True, "request_id": request_id}
+
+
+def _handle_multi(request: QueryRequest, user_id: str, parts: list[str], request_id: str | None = None):
+    """Several questions in one message: answer each on its own (in parallel), then merge into one reply."""
+    query = (request.query or "").strip()
+    safety = check_input_safety(query)
+    if not safety["is_safe"]:
+        return {"blocked": True, "reason": safety["reason"]}
+    session_id = ensure_valid_session(request.session_id, user_id, query, case_id=request.case_id)
+    save_message(session_id, "user", query)
+
+    def one(part):
+        _ctx.quiet = True  # the user message and the merged answer are saved once, below
+        try:
+            return _handle_ask(QueryRequest(query=part, case_id=request.case_id, session_id=session_id), user_id, request_id)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("multi part failed: %s", type(e).__name__)
+            return {"answer": "Something went wrong with this question. Please ask it again.", "verified": False}
+        finally:
+            _ctx.quiet = False
+
+    with ThreadPoolExecutor(max_workers=len(parts)) as ex:
+        results = list(ex.map(one, parts))
+    merged = merge_answers(parts, results, STATE_PARTIALLY_GROUNDED)
+    merged["session_id"] = session_id
+    save_message(session_id, "assistant", merged["answer"], sources=merged["sources"])
+    return merged
 
 
 def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = None):
@@ -508,7 +524,7 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
             return _reply(session_id, label, f"{head}\n\n{statute_text(r)}\n\n📄 Verbatim from the source PDF ({r['source_url'].split('/')[2]}), page {r.get('page')}.",
                           sources=statute_sources(rows), usefulness="high", verified=True, verdict_state=STATE_GROUNDED)
         if rows:
-            general_evidence = "\n\n".join(f"{r['act_name']} Section {r['section']} ({r.get('heading')}): {statute_text(r)}" for r in rows)
+            general_evidence = "\n\n".join(f"{r['act_name']} Section {r['section']} ({r.get('heading')}): {statute_evidence(r)}" for r in rows)
             general_sources += statute_sources(rows, status="pending")
         try:
             matches = search_knowledge_base(embed_text(query, task_type="RETRIEVAL_QUERY"), query, match_count=3)
