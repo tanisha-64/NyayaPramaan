@@ -4,6 +4,7 @@ Explicit questions ("section 303 BNS", "IPC 302") are answered ONLY from this ta
 import re
 
 from ai_core.rag.case_text_fallback import content_tokens
+from ai_core.rag.legal_scope import topic_sections
 
 _ACT = r"(bnss|bns|bsa|ipc|crpc)"
 _NUM = r"(\d{1,3}[A-Za-z]{0,2})"
@@ -15,8 +16,13 @@ _GENERIC = {"punish", "punishment", "law", "legal", "bns", "bnss", "bsa", "ipc",
 _AMEND = re.compile(r"\s*STATE AMENDMENTS?\b.*", re.S)   # state-level amendments follow some sections in the PDF
 
 
+_NOISE = re.compile(r"\d*\s*This Bare Act is a government source.*?educational purposes only\.?", re.S)
+
+
 def _clean(text: str) -> str:
-    return _AMEND.sub("", re.sub(r"[ \t]+", " ", text or "")).strip()
+    t = _NOISE.sub(" ", text or "")
+    t = re.sub(r"\b\d{1,3}\[", "", t).replace("[", "").replace("]", "")   # footnote markers like 1[...]
+    return _AMEND.sub("", re.sub(r"[ \t]+", " ", t)).strip()
 
 
 def explicit_lookup(query: str):
@@ -38,6 +44,11 @@ def find_sections(client, query: str, limit: int = 3) -> list[dict]:
         t = client.table("statute_sections")
         if ex:
             return t.select("*").eq("act", ex[0]).eq("section", ex[1]).limit(1).execute().data or []
+        tops = topic_sections(query)       # FIR/bail/arrest jaise topics -> exact sections, loose matches nahi
+        if tops:
+            got = [r for a, n in tops for r in (t.select("*").eq("act", a).eq("section", n).limit(1).execute().data or [])]
+            if got:
+                return got[:limit + 1]
         ql = query.lower()
         toks = sorted((w for w in content_tokens(query) if w not in _GENERIC), key=lambda w: ql.find(w) % 10_000)[:4]
         if not toks:
