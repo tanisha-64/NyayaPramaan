@@ -23,6 +23,8 @@ from ai_core.rag.web_evidence import web_evidence
 from ai_core.rag.self_rag import self_reflect
 from ai_core.rag.case_text_fallback import search_case_text, answer_date_question, content_tokens
 from ai_core.router.domain_gate import greeting_reply
+from ai_core.rag.legal_scope import in_scope, suggestions_for, OUT_MSG
+from ai_core.rag.section_map import mapping_note
 from ai_core.rag.statutes import explicit_lookup, find_sections, statute_sources, statute_text, statute_evidence
 from ai_core.router.multi_question import split_questions, merge_answers
 from ai_core.formatting.grounding import ground_answer
@@ -104,15 +106,7 @@ ANSWER:""")
 
 
 def generate_suggestions(query, answer, model):
-    try:
-        raw = call_llm(model, f"Suggest 3 short follow-up legal questions in the same language as the question. "
-                              f"ONLY a JSON array of 3 strings.\nQ: {query}\nA: {answer[:300]}\nJSON:")
-        if is_llm_failure(raw):
-            return []
-        s = json.loads(raw[raw.find("["): raw.rfind("]") + 1])
-        return [x for x in s if isinstance(x, str)][:3] if isinstance(s, list) else []
-    except Exception:
-        return []
+    return suggestions_for(query)
 
 
 def get_recent_history(session_id, current_case_id=None, limit=4):
@@ -415,6 +409,8 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
     session_id = ensure_valid_session(request.session_id, user_id, query, case_id=request.case_id)
     save_message(session_id, "user", query)
     history = get_recent_history(session_id, current_case_id=request.case_id)
+    if not request.case_id and not in_scope(query):
+        return _reply(session_id, "OUT_OF_DOMAIN", OUT_MSG, usefulness=None, verdict_state="NOT_APPLICABLE", mode="refused")
     model = choose_model(query)
     has_document = bool(request.case_id)
     intent = classify_intent(query, has_document)
@@ -518,10 +514,13 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
                 msg = (f"{ex[0]} Section {ex[1]} abhi hamare verified statute database me nahi hai, isliye main andaza nahi lagaunga."
                        if hi else f"{ex[0]} Section {ex[1]} is not in our verified statute database yet, so I won't guess it. "
                                   "Please check the official text on India Code.")
+                msg += mapping_note(client, ex[0], ex[1], hi)
                 return _reply(session_id, label, msg, verdict_state=STATE_NO_EVIDENCE_FOUND)
             r = rows[0]
             head = f"📌 {r['act_name']} — Section {r['section']}" + (f": {r['heading']}" if r.get("heading") else "")
-            return _reply(session_id, label, f"{head}\n\n{statute_text(r)}\n\n📄 Verbatim from the source PDF ({r['source_url'].split('/')[2]}), page {r.get('page')}.",
+            body = (f"{head}\n\n{statute_text(r)}\n\n📄 Verbatim from the source PDF ({r['source_url'].split('/')[2]}), page {r.get('page')}."
+                    + mapping_note(client, r["act"], r["section"], hi))
+            return _reply(session_id, label, body,
                           sources=statute_sources(rows), usefulness="high", verified=True, verdict_state=STATE_GROUNDED)
         if rows:
             general_evidence = "\n\n".join(f"{r['act_name']} Section {r['section']} ({r.get('heading')}): {statute_evidence(r)}" for r in rows)
