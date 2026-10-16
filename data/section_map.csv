@@ -1,0 +1,1316 @@
+new_act,new_section,new_top,subject,old_act,old_section,change_type,pdf_page
+BNS,1(1),1,"Short title, commencement and application.",IPC,1,MODIFIED,1
+BNS,1(2),1,Commencement.,IPC,,NEW,1
+BNS,1(3),1,Punishment of offences committed within India.,IPC,2,NO_CHANGE,1
+BNS,1(4),1,"Punishment of offences committed beyond, which by law may be tried within, India.",IPC,3,MODIFIED,1
+BNS,1(5),1,"Short title, commencement and application- Extension of Code to extra-territorial offences.",IPC,4,MODIFIED,1
+BNS,1(6),1,"Short title, commencement and application-“Certain laws not to be affected by this Act”.",IPC,5,MODIFIED,1
+BNS,2,2,Definitions.,IPC,,NEW,1
+BNS,2(1),2,“act”.,IPC,33,MODIFIED,1
+BNS,2(2),2,"""animal"".",IPC,47,NO_CHANGE,2
+BNS,2(3),2,"""child"".",IPC,,NEW,2
+BNS,2(4),2,"""Counterfeit"".",IPC,28,NO_CHANGE,2
+BNS,2(5),2,"""Court"".",IPC,20,MODIFIED,2
+BNS,2(6),2,"""Death"".",IPC,46,NO_CHANGE,2
+BNS,2(7),2,"""Dishonestly"".",IPC,24,MODIFIED,2
+BNS,2(8),2,"""Document"".",IPC,29,MODIFIED,2
+BNS,2(8),2,"""Document"".",IPC,29A,MODIFIED,2
+BNS,2(9),2,Fraudulently.,IPC,25,MODIFIED,2
+BNS,2(10),2,Gender.,IPC,8,MODIFIED,2
+BNS,2(11),2,Good faith.,IPC,52,NO_CHANGE,2
+BNS,2(12),2,Government.,IPC,17,MODIFIED,2
+BNS,2(13),2,Harbour.,IPC,52A,MODIFIED,2
+BNS,2(14),2,Injury.,IPC,44,MODIFIED,2
+BNS,2(15),2,Illegal and legally bound to do.,IPC,43,NO_CHANGE,2
+BNS,2(16),2,Judge.,IPC,19,MODIFIED,2
+BNS,2(17),2,Life.,IPC,45,MODIFIED,2
+BNS,2(18),2,Local law.,IPC,42,NO_CHANGE,2
+BNS,2(19),2,Man.,IPC,10,MODIFIED,2
+BNS,2(20),2,Month and year.,IPC,49,MODIFIED,2
+BNS,2(21),2,Movable property.,IPC,22,MODIFIED,2
+BNS,2(22),2,Number.,IPC,9,NO_CHANGE,3
+BNS,2(23),2,Oath.,IPC,51,MODIFIED,3
+BNS,2(24),2,Offence.,IPC,40,MODIFIED,3
+BNS,2(25),2,Omission.,IPC,33,MODIFIED,3
+BNS,2(26),2,Person.,IPC,11,NO_CHANGE,3
+BNS,2(27),2,Public.,IPC,12,NO_CHANGE,3
+BNS,2(28),2,Public servant.,IPC,21,MODIFIED,3
+BNS,2(29),2,Reason to believe.,IPC,26,NO_CHANGE,3
+BNS,2(30),2,Special law.,IPC,41,MODIFIED,3
+BNS,2(31),2,Valuable security.,IPC,30,MODIFIED,3
+BNS,2(32),2,Vessel.,IPC,48,MODIFIED,3
+BNS,2(33),2,Voluntarily.,IPC,39,NO_CHANGE,3
+BNS,2(34),2,Will.,IPC,31,MODIFIED,3
+BNS,2(35),2,Woman.,IPC,10,MODIFIED,3
+BNS,2(36),2,Wrongful gain.,IPC,23,MODIFIED,3
+BNS,2(37),2,Wrongful loss.,IPC,23,MODIFIED,3
+BNS,2(38),2,"Gaining wrongfully, losing wrongfully.",IPC,23,NO_CHANGE,3
+BNS,2(39),2,Words and expressions used but not defined.,IPC,29A,MODIFIED,3
+BNS,3(1),3,General explanations.,IPC,6,MODIFIED,3
+BNS,3(2),3,General explanations- Sense of expression once explained.,IPC,7,MODIFIED,3
+BNS,3(3),3,"General explanations- Property in possession of wife, clerk or servant.",IPC,27,MODIFIED,3
+BNS,3(4),3,"General explanations-""Words referring to acts include illegal omissions"".",IPC,32,MODIFIED,3
+BNS,3(5),3,General explanations- Acts done by several persons in furtherance of common intention.,IPC,34,MODIFIED,4
+BNS,3(6),3,General explanations- When such an act is criminal by reason of its being done with a criminal knowledge or intention.,IPC,35,MODIFIED,4
+BNS,3(7),3,General explanations- Effect caused partly by act and partly by omission.,IPC,36,MODIFIED,4
+BNS,3(8),3,General explanations- Co-operation by doing one of several acts constituting an offence.,IPC,37,MODIFIED,4
+BNS,3(9),3,General explanations- Persons concerned in Criminal act may be guilty of different offences.,IPC,38,MODIFIED,4
+BNS,4,4,Punishments.,IPC,53,MODIFIED,4
+BNS,5,5,Commutation of sentence.,IPC,54,MODIFIED,4
+BNS,5,5,Commutation of sentence.,IPC,55,MODIFIED,4
+BNS,5,5,Commutation of sentence.,IPC,55A,MODIFIED,4
+BNS,6,6,Fractions of terms of punishment.,IPC,57,MODIFIED,4
+BNS,7,7,Sentence may be (in certain cases of imprisonment) wholly or partly rigorous or simple.,IPC,60,NO_CHANGE,4
+BNS,8(1),8,"Amount of fine, liability in default of payment of fine, etc.",IPC,63,MODIFIED,4
+BNS,8(2),8,Sentence of imprisonment for non- payment of fine.,IPC,64,MODIFIED,4
+BNS,8(3),8,"Limit to imprisonment for non- payment of fine, when imprisonment and fine awardable.",IPC,65,MODIFIED,4
+BNS,8(4),8,Description of imprisonment for non- payment of fine.,IPC,66,MODIFIED,4
+BNS,8(5),8,"Imprisonment for non-payment of fine, when offence punishable with fine only.",IPC,67,MODIFIED,5
+BNS,8(6),8,Imprisonment to terminate on payment of fine. Termination of imprisonment on payment of proportional part of fine.,IPC,68,MODIFIED,5
+BNS,8(6),8,Imprisonment to terminate on payment of fine. Termination of imprisonment on payment of proportional part of fine.,IPC,69,MODIFIED,5
+BNS,8(7),8,"Fine leviable within six years, or during imprisonment. Death not to discharge property from liability.",IPC,70,MODIFIED,5
+BNS,9,9,Limit of punishment of offence made up of several offences.,IPC,71,NO_CHANGE,5
+BNS,10,10,"Punishment of person guilty of one of several offences, the judgment stating that it is doubtful of which.",IPC,72,NO_CHANGE,5
+BNS,11,11,Solitary confinement.,IPC,73,MODIFIED,5
+BNS,12,12,Limit of solitary confinement.,IPC,74,NO_CHANGE,5
+BNS,13,13,Enhanced punishment for certain offences after previous conviction.,IPC,75,MODIFIED,5
+BNS,14,14,"Act done by a person bound, or by mistake of fact believing himself bound, by law.",IPC,76,NO_CHANGE,5
+BNS,15,15,Act of Judge when acting judicially.,IPC,77,NO_CHANGE,5
+BNS,16,16,Act done pursuant to the judgment or order of Court.,IPC,78,MODIFIED,5
+BNS,17,17,"Act done by a person justified, or by mistake of fact believing himself justified, by law.",IPC,79,NO_CHANGE,5
+BNS,18,18,Accident in doing a lawful act.,IPC,80,NO_CHANGE,5
+BNS,19,19,"Act likely to cause harm, but done without criminal intent, and to prevent other harm.",IPC,81,MODIFIED,5
+BNS,20,20,Act of a child under seven years of age.,IPC,82,NO_CHANGE,5
+BNS,21,21,Act of a child above seven and under twelve of immature understanding.,IPC,83,NO_CHANGE,5
+BNS,22,22,Act of a person of unsound mind.,IPC,84,NO_CHANGE,5
+BNS,23,23,Act of a person incapable of judgment by reason of intoxication caused against his will.,IPC,85,NO_CHANGE,6
+BNS,24,24,Offence requiring a particular intent or knowledge committed by one who is intoxicated.,IPC,86,NO_CHANGE,6
+BNS,25,25,"Act not intended and not known to be likely to cause death or grievous hurt, done by consent.",IPC,87,NO_CHANGE,6
+BNS,26,26,"Act not intended to cause death, done by consent in good faith for person's benefit.",IPC,88,NO_CHANGE,6
+BNS,27,27,"Act done in good faith for benefit of child or person, by or by consent of guardian.",IPC,89,MODIFIED,6
+BNS,28,28,Consent known to be given under fear or misconception.,IPC,90,NO_CHANGE,6
+BNS,29,29,Exclusion of acts which are offences independently of harm caused.,IPC,91,NO_CHANGE,6
+BNS,30,30,Act done in good faith for benefit of a person without consent.,IPC,92,NO_CHANGE,6
+BNS,31,31,Communication made in good faith.,IPC,93,NO_CHANGE,6
+BNS,32,32,Act to which a person is compelled by threats.,IPC,94,NO_CHANGE,6
+BNS,33,33,Act causing slight harm.,IPC,95,NO_CHANGE,6
+BNS,34,34,Things done in private defence.,IPC,96,NO_CHANGE,6
+BNS,35,35,Right of private defence of body and of property.,IPC,97,MODIFIED,6
+BNS,36,36,"Right of private defence against the act of a person of unsound mind, etc.",IPC,98,MODIFIED,6
+BNS,37,37,Act against which there is no right to private defence Extent to which the right may be exercised.,IPC,99,MODIFIED,6
+BNS,38,38,When the right of private defence of property extends to causing death.,IPC,100,MODIFIED,6
+BNS,39,39,When such right extends to causing any harm other than death.,IPC,101,NO_CHANGE,6
+BNS,40,40,Commencement and continuance of the right of private defence of the body.,IPC,102,NO_CHANGE,7
+BNS,41,41,When the right of private defence of property extends to causing death.,IPC,103,MODIFIED,7
+BNS,42,42,When such right extends to causing any harm other than death.,IPC,104,NO_CHANGE,7
+BNS,43,43,Commencement and continuance of the right of private defence of property.,IPC,105,MODIFIED,7
+BNS,44,44,Right of private defence against deadly assault when there is risk of harm to innocent person.,IPC,106,NO_CHANGE,7
+BNS,45,45,Abetment of a thing.,IPC,107,MODIFIED,7
+BNS,46,46,Abettor.,IPC,108,MODIFIED,7
+BNS,47,47,Abetment in India of offences outside India.,IPC,108A,MODIFIED,7
+BNS,48,48,Abetment outside India for offence in India.,IPC,,NEW,7
+BNS,49,49,Punishment of abetment if act abetted is committed in consequence and where no express provision is made for its punishment.,IPC,109,NO_CHANGE,7
+BNS,50,50,Punishment of abetment if person abetted does act with different intention from that of abettor.,IPC,110,NO_CHANGE,7
+BNS,51,51,Liability of abettor when one act abetted and different act done.,IPC,111,NO_CHANGE,7
+BNS,52,52,Abettor when liable to cumulative punishment for act abetted and for act done.,IPC,112,MODIFIED,7
+BNS,53,53,Liability of abettor for an effect caused by the act abetted different from that intended by the abettor.,IPC,113,NO_CHANGE,7
+BNS,54,54,Abettor present when offence committed.,IPC,114,NO_CHANGE,8
+BNS,55,55,Abetment of offence punishable with death or imprisonment for life.,IPC,115,NO_CHANGE,8
+BNS,56,56,Abetment of offence punishable with imprisonment.,IPC,116,MODIFIED,8
+BNS,57,57,Abetting commission of offence by the public or by more than ten persons.,IPC,117,MODIFIED,8
+BNS,58,58,Concealing design to commit offence punishable with death or imprisonment for life.,IPC,118,MODIFIED,8
+BNS,59,59,Public servant concealing design to commit offence which it is his duty to prevent.,IPC,119,NO_CHANGE,8
+BNS,60,60,Concealing design to commit offence punishable with imprisonment.,IPC,120,NO_CHANGE,8
+BNS,61(1),61,Criminal conspiracy definition.,IPC,120A,MODIFIED,8
+BNS,61(2),61,Criminal conspiracy punishment.,IPC,120B,MODIFIED,8
+BNS,62,62,Punishment for attempting to commit offences punishable with imprisonment for life or other imprisonment.,IPC,511,NO_CHANGE,8
+BNS,63,63,Rape definition.,IPC,375,MODIFIED,8
+BNS,64,64,Punishment for rape.,IPC,376(1),MODIFIED,8
+BNS,64,64,Punishment for rape.,IPC,376(2),MODIFIED,8
+BNS,65(1),65,Punishment for rape in certain cases- rape on a woman under sixteen years.,IPC,376(3),NO_CHANGE,8
+BNS,65(2),65,Punishment for rape in certain cases- rape on a woman under twelve years.,IPC,376AB,MODIFIED,8
+BNS,66,66,Punishment for causing death or resulting in persistent vegetative state of victim.,IPC,376A,NO_CHANGE,8
+BNS,67,67,Sexual intercourse by husband upon his wife during separation.,IPC,376B,NO_CHANGE,9
+BNS,68,68,Sexual intercourse by a person in authority.,IPC,376C,NO_CHANGE,9
+BNS,69,69,Sexual intercourse by employing deceitful means etc.,IPC,,NEW,9
+BNS,70(1),70,Gang rape.,IPC,376D,NO_CHANGE,9
+BNS,70(2),70,Gang rape on women under the age of eighteen.,IPC,376DB,MODIFIED,9
+BNS,71,71,Punishment for repeat offenders.,IPC,376E,NO_CHANGE,9
+BNS,72,72,Disclosure of identity of victim of certain offences etc.,IPC,228A,MODIFIED,9
+BNS,73,73,Printing or publishing any matter relating to court proceedings without permission.,IPC,228A(3),MODIFIED,9
+BNS,74,74,Assault or use of criminal force to woman with intent to outrage her modesty.,IPC,354,NO_CHANGE,9
+BNS,75,75,Sexual harassment.,IPC,354A,NO_CHANGE,9
+BNS,76,76,Assault or use of criminal force to woman with intent disrobe.,IPC,354B,MODIFIED,9
+BNS,77,77,Voyeurism.,IPC,354C,MODIFIED,9
+BNS,78,78,Stalking.,IPC,354D,NO_CHANGE,9
+BNS,79,79,"Word, gesture or act intended to insult the modesty of a woman.",IPC,509,NO_CHANGE,9
+BNS,80,80,Dowry death.,IPC,304B,NO_CHANGE,9
+BNS,81,81,Cohabitation caused by man deceitfully inducing belief of lawful marriage.,IPC,493,NO_CHANGE,10
+BNS,82(1),82,Marrying again during lifetime of husband or wife.,IPC,494,MODIFIED,10
+BNS,82(2),82,Marrying again during lifetime of husband or wife with concealment of former marriage from person with whom subsequent marriage is contracted.,IPC,495,MODIFIED,10
+BNS,83,83,Marriage ceremony fraudulently gone through without lawful marriage.,IPC,496,NO_CHANGE,10
+BNS,84,84,Enticing or taking away or detaining with criminal intent a married Woman.,IPC,498,MODIFIED,10
+BNS,85,85,Husband or relative of husband of a woman subjecting her to cruelty.,IPC,498A,NO_CHANGE,10
+BNS,86,86,Cruelty defined.,IPC,498A,MODIFIED,10
+BNS,87,87,"Kidnapping or abducting in order to murder or for ransom, etc.",IPC,366,NO_CHANGE,10
+BNS,88,88,Causing miscarriage.,IPC,312,NO_CHANGE,10
+BNS,89,89,Causing miscarriage without woman’s consent.,IPC,313,MODIFIED,10
+BNS,90,90,Death caused by act done with intent to cause miscarriage.,IPC,314,MODIFIED,10
+BNS,91,91,Act done with intent to prevent child being born alive or to cause it to die after birth.,IPC,315,NO_CHANGE,10
+BNS,92,92,Causing death of quick unborn child by act amounting to culpable homicide.,IPC,316,NO_CHANGE,10
+BNS,93,93,"Exposure and abandonment of child under twelve years, by parent or person having care of it.",IPC,317,NO_CHANGE,10
+BNS,94,94,Concealment of birth by secret disposal of dead body.,IPC,318,NO_CHANGE,11
+BNS,95,95,"Hiring, employing or engaging a child to commit an offence.",IPC,,NEW,11
+BNS,96,96,Procuration of child.,IPC,366A,MODIFIED,11
+BNS,97,97,Kidnapping or abducting child under ten years with intent to steal from its person.,IPC,369,NO_CHANGE,11
+BNS,98,98,"Selling minor for purposes of prostitution, etc.",IPC,372,MODIFIED,11
+BNS,99,99,"Buying minor for purposes of prostitution, etc.",IPC,373,MODIFIED,11
+BNS,100,100,Culpable homicide.,IPC,299,NO_CHANGE,11
+BNS,101,101,Murder.,IPC,300,MODIFIED,11
+BNS,102,102,Culpable homicide by causing death of person other than person whose death was intended.,IPC,301,NO_CHANGE,11
+BNS,103(1),103,Punishment for murder.,IPC,302,NO_CHANGE,11
+BNS,103(2),103,Punishment for murder.,IPC,,NEW,11
+BNS,104,104,Punishment for murder by life- convict.,IPC,303,MODIFIED,12
+BNS,105,105,Punishment for culpable homicide not amounting to murder.,IPC,304,MODIFIED,12
+BNS,106(1),106,Causing death by negligence.,IPC,304A,MODIFIED,12
+BNS,106(2),106,Causing death by negligence.,IPC,,NEW,12
+BNS,107,107,Abetment of suicide of child or person of unsound mind.,IPC,305,MODIFIED,12
+BNS,108,108,Abetment of suicide.,IPC,306,NO_CHANGE,12
+BNS,109,109,Attempt to murder.,IPC,307,MODIFIED,12
+BNS,110,110,Attempt to commit culpable homicide.,IPC,308,NO_CHANGE,12
+BNS,111,111,Organized crime.,IPC,,NEW,12
+BNS,112,112,Petty organized crime.,IPC,,NEW,13
+BNS,113,113,Terrorist act.,IPC,,NEW,13
+BNS,114,114,Hurt.,IPC,319,NO_CHANGE,13
+BNS,115(1),115,Voluntarily causing hurt.,IPC,321,NO_CHANGE,13
+BNS,115(2),115,Punishment for voluntarily causing hurt.,IPC,323,MODIFIED,13
+BNS,116,116,Grievous hurt definition.,IPC,320,MODIFIED,13
+BNS,117(1),117,Voluntarily causing grievous hurt punishment.,IPC,322,NO_CHANGE,13
+BNS,117(2),117,Punishment for voluntarily causing grievous hurt.,IPC,325,MODIFIED,13
+BNS,117(3),117,Voluntarily causing grievous hurt.,IPC,,NEW,13
+BNS,117(4),117,Voluntarily causing grievous hurt.,IPC,,NEW,13
+BNS,118(1),118,Voluntarily causing hurt or grievous hurt by dangerous weapons or means.,IPC,324,MODIFIED,14
+BNS,118(2),118,Voluntarily causing hurt or grievous hurt by dangerous weapons or means.,IPC,326,MODIFIED,14
+BNS,119(1),119,"Voluntarily causing hurt or grievous hurt to extort property, or to constrain to an illegal act.",IPC,327,NO_CHANGE,14
+BNS,119(2),119,"Voluntarily causing hurt or grievous hurt to extort property, or to constrain to an illegal act.",IPC,329,MODIFIED,14
+BNS,120(1),120,Voluntarily causing hurt or grievous hurt to extort confession or to compel restoration of property.,IPC,330,MODIFIED,14
+BNS,120(2),120,"Voluntarily causing grievous hurt to extort confession, or to compel restoration of property.",IPC,331,MODIFIED,14
+BNS,121(1),121,Voluntarily causing hurt to deter public servant from his duty.,IPC,332,MODIFIED,14
+BNS,121(2),121,Voluntarily causing grievous hurt to deter public servant from his duty.,IPC,333,MODIFIED,14
+BNS,122(1),122,Voluntarily causing provocation hurt on.,IPC,334,MODIFIED,14
+BNS,122(2),122,Voluntarily causing grievous hurt on provocation.,IPC,335,MODIFIED,14
+BNS,123,123,Causing harm by means of poison etc with intent to commit an offence.,IPC,328,NO_CHANGE,14
+BNS,124(1),124,Voluntarily causing grievous hurt by use of acid etc.,IPC,326A,MODIFIED,14
+BNS,124(2),124,Voluntarily causing grievous hurt by throwing or attempting to throw acid.,IPC,326B,MODIFIED,15
+BNS,125,125,Act endangering life or personal safety of others.,IPC,336,MODIFIED,15
+BNS,125(a),125,Where hurt is caused.,IPC,337,MODIFIED,15
+BNS,125(b),125,Where grievous hurt is caused.,IPC,338,MODIFIED,15
+BNS,126(1),126,Wrongful restraint.,IPC,339,MODIFIED,15
+BNS,126(2),126,Punishment for Wrongful restraint.,IPC,341,MODIFIED,15
+BNS,127(1),127,Wrongful confinement.,IPC,340,MODIFIED,15
+BNS,127(2),127,Punishment for Wrongful confinement.,IPC,342,MODIFIED,15
+BNS,127(3),127,Wrongful confinement for three or more days.,IPC,343,MODIFIED,15
+BNS,127(4),127,Wrongful confinement for ten or more days.,IPC,344,MODIFIED,15
+BNS,127(5),127,Wrongful confinement of person for whose liberation writ has been issued.,IPC,345,MODIFIED,15
+BNS,127(6),127,Wrongful confinement in secret.,IPC,346,MODIFIED,15
+BNS,127(7),127,"Wrongful confinement to extort property, or constrain to illegal act.",IPC,347,NO_CHANGE,15
+BNS,127(8),127,"Wrongful confinement to extort confession, or compel restoration of property.",IPC,348,MODIFIED,15
+BNS,128,128,Force.,IPC,349,MODIFIED,15
+BNS,129,129,Criminal force.,IPC,350,NO_CHANGE,15
+BNS,130,130,Assault.,IPC,351,NO_CHANGE,15
+BNS,131,131,Punishment for assault or criminal force otherwise than on grave provocation.,IPC,352,MODIFIED,16
+BNS,132,132,Assault or criminal force to deter public servant from discharge of his duty.,IPC,353,NO_CHANGE,16
+BNS,133,133,"Assault or criminal force with intent to dishonour person, otherwise than on grave provocation.",IPC,355,NO_CHANGE,16
+BNS,134,134,Assault or criminal force in attempt to commit theft of property carried by a person.,IPC,356,NO_CHANGE,16
+BNS,135,135,Assault or criminal force in attempt to wrongfully confine a person.,IPC,357,MODIFIED,16
+BNS,136,136,Assault or criminal force on grave provocation.,IPC,358,MODIFIED,16
+BNS,137(1),137,Kidnapping.,IPC,359,MODIFIED,16
+BNS,137(1)(a),137,Kidnapping from India.,IPC,360,MODIFIED,16
+BNS,137(1)(b),137,Kidnapping from lawful guardianship.,IPC,361,MODIFIED,16
+BNS,137(2),137,Punishment for kidnapping.,IPC,363,MODIFIED,16
+BNS,138,138,Abduction.,IPC,362,NO_CHANGE,16
+BNS,139,139,Kidnapping or maiming a child for purposes of begging.,IPC,363A,MODIFIED,16
+BNS,140(1),140,"Kidnapping or abducting in order to murder, etc.",IPC,364,NO_CHANGE,16
+BNS,140(2),140,"Kidnapping for ransom, etc.",IPC,364A,MODIFIED,16
+BNS,140(3),140,Kidnapping or abducting with intent secretly and wrongfully to confine person.,IPC,365,MODIFIED,16
+BNS,140(4),140,"Kidnapping or abducting in order to subject person to grievous hurt, slavery, etc.",IPC,367,MODIFIED,17
+BNS,141,141,Importation of girl or boy from foreign country.,IPC,366B,MODIFIED,17
+BNS,142,142,"Wrongfully concealing or keeping in confinement, kidnapped or abducted person.",IPC,368,NO_CHANGE,17
+BNS,143,143,Trafficking of person.,IPC,370,MODIFIED,17
+BNS,144,144,Exploitation of a trafficked person.,IPC,370A,MODIFIED,17
+BNS,145,145,Habitual dealing in slaves.,IPC,371,NO_CHANGE,17
+BNS,146,146,Unlawful compulsory labour.,IPC,374,NO_CHANGE,17
+BNS,147,147,"Waging, or attempting to wage war. or abetting waging of war, against the Government of India.",IPC,121,NO_CHANGE,17
+BNS,148,148,Conspiracy to commit offences punishable by Section 147.,IPC,121A,MODIFIED,17
+BNS,149,149,"Collecting arms, etc., with intention of waging war against the Government of India.",IPC,122,NO_CHANGE,17
+BNS,150,150,Concealing with intent to facilitate design to wage war.,IPC,123,NO_CHANGE,17
+BNS,151,151,"Assaulting President, Governor, etc., with intent to compel or restrain the exercise of any lawful power.",IPC,124,NO_CHANGE,17
+BNS,152,152,"Act endangering sovereignty, unity and integrity of India.",IPC,,NEW,17
+BNS,153,153,Waging war against Government of any Foreign State at peace with Government of India.,IPC,125,MODIFIED,18
+BNS,154,154,Committing depredation on territories of Foreign State at peace with Government of India.,IPC,126,MODIFIED,18
+BNS,155,155,Receiving property taken by war or depredation mentioned in Sections 153 and 154.,IPC,127,NO_CHANGE,18
+BNS,156,156,Public servant voluntarily allowing prisoner of State or war to escape.,IPC,128,NO_CHANGE,18
+BNS,157,157,Public servant negligently suffering such prisoner to escape.,IPC,129,NO_CHANGE,18
+BNS,158,158,"Aiding escape of, rescuing or harbouring such prisoner.",IPC,130,NO_CHANGE,18
+BNS,159,159,"Abetting mutiny, attempting to seduce a soldier, sailor or airman from his duty.",IPC,131,NO_CHANGE,18
+BNS,160,160,"Abetment of mutiny, if mutiny is committed in consequence thereof.",IPC,132,MODIFIED,18
+BNS,161,161,"Abetment of assault by soldier, sailor or airman on his superior officer, when in execution of his office.",IPC,133,NO_CHANGE,18
+BNS,162,162,"Abetment of such assault, if the assault is committed.",IPC,134,NO_CHANGE,18
+BNS,163,163,"Abetment of desertion of soldier, sailor or airman.",IPC,135,NO_CHANGE,18
+BNS,164,164,Harbouring deserter.,IPC,136,MODIFIED,18
+BNS,165,165,"Deserter concealed on board, of master merchant vessel through negligence.",IPC,137,MODIFIED,18
+BNS,166,166,"Abetment of act of insubordination by soldier, sailor or airman.",IPC,138,MODIFIED,18
+BNS,167,167,Persons subject to certain Acts.,IPC,139,NO_CHANGE,19
+BNS,168,168,"Wearing garb or carrying token used by soldier, sailor or airman.",IPC,140,MODIFIED,19
+BNS,169,169,"Candidate, electoral right defined.",IPC,171A,NO_CHANGE,19
+BNS,170,170,Bribery.,IPC,171B,NO_CHANGE,19
+BNS,171,171,Undue influence at elections.,IPC,171C,NO_CHANGE,19
+BNS,172,172,Personation at elections.,IPC,171D,NO_CHANGE,19
+BNS,173,173,Punishment for bribery.,IPC,171E,NO_CHANGE,19
+BNS,174,174,Punishment for undue influence or personation at an election.,IPC,171F,NO_CHANGE,19
+BNS,175,175,False statement in connection with an election.,IPC,171G,NO_CHANGE,19
+BNS,176,176,Illegal payment in connection with an election.,IPC,171H,MODIFIED,19
+BNS,177,177,Failure to keep election accounts.,IPC,171I,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,230,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,231,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,232,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,246,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,247,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,248,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,249,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,255,MODIFIED,19
+BNS,178,178,"Counterfeiting coin, Government stamps, currency- notes or bank- notes.",IPC,489A,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,237,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,238,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,239,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,240,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,241,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,250,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,251,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,254,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,258,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,260,MODIFIED,19
+BNS,179,179,"Using as genuine, forged or counterfeit coin, Government stamp, currency-notes or bank-notes.",IPC,489B,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,242,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,243,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,252,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,253,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,259,MODIFIED,19
+BNS,180,180,"Possession of forged or counterfeit coin, Government stamp, currency- notes or bank-notes.",IPC,489C,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,233,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,234,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,235,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,256,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,257,MODIFIED,19
+BNS,181,181,"Making or possessing instruments or materials for forging or counterfeiting coin, govt stamps, currency notes or bank notes.",IPC,489D,MODIFIED,19
+BNS,182,182,Making or using documents resembling currency-notes or bank- notes.,IPC,489E,MODIFIED,20
+BNS,183,183,"Effacing, writing from substance bearing Government stamp, removing from document a stamp used for it, with intent to cause loss to Government.",IPC,261,NO_CHANGE,20
+BNS,184,184,Using Government stamp known to have been before used.,IPC,262,NO_CHANGE,20
+BNS,185,185,Erasure of mark denoting that stamp has been used.,IPC,263,NO_CHANGE,20
+BNS,186,186,Prohibition of fictitious stamps.,IPC,263A,MODIFIED,20
+BNS,187,187,Person employed in mint causing coin to be of different weight or composition from that fixed by law.,IPC,244,NO_CHANGE,20
+BNS,188,188,Unlawfully taking coining instrument from mint.,IPC,245,NO_CHANGE,20
+BNS,189(1),189,Unlawful assembly.,IPC,141,MODIFIED,20
+BNS,189(2),189,Unlawful assembly- Being member of unlawful assembly.,IPC,142,MODIFIED,20
+BNS,189(3),189,"Unlawful assembly- Joining or continuing in unlawful assembly, knowing it has been commanded to disperse.",IPC,145,MODIFIED,20
+BNS,189(4),189,Unlawful assembly- Joining unlawful assembly armed with deadly weapon.—,IPC,144,MODIFIED,20
+BNS,189(5),189,Unlawful assembly- Knowingly joining or continuing in assembly of five or more persons after it has been commanded to disperse.—,IPC,151,MODIFIED,20
+BNS,189(6),189,"Unlawful assembly- Hiring, or conniving at hiring, of persons to join unlawful assembly.",IPC,150,MODIFIED,20
+BNS,189(7),189,Unlawful assembly- Harbouring persons hired for an unlawful assembly.,IPC,157,MODIFIED,20
+BNS,189(8)/(9),189,Unlawful assembly- Being hired to take part in an unlawful assembly or riot. Or to go armed.,IPC,158,MODIFIED,21
+BNS,190,190,Every member of unlawful assembly guilty of offence committed in prosecution of common object.,IPC,149,NO_CHANGE,21
+BNS,191(1),191,Rioting-Offence defined.,IPC,146,MODIFIED,21
+BNS,191(2),191,Rioting- Punishment for rioting.,IPC,147,MODIFIED,21
+BNS,191(3),191,Rioting- Being armed with deadly weapon.—,IPC,148,MODIFIED,21
+BNS,192,192,Wantonly giving provocation with intent to cause riot if rioting be committed if not committed.,IPC,153,NO_CHANGE,21
+BNS,193(1),193,"Liability of owner, occupier, etc., of land on which an unlawful assembly or riot takes place.",IPC,154,MODIFIED,21
+BNS,193(2),193,Liability of person for whose benefit riot is committed.,IPC,155,MODIFIED,21
+BNS,193(3),193,Liability of agent of owner or occupier for whose benefit riot is committed.,IPC,156,MODIFIED,21
+BNS,194(1),194,Affray- defined.,IPC,159,MODIFIED,21
+BNS,194(2),194,Punishment for Affray.,IPC,160,MODIFIED,21
+BNS,195(1),195,"Assaulting or obstructing public servant when suppressing riot, etc.",IPC,152,MODIFIED,21
+BNS,195(2),195,"Assaulting or obstructing public servant when suppressing riot, etc.",IPC,152,MODIFIED,22
+BNS,196,196,"Promoting enmity between different groups on grounds of religion, race, place of birth, residence, language, etc., and doing acts prejudicial to maintenance of harmony.",IPC,153A,MODIFIED,22
+BNS,197,197,"Imputations, assertions prejudicial to national integration.",IPC,153B,MODIFIED,22
+BNS,197(1)d,197,"Makes or publishes false or misleading information, jeopardising the sovereignty, unity and integrity or security of India.",IPC,,NEW,22
+BNS,198,198,"Public servant disobeying law, with intent to cause injury to any person.",IPC,166,NO_CHANGE,22
+BNS,199,199,Public servant disobeying direction under law.,IPC,166A,NO_CHANGE,22
+BNS,200,200,Punishment for non-treatment of victim.,IPC,166B,NO_CHANGE,22
+BNS,201,201,Public servant framing an incorrect document with intent to cause injury.,IPC,167,NO_CHANGE,22
+BNS,202,202,Public servant unlawfully engaging in trade.,IPC,168,MODIFIED,22
+BNS,203,203,Public servant unlawfully buying or bidding for property.,IPC,169,NO_CHANGE,22
+BNS,204,204,Personating a public servant.,IPC,170,MODIFIED,22
+BNS,205,205,Wearing garb or carrying token used by public servant with fraudulent intent.,IPC,171,MODIFIED,22
+BNS,206,206,Absconding to avoid service of summons or other proceeding.,IPC,172,MODIFIED,22
+BNS,207,207,"Preventing service of summons or other proceeding, or preventing publication thereof.",IPC,173,MODIFIED,23
+BNS,208,208,Non-attendance in obedience to an order from public servant.,IPC,174,MODIFIED,23
+BNS,209,209,"Non-appearance in response to a proclamation under section 84 of Bharatiya Nagarik Suraksha Sanhita,2023.",IPC,174A,MODIFIED,23
+BNS,210,210,"Omission to produce document or electronic record to public servant by person, legally bound to produce it.",IPC,175,MODIFIED,23
+BNS,211,211,Omission to give notice or information to public servant by person legally bound to give it.,IPC,176,MODIFIED,23
+BNS,212,212,Furnishing false information.,IPC,177,MODIFIED,23
+BNS,213,213,Refusing oath or affirmation when duly required by public servant to make it.,IPC,178,MODIFIED,23
+BNS,214,214,Refusing to answer public servant authorised to question.,IPC,179,MODIFIED,23
+BNS,215,215,Refusing to sign statement.,IPC,180,MODIFIED,23
+BNS,216,216,False statement on oath or affirmation to public servant or person authorised to administer an oath or affirmation.,IPC,181,NO_CHANGE,23
+BNS,217,217,"False information, with intent to cause public servant to use his lawful power to the injury of another person.",IPC,182,MODIFIED,23
+BNS,218,218,Resistance to the taking of property by the lawful authority of a public servant.,IPC,183,MODIFIED,24
+BNS,219,219,Obstructing sale of property offered by authority of public servant for sale.,IPC,184,MODIFIED,24
+BNS,220,220,Illegal purchase or bid for property offered for sale by authority of public servant.,IPC,185,NO_CHANGE,24
+BNS,221,221,Obstructing public servant in discharge of public functions.,IPC,186,MODIFIED,24
+BNS,222,222,Omission to assist public servant when bound by law to give assistance.,IPC,187,MODIFIED,24
+BNS,223,223,Disobedience to order duly promulgated by public servant.,IPC,188,MODIFIED,24
+BNS,224,224,Threat of injury to public servant.,IPC,189,NO_CHANGE,24
+BNS,225,225,Threat of injury to induce person to refrain from applying for protection.,IPC,190,NO_CHANGE,24
+BNS,226,226,Attempt to commit suicide to compel or restrain from applying or restrain of lawful power.,IPC,,NEW,24
+BNS,227,227,Giving false evidence.,IPC,191,NO_CHANGE,24
+BNS,228,228,Fabricating false evidence.,IPC,192,NO_CHANGE,24
+BNS,229,229,Punishment for false evidence.,IPC,193,MODIFIED,24
+BNS,230,230,Giving or fabricating false evidence with intent to procure conviction of capital offence.,IPC,194,MODIFIED,25
+BNS,231,231,Giving or fabricating false evidence with intent to procure conviction of offence punishable with imprisonment for life or imprisonment.,IPC,195,NO_CHANGE,25
+BNS,232,232,Threatening any person to give false evidence.,IPC,195A,MODIFIED,25
+BNS,233,233,Using evidence known to be false.,IPC,196,NO_CHANGE,25
+BNS,234,234,Issuing or signing false certificate.,IPC,197,NO_CHANGE,25
+BNS,235,235,Using as true a certificate known to be false.,IPC,198,NO_CHANGE,25
+BNS,236,236,False statement made in declaration which is by law receivable as evidence.,IPC,199,MODIFIED,25
+BNS,237,237,Using as true such declaration knowing it to be false.,IPC,200,MODIFIED,25
+BNS,238,238,"Causing disappearance of evidence ,or giving false information to screen offender.",IPC,201,MODIFIED,25
+BNS,239,239,Intentional omission to give information of offence by person bound to inform.,IPC,202,MODIFIED,25
+BNS,240,240,Giving false information respecting an offence committed.,IPC,203,NO_CHANGE,25
+BNS,241,241,Destruction of document or electronic record to prevent its production as evidence.,IPC,204,MODIFIED,25
+BNS,242,242,False personation for purpose of act or proceeding in suit or prosecution.,IPC,205,NO_CHANGE,25
+BNS,243,243,Fraudulent removal or concealment of property to prevent its seizure as forfeited or in execution.,IPC,206,MODIFIED,25
+BNS,244,244,Fraudulent claim to property to prevent its seizure as forfeited or in execution.,IPC,207,MODIFIED,26
+BNS,245,245,Fraudulently suffering decree for sum not due.,IPC,208,NO_CHANGE,26
+BNS,246,246,Dishonestly making false claim in Court.,IPC,209,MODIFIED,26
+BNS,247,247,Fraudulently obtaining decree for sum not due.,IPC,210,MODIFIED,26
+BNS,248,248,False charge of offence made with intent to injure.,IPC,211,MODIFIED,26
+BNS,249,249,Harbouring offender.,IPC,212,MODIFIED,26
+BNS,250,250,"Taking gift, etc., to screen an offender from punishment.",IPC,213,MODIFIED,26
+BNS,251,251,Offering gift or restoration of property in consideration of screening offender.,IPC,214,MODIFIED,26
+BNS,252,252,"Taking gift to help to recover stolen property, etc.",IPC,215,NO_CHANGE,26
+BNS,253,253,Harbouring offender who has escaped from custody or whose apprehension has been ordered.,IPC,216,MODIFIED,26
+BNS,254,254,Penalty for harbouring robbers or dacoits.,IPC,216A,MODIFIED,26
+BNS,255,255,Public servant disobeying direction of law with intent to save person from punishment or property from forfeiture.,IPC,217,NO_CHANGE,26
+BNS,256,256,Public servant framing incorrect record or writing with intent to save person from punishment or property from forfeiture.,IPC,218,NO_CHANGE,26
+BNS,257,257,"Public servant in judicial proceeding corruptly making report, etc. contrary to law.",IPC,219,NO_CHANGE,26
+BNS,258,258,Commitment for trial or confinement by person having authority who knows that he is acting contrary to law.,IPC,220,NO_CHANGE,27
+BNS,259,259,Intentional omission to apprehend on part of public servant bound to apprehend.,IPC,221,MODIFIED,27
+BNS,260,260,Intentional omission to apprehend on part of public servant bound to apprehend person under sentence or lawfully committed.,IPC,222,MODIFIED,27
+BNS,261,261,Escape from confinement or custody negligently suffered by public servant.,IPC,223,NO_CHANGE,27
+BNS,262,262,Resistance or obstruction by a person to his lawful apprehension.,IPC,224,NO_CHANGE,27
+BNS,263,263,Resistance or obstruction to lawful apprehension of another person.,IPC,225,MODIFIED,27
+BNS,264,264,"Omission to apprehend, or sufferance of escape, on part of public servant, in cases not otherwise provided for.",IPC,225A,NO_CHANGE,27
+BNS,265,265,Resistance or obstruction to lawful apprehension or escape or rescue in cases not otherwise provided for.,IPC,225B,NO_CHANGE,27
+BNS,266,266,Violation of condition of remission of punishment.,IPC,227,NO_CHANGE,27
+BNS,267,267,Intentional insult or interruption to public servant sitting in judicial proceeding.,IPC,228,MODIFIED,27
+BNS,268,268,Personation of assessor.,IPC,229,MODIFIED,27
+BNS,269,269,Failure by person released on bail or bond to appear in Court.,IPC,229A,NO_CHANGE,27
+BNS,270,270,Public nuisance.,IPC,268,MODIFIED,27
+BNS,271,271,Negligent act likely to spread infection of disease dangerous to life.,IPC,269,NO_CHANGE,28
+BNS,272,272,Malignant act likely to spread infection of disease dangerous to life.,IPC,270,NO_CHANGE,28
+BNS,273,273,Disobedience to quarantine rule.,IPC,271,MODIFIED,28
+BNS,274,274,Adulteration of food or drink intended for sale.,IPC,272,MODIFIED,28
+BNS,275,275,Sale of noxious food or drink.,IPC,273,MODIFIED,28
+BNS,276,276,Adulteration of drugs.,IPC,274,MODIFIED,28
+BNS,277,277,Sale of adulterated drugs.,IPC,275,MODIFIED,28
+BNS,278,278,Sale of drug as a different drug or preparation.,IPC,276,MODIFIED,28
+BNS,279,279,Fouling water of public spring or reservoir.,IPC,277,MODIFIED,28
+BNS,280,280,Making atmosphere noxious to health.,IPC,278,MODIFIED,28
+BNS,281,281,Rash driving or riding on a public way.,IPC,279,NO_CHANGE,28
+BNS,282,282,Rash navigation of vessel.,IPC,280,MODIFIED,28
+BNS,283,283,"Exhibition of false light, mark or buoy.",IPC,281,MODIFIED,28
+BNS,284,284,Conveying person by water for hire in unsafe or overloaded vessel.,IPC,282,MODIFIED,28
+BNS,285,285,Danger or obstruction in public way or line of navigation.,IPC,283,MODIFIED,28
+BNS,286,286,Negligent conduct with respect to poisonous substance.,IPC,284,MODIFIED,28
+BNS,287,287,Negligent conduct with respect to fire or combustible matter.,IPC,285,MODIFIED,29
+BNS,288,288,Negligent conduct with respect to explosive substance.,IPC,286,MODIFIED,29
+BNS,289,289,Negligent conduct with respect to machinery.,IPC,287,MODIFIED,29
+BNS,290,290,"Negligent conduct with respect to pulling down, repairing or constructing buildings, etc.",IPC,288,MODIFIED,29
+BNS,291,291,Negligent conduct with respect to animal.,IPC,289,MODIFIED,29
+BNS,292,292,Punishment for public nuisance in cases not otherwise provided for.,IPC,290,MODIFIED,29
+BNS,293,293,Continuance of nuisance after injunction to discontinue.,IPC,291,MODIFIED,29
+BNS,294,294,"Sale, etc., of obscene books, etc.",IPC,292,MODIFIED,29
+BNS,295,295,"Sale, etc., of obscene objects to young person.",IPC,293,MODIFIED,29
+BNS,296,296,Obscene acts and songs.,IPC,294,MODIFIED,29
+BNS,297,297,Keeping lottery office.,IPC,294A,MODIFIED,29
+BNS,298,298,Injuring or defiling place of worship with intent to insult the religion of any class.,IPC,295,NO_CHANGE,29
+BNS,299,299,"Deliberate and malicious acts intended to outrage religious feelings of any class, by insulting its religion or religious beliefs.",IPC,295A,MODIFIED,29
+BNS,300,300,Disturbing religious assembly.,IPC,296,NO_CHANGE,29
+BNS,301,301,"Trespassing on burial places, etc.",IPC,297,NO_CHANGE,29
+BNS,302,302,"Uttering words, etc., with deliberate intent to wound the religious feelings of any person.",IPC,298,NO_CHANGE,30
+BNS,303(1),303,Theft.,IPC,378,MODIFIED,30
+BNS,303(2),303,Punishment for theft.,IPC,379,MODIFIED,30
+BNS,304,304,Snatching.,IPC,,NEW,30
+BNS,305,305,"Theft in a dwelling house, or means of transportation or place of worship, etc.",IPC,380,MODIFIED,30
+BNS,306,306,Theft by clerk or servant of property in possession of master.,IPC,381,NO_CHANGE,30
+BNS,307,307,"Theft after preparation made for causing death, hurt or restraint in order to committing of theft.",IPC,382,NO_CHANGE,30
+BNS,308(1),308,Extortion.,IPC,383,MODIFIED,30
+BNS,308(2),308,Extortion punishment.,IPC,384,MODIFIED,30
+BNS,308(3),308,Putting person in fear of injury in order to commit extortion.,IPC,385,MODIFIED,30
+BNS,308(4),308,"Putting person in fear of death or of grievous hurt, in order to commit extortion.",IPC,387,MODIFIED,30
+BNS,308(5),308,Extortion by putting a person in fear of death or grievous hurt.,IPC,386,MODIFIED,30
+BNS,308(6),308,"Extortion by threat of accusation of an offence punishable with death or imprisonment for life, etc.",IPC,388,MODIFIED,30
+BNS,308(7),308,"Putting person in fear or accusation of offence, in order to commit extortion.",IPC,389,MODIFIED,30
+BNS,"309(1),(2),(3)",309,Robbery- When theft is robbery When extortion is robbery.,IPC,390,MODIFIED,30
+BNS,309(4),309,Robbery- Punishment for robbery.,IPC,392,MODIFIED,31
+BNS,309(5),309,Robbery- Attempt to commit robbery.,IPC,393,MODIFIED,31
+BNS,309(6),309,Robbery- Voluntarily causing hurt in committing robbery.,IPC,394,MODIFIED,31
+BNS,310(1),310,Dacoity definition.,IPC,391,MODIFIED,31
+BNS,310(2),310,Dacoity punishment .,IPC,395,MODIFIED,31
+BNS,310(3),310,Dacoity with murder.,IPC,396,MODIFIED,31
+BNS,310(4),310,Making preparation to commit dacoity.,IPC,399,MODIFIED,31
+BNS,310(5),310,Assembling for purpose of committing dacoity.,IPC,402,MODIFIED,31
+BNS,310(6),310,Punishment for belonging to gang of dacoits.,IPC,400,MODIFIED,31
+BNS,311,311,"Robbery or dacoity, with attempt to cause death or grievous hurt.",IPC,397,NO_CHANGE,31
+BNS,312,312,Attempt to commit robbery or dacoity when armed with deadly weapon.,IPC,398,NO_CHANGE,31
+BNS,313,313,"Punishment for belonging to gang of robbers, etc.",IPC,401,MODIFIED,31
+BNS,314,314,Dishonest misappropriation of property.,IPC,403,MODIFIED,31
+BNS,315,315,Dishonest misappropriation of property possessed by deceased person at the time of his death.,IPC,404,NO_CHANGE,31
+BNS,316(1),316,Criminal breach of trust.,IPC,405,MODIFIED,31
+BNS,316(2),316,Punishment for criminal breach of trust.,IPC,406,MODIFIED,31
+BNS,316(3),316,"Criminal breach of trust by carrier, etc.",IPC,407,MODIFIED,31
+BNS,316(4),316,Criminal breach of trust by clerk or servant.,IPC,408,MODIFIED,31
+BNS,316(5),316,"Criminal breach of trust by public servant, or by banker, merchant or agent.",IPC,409,MODIFIED,32
+BNS,317(1),317,Stolen property.,IPC,410,MODIFIED,32
+BNS,317(2),317,Dishonestly receiving stolen property.,IPC,411,MODIFIED,32
+BNS,317(3),317,Dishonestly receiving property stolen in the commission of a dacoity.,IPC,412,MODIFIED,32
+BNS,317(4),317,Habitually dealing in stolen property.,IPC,413,MODIFIED,32
+BNS,317(5),317,Assisting in concealment of stolen property.,IPC,414,MODIFIED,32
+BNS,318(1),318,Cheating.,IPC,415,MODIFIED,32
+BNS,318(2),318,Cheating punishment.,IPC,417,MODIFIED,32
+BNS,318(3),318,Cheating with knowledge that wrongful loss may ensue to person whose interest offender is bound to protect.,IPC,418,MODIFIED,32
+BNS,318(4),318,Cheating and dishonestly inducing delivery of property.,IPC,420,MODIFIED,32
+BNS,319(1),319,Cheating by personation.,IPC,416,MODIFIED,32
+BNS,319(2),319,Cheating by personation punishment.,IPC,419,MODIFIED,32
+BNS,320,320,Dishonest or fraudulent removal or concealment of property to prevent distribution among creditors.,IPC,421,MODIFIED,32
+BNS,321,321,Dishonestly or fraudulently preventing debt being available for creditors.,IPC,422,NO_CHANGE,32
+BNS,322,322,Dishonest or fraudulent execution of deed of transfer containing false statement of consideration.,IPC,423,MODIFIED,32
+BNS,323,323,Dishonest or fraudulent removal or concealment of property.,IPC,424,MODIFIED,32
+BNS,324(1),324,Mischief.,IPC,425,NO_CHANGE,32
+BNS,324(2),324,Mischief punishment.,IPC,426,MODIFIED,33
+BNS,324(3),324,Mischief - causes loss or damage to any property including the property of Government or Local Authority.,IPC,,NEW,33
+BNS,324(4),324,Mischief causing damage to the amount of twenty thousand rupees and more but less than one lakh rupees.,IPC,427,MODIFIED,33
+BNS,324(5),324,Mischief- cause loss or damage to amount of one lakh rupees onwards.,IPC,,NEW,33
+BNS,324(6),324,Mischief committed after preparation made for causing death or hurt.,IPC,440,NO_CHANGE,33
+BNS,325,325,Mischief by killing or maiming animal.,IPC,428,MODIFIED,33
+BNS,325,325,Mischief by killing or maiming animal.,IPC,429,MODIFIED,33
+BNS,326(a),326,"Mischief by injury, inundation, fire or explosive substance, etc.",IPC,430,MODIFIED,33
+BNS,326(b),326,"Mischief by injury to public road, bridge, river or channel.",IPC,431,MODIFIED,33
+BNS,326(c),326,Mischief by causing inundation or obstruction to public drainage attended with damage.,IPC,432,MODIFIED,33
+BNS,326(d),326,"Mischief by injury, inundation, fire or explosive substance, etc.",IPC,433,MODIFIED,33
+BNS,326(e),326,"Mischief by destroying or moving, etc., a land-mark fixed by public authority.",IPC,434,MODIFIED,33
+BNS,326(f),326,"Mischief by injury, inundation, fire or explosive substance, etc.",IPC,435,MODIFIED,33
+BNS,326(g),326,"Mischief by fire or explosive substance with intent to destroy house, etc.",IPC,436,MODIFIED,33
+BNS,327(1),327,"Mischief with intent to destroy or make unsafe a rail, aircraft, decked vessel or one of twenty tons burden.",IPC,437,MODIFIED,33
+BNS,327(2),327,Punishment for above offence.,IPC,438,MODIFIED,33
+BNS,328,328,"Punishment for intentionally running vessel aground or ashore with intent to commit theft, etc.",IPC,439,NO_CHANGE,34
+BNS,329(1),329,Criminal trespass and house- trespass.,IPC,441,MODIFIED,34
+BNS,329(2),329,Criminal trespass and house- trespass.,IPC,442,MODIFIED,34
+BNS,329(3),329,Criminal trespass punishment.,IPC,447,MODIFIED,34
+BNS,329(4),329,Punishment for house- trespass.,IPC,448,MODIFIED,34
+BNS,330(1),330,Lurking house trespass.,IPC,443,MODIFIED,34
+BNS,330(2),330,House breaking.,IPC,445,MODIFIED,34
+BNS,331(1),331,Punishment for house- trespass or house-breaking.,IPC,453,MODIFIED,34
+BNS,331(2),331,Punishment for lurking house-trespass or house-breaking by night.,IPC,456,MODIFIED,34
+BNS,331(3),331,Lurking house-trespass or house- breaking in order to commit offence punishable with imprisonment.,IPC,454,MODIFIED,34
+BNS,331(4),331,Lurking house-trespass or house- breaking by night in order to commit offence punishable with imprisonment.,IPC,457,MODIFIED,34
+BNS,331(5),331,"Lurking house-trespass or house- breaking after preparation for hurt, assault or wrongful restraint.",IPC,455,MODIFIED,34
+BNS,331(6),331,"Lurking house-trespass or house- breaking by night after preparation for hurt, assault, or wrongful restraint.",IPC,458,MODIFIED,34
+BNS,331(7),331,Grievous hurt caused whilst committing lurking house-trespass or house-breaking.,IPC,459,MODIFIED,34
+BNS,331(8),331,All persons jointly concerned in lurking house-trespass or house- breaking by night punishable where death or grievous hurt caused by one of them.,IPC,460,MODIFIED,35
+BNS,332(a),332,House-trespass in order to commit offence punishable with death.,IPC,449,MODIFIED,35
+BNS,332(b),332,House-trespass in order to commit offence punishable with imprisonment for life.,IPC,450,MODIFIED,35
+BNS,332(c),332,House-trespass in order to commit offence punishable with imprisonment.,IPC,451,MODIFIED,35
+BNS,333,333,"House-trespass after preparation for hurt, assault or wrongful restraint.",IPC,452,NO_CHANGE,35
+BNS,334(1),334,Dishonestly breaking open receptacle containing property.,IPC,461,MODIFIED,35
+BNS,334(2),334,Punishment for same offence when committed by person entrusted with custody.,IPC,462,MODIFIED,35
+BNS,335,335,Making a false document.,IPC,464,MODIFIED,35
+BNS,336(1),336,Forgery.,IPC,463,MODIFIED,35
+BNS,336(2),336,Forgery punishment.,IPC,465,MODIFIED,35
+BNS,336(3),336,Forgery for purpose of cheating.,IPC,468,MODIFIED,35
+BNS,336(4),336,Forgery for purpose of harming reputation.,IPC,469,MODIFIED,35
+BNS,337,337,"Forgery of record of Court or of public register, etc.",IPC,466,MODIFIED,35
+BNS,338,338,"Forgery of valuable security, will, etc.",IPC,467,NO_CHANGE,35
+BNS,339,339,"Having possession of document described in Section 337 or Section 338, knowing it to be forged and intending to use it as genuine.",IPC,474,NO_CHANGE,35
+BNS,340(1),340,Forged document or electronic record. and using it as genuine.,IPC,470,MODIFIED,35
+BNS,340(2),340,Using as genuine a forged document or electronic record.,IPC,471,MODIFIED,35
+BNS,341(1),341,"Making or possessing counterfeit seal, etc., with intent to commit forgery, punishable under section 338.",IPC,472,MODIFIED,36
+BNS,341(2),341,"Making or possessing counterfeit seal, etc., with intent to commit forgery punishable otherwise.",IPC,473,MODIFIED,36
+BNS,341(3),341,"Possesses any seal, plate or other instrument knowing the same to be counterfeit.",IPC,,NEW,36
+BNS,341(4),341,"Fraudulently or dishonestly uses as genuine any seal, plate or other instrument knowing or having reason to believe the same to be counterfeit.",IPC,,NEW,36
+BNS,342(1),342,"Counterfeiting device or mark used for authenticating documents described in section 338, or possessing counterfeit marked material.",IPC,475,MODIFIED,36
+BNS,342(2),342,"Counterfeiting device or mark used for authenticating documents described in section 338, or possessing counterfeit marked material.",IPC,476,MODIFIED,36
+BNS,343,343,"Fraudulent cancellation, destruction, etc. of will, authority to adopt, or valuable security.",IPC,477,NO_CHANGE,36
+BNS,344,344,Falsification of accounts.,IPC,477A,NO_CHANGE,36
+BNS,345(1),345,Property mark.,IPC,479,MODIFIED,36
+BNS,345(2),345,Using a false property mark.,IPC,481,MODIFIED,36
+BNS,345(3),345,Punishment for using a false property mark.,IPC,482,MODIFIED,36
+BNS,346,346,Tampering with property mark with intent to cause injury.,IPC,489,NO_CHANGE,36
+BNS,347(1),347,Counterfeiting a property mark.,IPC,483,MODIFIED,36
+BNS,347(2),347,Counterfeiting a mark used by a public servant.,IPC,484,MODIFIED,36
+BNS,348,348,Making or possession of any instrument for counterfeiting a property mark.,IPC,485,NO_CHANGE,37
+BNS,349,349,Selling goods marked with counterfeit property mark.,IPC,486,NO_CHANGE,37
+BNS,350(1),350,Making a false mark upon any receptacle containing goods.,IPC,487,MODIFIED,37
+BNS,350(2),350,Punishment for making use of any such false mark.,IPC,488,MODIFIED,37
+BNS,351(1),351,Criminal intimidation.,IPC,503,MODIFIED,37
+BNS,351(2)/(3),351,Criminal intimidation punishment.,IPC,506,MODIFIED,37
+BNS,351(4),351,Criminal intimidation by an anonymous communication.,IPC,507,MODIFIED,37
+BNS,352,352,Intentional insult with intent to provoke breach of the peace.,IPC,504,MODIFIED,37
+BNS,353,353,Statements conducing to public mischief.,IPC,505,MODIFIED,37
+BNS,354,354,Act caused by inducing person to believe that he will be rendered an object of the Divine displeasure.,IPC,508,NO_CHANGE,37
+BNS,355,355,Misconduct in public by a drunken person.,IPC,510,MODIFIED,37
+BNS,356(1),356,Defamation.,IPC,499,MODIFIED,37
+BNS,356(2),356,Defamation punishment.,IPC,500,MODIFIED,37
+BNS,356(3),356,Printing or engraving matter known to be defamatory.,IPC,501,MODIFIED,37
+BNS,356(4),356,Sale of printed or engraved substance containing defamatory matter.,IPC,502,MODIFIED,37
+BNS,357,357,Breach of contract to attend on and supply wants of helpless person.,IPC,491,MODIFIED,37
+BNS,358,358,Repeal and Savings.,IPC,,NEW,37
+BNSS,1,1,"Short title, extent and commencement.",CrPC,1,MODIFIED,1
+BNSS,2,2,Definitions.,CrPC,2,MODIFIED,1
+BNSS,2(1)(a),2,"""audio-video electronic means"" .",CrPC,,NEW,1
+BNSS,2(1)(b),2,"""bail""",CrPC,,NEW,1
+BNSS,2(1)(c),2,"""bailable offence"".",CrPC,2(a),NO_CHANGE,1
+BNSS,2(1)(d),2,"""bail bond"".",CrPC,,NEW,1
+BNSS,2(1)(e),2,"""bond"".",CrPC,,NEW,1
+BNSS,2(1)(f),2,"""charge"".",CrPC,2(b),NO_CHANGE,1
+BNSS,2(1)(g),2,"""cognizable offence"".",CrPC,2(c),NO_CHANGE,1
+BNSS,2(1)(h),2,"""complaint"".",CrPC,2(d),NO_CHANGE,1
+BNSS,2(1)(i),2,"""electronic communication"".",CrPC,,NEW,1
+BNSS,2(1)(j),2,"""High Court"".",CrPC,2(e),NO_CHANGE,1
+BNSS,2(1)(k),2,"""inquiry"".",CrPC,2(g),NO_CHANGE,1
+BNSS,2(1)(l),2,"""investigation"".",CrPC,2(h),MODIFIED,1
+BNSS,2(1)(m),2,"""judicial proceeding"".",CrPC,2(i),NO_CHANGE,1
+BNSS,2(1)(n),2,"""local jurisdiction"".",CrPC,2(j),NO_CHANGE,1
+BNSS,2(1)(o),2,"""non-cognizable offence"".",CrPC,2(l),NO_CHANGE,1
+BNSS,2(1)(p),2,"""notification"".",CrPC,2(m),NO_CHANGE,1
+BNSS,2(1)(q),2,"""offence"".",CrPC,2(n),NO_CHANGE,1
+BNSS,2(1)(r),2,"""officer in charge of a police station"".",CrPC,2(o),NO_CHANGE,1
+BNSS,2(1)(s),2,"""place"".",CrPC,2(p),NO_CHANGE,2
+BNSS,2(1)(t),2,"""police report"".",CrPC,2(r),NO_CHANGE,2
+BNSS,2(1)(u),2,"""police station"".",CrPC,2(s),NO_CHANGE,2
+BNSS,2(1)(v),2,"""Public Prosecutor"".",CrPC,2(u),NO_CHANGE,2
+BNSS,2(1)(w),2,"""sub-division"".",CrPC,2(v),NO_CHANGE,2
+BNSS,2(1)(x),2,"""summons-case"".",CrPC,2(w),NO_CHANGE,2
+BNSS,2(1)(y),2,"""victim"".",CrPC,2(wa),MODIFIED,2
+BNSS,2(1)(z),2,"""warrant-case"".",CrPC,2(x),NO_CHANGE,2
+BNSS,2(2),2,Words and expressions used.,CrPC,2(y),MODIFIED,2
+BNSS,3,3,Construction of references.,CrPC,3,MODIFIED,2
+BNSS,4,4,Trial of offences under Bharatiya Nyaya Sanhita and other laws.,CrPC,4,NO_CHANGE,2
+BNSS,5,5,Saving.,CrPC,5,NO_CHANGE,2
+BNSS,6,6,Classes of Criminal Courts.,CrPC,6,MODIFIED,2
+BNSS,7,7,Territorial divisions.,CrPC,7,MODIFIED,2
+BNSS,8,8,Court of Session.,CrPC,9,MODIFIED,2
+BNSS,9,9,Courts of Judicial Magistrates.,CrPC,11,MODIFIED,2
+BNSS,10,10,"Chief Judicial Magistrate and Additional Chief Judicial Magistrate, etc.",CrPC,12,MODIFIED,2
+BNSS,11,11,Special Judicial Magistrates.,CrPC,13,MODIFIED,2
+BNSS,12,12,Local jurisdiction of Judicial Magistrates.,CrPC,14,MODIFIED,2
+BNSS,13,13,Subordination of Judicial Magistrates.,CrPC,15,NO_CHANGE,3
+BNSS,14,14,Executive Magistrates.,CrPC,20,MODIFIED,3
+BNSS,15,15,Special Executive Magistrates.,CrPC,21,MODIFIED,3
+BNSS,16,16,Local Jurisdiction of Executive Magistrates.,CrPC,22,NO_CHANGE,3
+BNSS,17,17,Subordination of Executive Magistrates.,CrPC,23,MODIFIED,3
+BNSS,18,18,Public Prosecutors.,CrPC,24,MODIFIED,3
+BNSS,19,19,Assistant Public Prosecutors.,CrPC,25,MODIFIED,3
+BNSS,20,20,Directorate of Prosecution.,CrPC,25A,MODIFIED,3
+BNSS,21,21,Courts by which offences are triable.,CrPC,26,NO_CHANGE,3
+BNSS,22,22,Sentences which High Courts and Sessions Judges may pass.,CrPC,28,MODIFIED,3
+BNSS,23,23,Sentences which Magistrates may pass.,CrPC,29,MODIFIED,3
+BNSS,24,24,Sentence of imprisonment in default of fine.,CrPC,30,NO_CHANGE,3
+BNSS,25,25,Sentence in cases of conviction of several offences at one trial.,CrPC,31,MODIFIED,3
+BNSS,26,26,Mode of conferring powers.,CrPC,32,NO_CHANGE,3
+BNSS,27,27,Powers of officers appointed.,CrPC,33,MODIFIED,3
+BNSS,28,28,Withdrawal of powers.,CrPC,34,MODIFIED,3
+BNSS,29,29,Powers of Judges and Magistrates exercisable by their successors-in-office.,CrPC,35,MODIFIED,3
+BNSS,30,30,Powers of superior officers of police.,CrPC,36,NO_CHANGE,3
+BNSS,31,31,Public when to assist Magistrates and police.,CrPC,37,MODIFIED,4
+BNSS,32,32,"Aid to person, other than police officer, executing warrant.",CrPC,38,NO_CHANGE,4
+BNSS,33,33,Public to give information of certain offences.,CrPC,39,MODIFIED,4
+BNSS,34,34,Duty of officers employed in connection with the affairs of a village to make certain report.,CrPC,40,MODIFIED,4
+BNSS,35,35,When police may arrest without warrant.,CrPC,41,MODIFIED,4
+BNSS,35,35,When police may arrest without warrant.,CrPC,41A,MODIFIED,4
+BNSS,36,36,Procedure of arrest and duties of officer making arrest.,CrPC,41B,MODIFIED,4
+BNSS,37,37,Designated Police Officer.,CrPC,41C,MODIFIED,4
+BNSS,38,38,Right of arrested person to meet an advocate of his choice during interrogation.,CrPC,41D,NO_CHANGE,4
+BNSS,39,39,Arrest on refusal to give name and residence.,CrPC,42,MODIFIED,4
+BNSS,40,40,Arrest by private person and procedure on such arrest.,CrPC,43,MODIFIED,4
+BNSS,41,41,Arrest by Magistrate.,CrPC,44,NO_CHANGE,4
+BNSS,42,42,Protection of members of the Armed Forces from arrest.,CrPC,45,NO_CHANGE,4
+BNSS,43,43,Arrest how made.,CrPC,46,MODIFIED,4
+BNSS,44,44,Search of place entered by person sought to be arrested.,CrPC,47,NO_CHANGE,4
+BNSS,45,45,Pursuit of offenders into other jurisdictions.,CrPC,48,NO_CHANGE,4
+BNSS,46,46,No unnecessary restraint.,CrPC,49,NO_CHANGE,5
+BNSS,47,47,Person arrested to be informed of grounds of arrest and of right to bail.,CrPC,50,NO_CHANGE,5
+BNSS,48,48,"Obligation of person making arrest to inform about the arrest, etc , to relative or friend.",CrPC,50A,MODIFIED,5
+BNSS,49,49,Search of arrested person.,CrPC,51,NO_CHANGE,5
+BNSS,50,50,Power to seize offensive weapons.,CrPC,52,MODIFIED,5
+BNSS,51,51,Examination of accused by medical practitioner at the request of police officer.,CrPC,53,MODIFIED,5
+BNSS,52,52,Examination of person accused of rape by medical practitioner.,CrPC,53A,MODIFIED,5
+BNSS,53,53,Examination of arrested person by medical officer.,CrPC,54,MODIFIED,5
+BNSS,54,54,Identification of person arrested.,CrPC,54A,MODIFIED,5
+BNSS,55,55,Procedure when police officer deputes subordinate to arrest without warrant.,CrPC,55,NO_CHANGE,5
+BNSS,56,56,Health and safety of arrested person.,CrPC,55A,NO_CHANGE,5
+BNSS,57,57,Person arrested to be taken before Magistrate or officer in charge of police station.,CrPC,56,NO_CHANGE,5
+BNSS,58,58,Person arrested not to be detained more than twenty- four hours.,CrPC,57,NO_CHANGE,5
+BNSS,59,59,Police to report apprehensions.,CrPC,58,NO_CHANGE,6
+BNSS,60,60,Discharge of person apprehended.,CrPC,59,MODIFIED,6
+BNSS,61,61,"Power, on escape, to pursue and retake.",CrPC,60,NO_CHANGE,6
+BNSS,62,62,Arrest to be made strictly according to the Sanhita.,CrPC,60A,NO_CHANGE,6
+BNSS,63,63,Form of summons.,CrPC,61,MODIFIED,6
+BNSS,64,64,Summons how served.,CrPC,62,MODIFIED,6
+BNSS,65,65,"Service of summons on corporate bodies, firms, and societies.",CrPC,63,MODIFIED,6
+BNSS,66,66,Service when persons summoned cannot be found.,CrPC,64,MODIFIED,6
+BNSS,67,67,Procedure when service cannot be effected as before provided.,CrPC,65,NO_CHANGE,6
+BNSS,68,68,Service on Government servant.,CrPC,66,NO_CHANGE,6
+BNSS,69,69,Service of summons outside local limits.,CrPC,67,NO_CHANGE,6
+BNSS,70,70,Proof of service in such cases and when serving officer not present.,CrPC,68,MODIFIED,6
+BNSS,71,71,Service of summons on witness by post.,CrPC,69,MODIFIED,6
+BNSS,72,72,Form of warrant of arrest and duration.,CrPC,70,NO_CHANGE,6
+BNSS,73,73,Power to direct security to be taken.,CrPC,71,NO_CHANGE,6
+BNSS,74,74,Warrants to whom directed.,CrPC,72,NO_CHANGE,6
+BNSS,75,75,Warrant may be directed to any person.,CrPC,73,NO_CHANGE,6
+BNSS,76,76,Warrant directed to police officer.,CrPC,74,NO_CHANGE,7
+BNSS,77,77,Notification of substance of warrant.,CrPC,75,NO_CHANGE,7
+BNSS,78,78,Person arrested to be brought before court without delay.,CrPC,76,NO_CHANGE,7
+BNSS,79,79,Where warrant may be executed.,CrPC,77,NO_CHANGE,7
+BNSS,80,80,Warrant forwarded for execution outside jurisdiction.,CrPC,78,NO_CHANGE,7
+BNSS,81,81,Warrant directed to police officer for execution outside jurisdiction.,CrPC,79,NO_CHANGE,7
+BNSS,82,82,Procedure on arrest of person against whom warrant issued.,CrPC,80,MODIFIED,7
+BNSS,83,83,Procedure by Magistrate before whom such person arrested is brought.,CrPC,81,MODIFIED,7
+BNSS,84,84,Proclamation for person absconding.,CrPC,82,MODIFIED,7
+BNSS,85,85,Attachment of property of person absconding.,CrPC,83,MODIFIED,7
+BNSS,86,86,Identification and attachment of property of proclaimed person.,CrPC,,NEW,7
+BNSS,87,87,Claims and objections to attachment.,CrPC,84,NO_CHANGE,7
+BNSS,88,88,"Release, sale and restoration of attached property.",CrPC,85,NO_CHANGE,7
+BNSS,89,89,Appeal from order rejecting application for restoration of attached property.,CrPC,86,NO_CHANGE,7
+BNSS,90,90,"Issue of warrant in lieu of, or in addition to, summons.",CrPC,87,NO_CHANGE,7
+BNSS,91,91,Power to take bond or bail bond for appearance.,CrPC,88,MODIFIED,7
+BNSS,92,92,Arrest on breach of bond or bail bond for appearance.,CrPC,89,MODIFIED,8
+BNSS,93,93,Provisions of this Chapter generally applicable to summonses and warrants of arrest.,CrPC,90,NO_CHANGE,8
+BNSS,94,94,Summons to produce document or other thing.,CrPC,91,MODIFIED,8
+BNSS,95,95,Procedure as to letters.,CrPC,92,MODIFIED,8
+BNSS,96,96,When search-warrant may be issued.,CrPC,93,MODIFIED,8
+BNSS,97,97,"Search of place suspected to contain stolen property, forged documents, etc.",CrPC,94,MODIFIED,8
+BNSS,98,98,Power to declare certain publications forfeited and to issue search-warrants for the same.,CrPC,95,MODIFIED,8
+BNSS,99,99,Application to High Court to set aside declaration of forfeiture.,CrPC,96,NO_CHANGE,8
+BNSS,100,100,Search for persons wrongfully confined.,CrPC,97,NO_CHANGE,8
+BNSS,101,101,Power to compel restoration of abducted females.,CrPC,98,MODIFIED,8
+BNSS,102,102,"Direction, etc, of search- warrants.",CrPC,99,NO_CHANGE,8
+BNSS,103,103,Persons in charge of closed place to allow search.,CrPC,100,MODIFIED,8
+BNSS,104,104,Disposal of things found in search beyond jurisdiction.,CrPC,101,NO_CHANGE,8
+BNSS,105,105,Recording of search and seizure through audio-video electronic means.,CrPC,,NEW,9
+BNSS,106,106,Power of police officer to seize certain property.,CrPC,102,NO_CHANGE,9
+BNSS,107,107,"Attachment, forfeiture or restoration of property.",CrPC,,NEW,9
+BNSS,108,108,Magistrate may direct search in his presence.,CrPC,103,NO_CHANGE,9
+BNSS,109,109,"Power to impound document, etc , produced.",CrPC,104,NO_CHANGE,9
+BNSS,110,110,Reciprocal arrangements regarding processes.,CrPC,105,NO_CHANGE,9
+BNSS,111,111,Definitions.,CrPC,105A,NO_CHANGE,9
+BNSS,112,112,Letter of request to competent authority for investigation in a country or place outside India.,CrPC,166A,NO_CHANGE,9
+BNSS,113,113,Letter of request from a country or place outside India to a Court or an authority for investigation in India.,CrPC,166B,NO_CHANGE,9
+BNSS,114,114,Assistance in securing transfer of persons.,CrPC,105B,NO_CHANGE,9
+BNSS,115,115,Assistance in relation to orders of attachment or forfeiture of property.,CrPC,105C,NO_CHANGE,9
+BNSS,116,116,Identifying unlawfully acquired property.,CrPC,105D,NO_CHANGE,9
+BNSS,117,117,Seizure or attachment of property.,CrPC,105E,NO_CHANGE,9
+BNSS,118,118,Management of properties seized or forfeited under this Chapter.,CrPC,105F,NO_CHANGE,9
+BNSS,119,119,Notice of forfeiture of property.,CrPC,105G,NO_CHANGE,10
+BNSS,120,120,Forfeiture of property in certain cases.,CrPC,105H,MODIFIED,10
+BNSS,121,121,Fine in lieu of forfeiture.,CrPC,105I,NO_CHANGE,10
+BNSS,122,122,Certain transfers to be null and void.,CrPC,105J,NO_CHANGE,10
+BNSS,123,123,Procedure in respect of letter of request.,CrPC,105K,NO_CHANGE,10
+BNSS,124,124,Application of this Chapter.,CrPC,105L,NO_CHANGE,10
+BNSS,125,125,Security for keeping the peace on conviction.,CrPC,106,NO_CHANGE,10
+BNSS,126,126,Security for keeping the peace in other cases.,CrPC,107,NO_CHANGE,10
+BNSS,127,127,Security for good behaviour from persons disseminating seditious matters.,CrPC,108,MODIFIED,10
+BNSS,128,128,Security for good behaviour from suspected persons.,CrPC,109,NO_CHANGE,10
+BNSS,129,129,Security for good behaviour from habitual offenders.,CrPC,110,MODIFIED,10
+BNSS,130,130,Order to be made.,CrPC,111,MODIFIED,10
+BNSS,131,131,Procedure in respect of person present in Court.,CrPC,112,NO_CHANGE,10
+BNSS,132,132,Summons or warrant in case of person not so present.,CrPC,113,NO_CHANGE,10
+BNSS,133,133,Copy of order to accompany summons or warrant.,CrPC,114,NO_CHANGE,10
+BNSS,134,134,Power to dispense with personal attendance.,CrPC,115,MODIFIED,10
+BNSS,135,135,Inquiry as to truth of information.,CrPC,116,MODIFIED,10
+BNSS,136,136,Order to give security.,CrPC,117,MODIFIED,10
+BNSS,137,137,Discharge of person informed against.,CrPC,118,NO_CHANGE,10
+BNSS,138,138,Commencement of period for which security is required.,CrPC,119,NO_CHANGE,11
+BNSS,139,139,Contents of bond.,CrPC,120,MODIFIED,11
+BNSS,140,140,Power to reject sureties.,CrPC,121,MODIFIED,11
+BNSS,141,141,Imprisonment in default of security.,CrPC,122,MODIFIED,11
+BNSS,142,142,Power to release persons imprisoned for failing to give security.,CrPC,123,NO_CHANGE,11
+BNSS,143,143,Security for unexpired period of bond.,CrPC,124,MODIFIED,11
+BNSS,144,144,"Order for maintenance of wives, children and parents.",CrPC,125,MODIFIED,11
+BNSS,145,145,Procedure.,CrPC,126,MODIFIED,11
+BNSS,146,146,Alteration in allowance.,CrPC,127,NO_CHANGE,11
+BNSS,147,147,Enforcement of order of maintenance.,CrPC,128,NO_CHANGE,11
+BNSS,148,148,Dispersal of assembly by use of civil force.,CrPC,129,NO_CHANGE,11
+BNSS,149,149,Use of armed forces to disperse assembly.,CrPC,130,MODIFIED,11
+BNSS,150,150,Power of certain armed force officers to disperse assembly.,CrPC,131,NO_CHANGE,11
+BNSS,151,151,"Protection against prosecution for acts done under sections 148, 149 and 150.",CrPC,132,MODIFIED,11
+BNSS,152,152,Conditional order for removal of nuisance.,CrPC,133,NO_CHANGE,11
+BNSS,153,153,Service or notification of order.,CrPC,134,NO_CHANGE,11
+BNSS,154,154,Person to whom order is addressed to obey or show cause.,CrPC,135,MODIFIED,11
+BNSS,155,155,Penalty for failure to comply with section 154.,CrPC,136,MODIFIED,12
+BNSS,156,156,Procedure where existence of public right is denied.,CrPC,137,NO_CHANGE,12
+BNSS,157,157,Procedure where person against whom order is made under section 152 appears to show cause.,CrPC,138,MODIFIED,12
+BNSS,158,158,Power of Magistrate to direct local investigation and examination of an expert.,CrPC,139,NO_CHANGE,12
+BNSS,159,159,"Power of Magistrate to furnish written instructions, etc.",CrPC,140,NO_CHANGE,12
+BNSS,160,160,Procedure on order being made absolute and consequences of disobedience.,CrPC,141,NO_CHANGE,12
+BNSS,161,161,Injunction pending inquiry.,CrPC,142,NO_CHANGE,12
+BNSS,162,162,Magistrate may prohibit repetition or continuance of public nuisance.,CrPC,143,MODIFIED,12
+BNSS,163,163,Power to issue order in urgent cases of nuisance or apprehended danger.,CrPC,144,NO_CHANGE,12
+BNSS,164,164,Procedure where dispute concerning land or water is likely to cause breach of peace.,CrPC,145,NO_CHANGE,12
+BNSS,165,165,Power to attach subject of dispute and to appoint receiver.,CrPC,146,NO_CHANGE,12
+BNSS,166,166,Dispute concerning right of use of land or water.,CrPC,147,MODIFIED,12
+BNSS,167,167,Local inquiry.,CrPC,148,MODIFIED,12
+BNSS,168,168,Police to prevent cognizable offences.,CrPC,149,NO_CHANGE,12
+BNSS,169,169,Information of design to commit cognizable offences.,CrPC,150,NO_CHANGE,12
+BNSS,170,170,Arrest to prevent the commission of cognizable offences.,CrPC,151,MODIFIED,13
+BNSS,171,171,Prevention of injury to public property.,CrPC,152,MODIFIED,13
+BNSS,172,172,Persons bound to conform to lawful directions of police.,CrPC,,NEW,13
+BNSS,173,173,Information in cognizable cases.,CrPC,154,MODIFIED,13
+BNSS,174,174,Information as to non- cognizable cases and investigation of such cases.,CrPC,155,MODIFIED,13
+BNSS,175,175,Police officer's power to investigate cognizable case.,CrPC,156,MODIFIED,13
+BNSS,176,176,Procedure for investigation.,CrPC,157,MODIFIED,13
+BNSS,177,177,Report how submitted.,CrPC,158,MODIFIED,13
+BNSS,178,178,Power to hold investigation or preliminary inquiry.,CrPC,159,NO_CHANGE,14
+BNSS,179,179,Police officer's power to require attendance of witnesses.,CrPC,160,MODIFIED,14
+BNSS,180,180,Examination of witnesses by police.,CrPC,161,NO_CHANGE,14
+BNSS,181,181,Statements to police and use thereof.,CrPC,162,MODIFIED,14
+BNSS,182,182,No inducement to be offered.,CrPC,163,NO_CHANGE,14
+BNSS,183,183,Recording of confessions and statements.,CrPC,164,MODIFIED,14
+BNSS,184,184,Medical examination of the victim of rape.,CrPC,164A,MODIFIED,14
+BNSS,185,185,Search by police officer.,CrPC,165,MODIFIED,14
+BNSS,186,186,When officer in charge of police station may require another to issue search- warrant.,CrPC,166,NO_CHANGE,14
+BNSS,187,187,Procedure when investigation cannot be completed in twenty-four hours.,CrPC,167,MODIFIED,14
+BNSS,188,188,Report of investigation by subordinate police officer.,CrPC,168,NO_CHANGE,15
+BNSS,189,189,Release of accused when evidence deficient.,CrPC,169,MODIFIED,15
+BNSS,190,190,"Cases to be sent to Magistrate, when evidence is sufficient.",CrPC,170,MODIFIED,15
+BNSS,191,191,Complainant and witnesses not to be required to accompany police officer and not to be subjected to restraint.,CrPC,171,NO_CHANGE,15
+BNSS,192,192,Diary of proceedings in investigation.,CrPC,172,NO_CHANGE,15
+BNSS,193,193,Report of police officer on completion of investigation.,CrPC,173,MODIFIED,15
+BNSS,194,194,"Police to enquire and report on suicide, etc.",CrPC,174,MODIFIED,16
+BNSS,195,195,Power to summon persons.,CrPC,175,MODIFIED,16
+BNSS,196,196,Inquiry by Magistrate into cause of death,CrPC,176,MODIFIED,16
+BNSS,197,197,Ordinary place of inquiry and trial.,CrPC,177,NO_CHANGE,16
+BNSS,198,198,Place of inquiry or trial.,CrPC,178,NO_CHANGE,16
+BNSS,199,199,Offence triable where act is done or consequence ensues.,CrPC,179,NO_CHANGE,16
+BNSS,200,200,Place of trial where act is an offence by reason of relation to other offence,CrPC,180,NO_CHANGE,16
+BNSS,201,201,Place of trial in case of certain offences.,CrPC,181,MODIFIED,16
+BNSS,202,202,"Offences committed by means of electronic communications, letters, etc.",CrPC,182,MODIFIED,16
+BNSS,203,203,Offence committed on journey or voyage.,CrPC,183,NO_CHANGE,17
+BNSS,204,204,Place of trial for offences triable together.,CrPC,184,NO_CHANGE,17
+BNSS,205,205,Power to order cases to be tried in different sessions divisions.,CrPC,185,NO_CHANGE,17
+BNSS,206,206,"High Court to decide, in case of doubt, district where inquiry or trial shall take place.",CrPC,186,NO_CHANGE,17
+BNSS,207,207,Power to issue summons or warrant for offence committed beyond local jurisdiction.,CrPC,187,MODIFIED,17
+BNSS,208,208,Offence committed outside India.,CrPC,188,MODIFIED,17
+BNSS,209,209,Receipt of evidence relating to offences committed outside India.,CrPC,189,MODIFIED,17
+BNSS,210,210,Cognizance of offences by Magistrates.,CrPC,190,MODIFIED,17
+BNSS,211,211,Transfer on application of the accused.,CrPC,191,NO_CHANGE,17
+BNSS,212,212,Making over of cases to Magistrates.,CrPC,192,NO_CHANGE,17
+BNSS,213,213,Cognizance of offences by Courts of Session.,CrPC,193,NO_CHANGE,17
+BNSS,214,214,Additional Sessions Judges to try cases made over to them.,CrPC,194,NO_CHANGE,17
+BNSS,215,215,"Prosecution for contempt of lawful authority of public servants, for offences against public justice and for offences relating to documents given in evidence.",CrPC,195,MODIFIED,17
+BNSS,216,216,"Procedure for witnesses in case of threatening, etc.",CrPC,195A,NO_CHANGE,17
+BNSS,217,217,Prosecution for offences against the State and for criminal conspiracy to commit such offence.,CrPC,196,MODIFIED,18
+BNSS,218,218,Prosecution of Judges and public servants.,CrPC,197,MODIFIED,18
+BNSS,219,219,Prosecution for offences against marriage.,CrPC,198,MODIFIED,18
+BNSS,220,220,"Prosecution of offences under section 498A of the Bharatiya Nyaya Sanhita, 2023.",CrPC,198A,NO_CHANGE,18
+BNSS,221,221,Cognizance of offence,CrPC,198B,NO_CHANGE,18
+BNSS,222,222,Prosecution for defamation.,CrPC,199,MODIFIED,18
+BNSS,223,223,Examination of complainant.,CrPC,200,MODIFIED,18
+BNSS,224,224,Procedure by Magistrate not competent to take cognizance of the case.,CrPC,201,NO_CHANGE,18
+BNSS,225,225,Postponement of issue of process.,CrPC,202,NO_CHANGE,19
+BNSS,226,226,Dismissal of complaint.,CrPC,203,NO_CHANGE,19
+BNSS,227,227,Issue of process.,CrPC,204,MODIFIED,19
+BNSS,228,228,Magistrate may dispense with personal attendance of accused.,CrPC,205,MODIFIED,19
+BNSS,229,229,Special summons in cases of petty offence.,CrPC,206,MODIFIED,19
+BNSS,230,230,Supply to the accused of copy of police report and other documents.,CrPC,207,MODIFIED,19
+BNSS,231,231,Supply of copies of statements and documents to accused in other cases triable by Court of Session.,CrPC,208,MODIFIED,19
+BNSS,232,232,Commitment of case to Court of Session when offence is triable exclusively by it.,CrPC,209,MODIFIED,19
+BNSS,233,233,Procedure to be followed when there is a complaint case and police investigation in respect of the same offence.,CrPC,210,NO_CHANGE,20
+BNSS,234,234,Contents of charge.,CrPC,211,NO_CHANGE,20
+BNSS,235,235,"Particulars as to time, place and person.",CrPC,212,NO_CHANGE,20
+BNSS,236,236,When manner of committing offence must be stated.,CrPC,213,NO_CHANGE,20
+BNSS,237,237,Words in charge taken in sense of law under which offence is punishable.,CrPC,214,NO_CHANGE,20
+BNSS,238,238,Effect of errors.,CrPC,215,NO_CHANGE,20
+BNSS,239,239,Court may alter charge.,CrPC,216,NO_CHANGE,20
+BNSS,240,240,Recall of witnesses when charge altered.,CrPC,217,NO_CHANGE,20
+BNSS,241,241,Separate charges for distinct offences.,CrPC,218,NO_CHANGE,20
+BNSS,242,242,Offences of same kind within year may be charged together.,CrPC,219,NO_CHANGE,20
+BNSS,243,243,Trial for more than one offence.,CrPC,220,MODIFIED,20
+BNSS,244,244,Where it is doubtful what offence has been committed.,CrPC,221,NO_CHANGE,20
+BNSS,245,245,When offence proved included in offence charged.,CrPC,222,NO_CHANGE,20
+BNSS,246,246,What persons may be charged jointly.,CrPC,223,NO_CHANGE,20
+BNSS,247,247,Withdrawal of remaining charges on conviction on one of several charges.,CrPC,224,NO_CHANGE,20
+BNSS,248,248,Trial to be conducted by Public Prosecutor.,CrPC,225,NO_CHANGE,20
+BNSS,249,249,Opening case for prosecution.,CrPC,226,MODIFIED,20
+BNSS,250,250,Discharge.,CrPC,227,MODIFIED,20
+BNSS,251,251,Framing of charge.,CrPC,228,MODIFIED,21
+BNSS,252,252,Conviction on plea of guilty.,CrPC,229,NO_CHANGE,21
+BNSS,253,253,Date for prosecution evidence.,CrPC,230,NO_CHANGE,21
+BNSS,254,254,Evidence for prosecution.,CrPC,231,MODIFIED,21
+BNSS,255,255,Acquittal.,CrPC,232,NO_CHANGE,21
+BNSS,256,256,Entering upon defence.,CrPC,233,NO_CHANGE,21
+BNSS,257,257,Arguments.,CrPC,234,MODIFIED,21
+BNSS,258,258,Judgment of acquittal or conviction.,CrPC,235,MODIFIED,21
+BNSS,259,259,Previous conviction.,CrPC,236,NO_CHANGE,21
+BNSS,260,260,Procedure in cases instituted under sib-section 2 of section 222.,CrPC,237,MODIFIED,21
+BNSS,261,261,Compliance with section 230,CrPC,238,NO_CHANGE,21
+BNSS,262,262,When accused shall be discharged.,CrPC,239,MODIFIED,21
+BNSS,263,263,Framing of charge.,CrPC,240,MODIFIED,21
+BNSS,264,264,Conviction on plea of guilty.,CrPC,241,NO_CHANGE,21
+BNSS,265,265,Evidence for prosecution.,CrPC,242,MODIFIED,21
+BNSS,266,266,Evidence for defence.,CrPC,243,MODIFIED,22
+BNSS,267,267,Evidence for prosecution.,CrPC,244,NO_CHANGE,22
+BNSS,268,268,When accused shall be discharged.,CrPC,245,NO_CHANGE,22
+BNSS,269,269,Procedure where accused is not discharged.,CrPC,246,MODIFIED,22
+BNSS,270,270,Evidence for defence.,CrPC,247,NO_CHANGE,22
+BNSS,271,271,Acquittal or conviction.,CrPC,248,NO_CHANGE,22
+BNSS,272,272,Absence of complainant.,CrPC,249,MODIFIED,22
+BNSS,273,273,Compensation for accusation without reasonable cause.,CrPC,250,MODIFIED,22
+BNSS,274,274,Substance of accusation to be stated.,CrPC,251,MODIFIED,22
+BNSS,275,275,Conviction on plea of guilty.,CrPC,252,NO_CHANGE,22
+BNSS,276,276,Conviction on plea of guilty in absence of accused in petty cases.,CrPC,253,MODIFIED,22
+BNSS,277,277,Procedure when not convicted.,CrPC,254,NO_CHANGE,22
+BNSS,278,278,Acquittal or conviction.,CrPC,255,NO_CHANGE,22
+BNSS,279,279,Non-appearance or death of complainant.,CrPC,256,MODIFIED,22
+BNSS,280,280,Withdrawal of complaint.,CrPC,257,NO_CHANGE,22
+BNSS,281,281,Power to stop proceedings in certain cases.,CrPC,258,NO_CHANGE,22
+BNSS,282,282,Power of Court to convert summons-cases into warrant- cases.,CrPC,259,NO_CHANGE,23
+BNSS,283,283,Power to try summarily.,CrPC,260,MODIFIED,23
+BNSS,284,284,Summary trial by Magistrate of the second class.,CrPC,261,NO_CHANGE,23
+BNSS,285,285,Procedure for summary trials.,CrPC,262,NO_CHANGE,23
+BNSS,286,286,Record in summary trials.,CrPC,263,NO_CHANGE,23
+BNSS,287,287,Judgment in cases tried summarily.,CrPC,264,NO_CHANGE,23
+BNSS,288,288,Language of record and judgment.,CrPC,265,NO_CHANGE,23
+BNSS,289,289,Application of the Chapter.,CrPC,265A,MODIFIED,23
+BNSS,290,290,Application for plea bargaining.,CrPC,265B,MODIFIED,23
+BNSS,291,291,Guidelines for mutually satisfactory disposition.,CrPC,265C,MODIFIED,23
+BNSS,292,292,Report of the mutually satisfactory disposition to be submitted before the Court.,CrPC,265D,NO_CHANGE,23
+BNSS,293,293,Disposal of the case.,CrPC,265E,MODIFIED,23
+BNSS,294,294,Judgment of the Court.,CrPC,265F,NO_CHANGE,23
+BNSS,295,295,Finality of the judgment.,CrPC,265G,NO_CHANGE,23
+BNSS,296,296,Power of the Court in plea bargaining.,CrPC,265H,NO_CHANGE,23
+BNSS,297,297,Period of detention undergone by the accused to be set off against the sentence of imprisonment.,CrPC,265I,NO_CHANGE,24
+BNSS,298,298,Savings.,CrPC,265J,NO_CHANGE,24
+BNSS,299,299,Statements of accused not to be used.,CrPC,265K,NO_CHANGE,24
+BNSS,300,300,Non-application of the Chapter.,CrPC,265L,NO_CHANGE,24
+BNSS,301,301,Definitions.,CrPC,266,NO_CHANGE,24
+BNSS,302,302,Power to require attendance of prisoners.,CrPC,267,MODIFIED,24
+BNSS,303,303,Power of State Government or Central Government to exclude certain persons from operation of section 302.,CrPC,268,MODIFIED,24
+BNSS,304,304,Officer in charge of prison to abstain from carrying out order in certain contingencies.,CrPC,269,NO_CHANGE,24
+BNSS,305,305,Prisoner to be brought to Court in custody.,CrPC,270,NO_CHANGE,24
+BNSS,306,306,Power to issue commission for examination of witness in prison.,CrPC,271,NO_CHANGE,24
+BNSS,307,307,Language of Courts.,CrPC,272,NO_CHANGE,24
+BNSS,308,308,Evidence to be taken in presence of accused.,CrPC,273,MODIFIED,24
+BNSS,309,309,Record in summons-cases and inquiries.,CrPC,274,NO_CHANGE,24
+BNSS,310,310,Record in warrant-cases.,CrPC,275,NO_CHANGE,24
+BNSS,311,311,Record in trial before Court of Session.,CrPC,276,NO_CHANGE,24
+BNSS,312,312,Language of record of evidence.,CrPC,277,NO_CHANGE,24
+BNSS,313,313,Procedure in regard to such evidence when completed.,CrPC,278,MODIFIED,24
+BNSS,314,314,Interpretation of evidence to accused or his pleader.,CrPC,279,MODIFIED,24
+BNSS,315,315,Remarks respecting demeanour of witness.,CrPC,280,NO_CHANGE,24
+BNSS,316,316,Record of examination of accused.,CrPC,281,MODIFIED,25
+BNSS,317,317,Interpreter to be bound to interpret truthfully.,CrPC,282,NO_CHANGE,25
+BNSS,318,318,Record in High Court.,CrPC,283,NO_CHANGE,25
+BNSS,319,319,When attendance of witness may be dispensed with and commission issued.,CrPC,284,MODIFIED,25
+BNSS,320,320,Commission to whom to be issued.,CrPC,285,MODIFIED,25
+BNSS,321,321,Execution of commissions.,CrPC,286,MODIFIED,25
+BNSS,322,322,Parties may examine witnesses.,CrPC,287,MODIFIED,25
+BNSS,323,323,Return of commission.,CrPC,288,MODIFIED,25
+BNSS,324,324,Adjournment of proceeding.,CrPC,289,NO_CHANGE,25
+BNSS,325,325,Execution of foreign commissions.,CrPC,290,NO_CHANGE,25
+BNSS,326,326,Deposition of medical witness.,CrPC,291,NO_CHANGE,25
+BNSS,327,327,Identification report of Magistrate.,CrPC,291A,MODIFIED,25
+BNSS,328,328,Evidence of officers of the Mint.,CrPC,292,MODIFIED,25
+BNSS,329,329,Reports of certain Government scientific experts.,CrPC,293,MODIFIED,25
+BNSS,330,330,No formal proof of certain documents.,CrPC,294,MODIFIED,25
+BNSS,331,331,Affidavit in proof of conduct of public servants.,CrPC,295,MODIFIED,26
+BNSS,332,332,Evidence of formal character on affidavit.,CrPC,296,MODIFIED,26
+BNSS,333,333,Authorities before whom affidavits may be sworn.,CrPC,297,MODIFIED,26
+BNSS,334,334,Previous conviction or acquittal how proved.,CrPC,298,MODIFIED,26
+BNSS,335,335,Record of evidence in absence of accused.,CrPC,299,MODIFIED,26
+BNSS,336,336,"Evidence of public servants, experts, police officers in certain cases.",CrPC,,NEW,26
+BNSS,337,337,Person once convicted or acquitted not to be tried for same offence.,CrPC,300,MODIFIED,26
+BNSS,338,338,Appearance by Public Prosecutors.,CrPC,301,MODIFIED,26
+BNSS,339,339,Permission to conduct prosecution.,CrPC,302,MODIFIED,26
+BNSS,340,340,Right of person against whom proceedings are instituted to be defended.,CrPC,303,MODIFIED,26
+BNSS,341,341,Legal aid to accused at State expense in certain cases.,CrPC,304,MODIFIED,26
+BNSS,342,342,Procedure when corporation or registered society is an accused.,CrPC,305,MODIFIED,26
+BNSS,343,343,Tender of pardon to accomplice.,CrPC,306,MODIFIED,26
+BNSS,344,344,Power to direct tender of pardon.,CrPC,307,MODIFIED,26
+BNSS,345,345,Trial of person not complying with conditions of pardon.,CrPC,308,MODIFIED,26
+BNSS,346,346,Power to postpone or adjourn proceedings.,CrPC,309,MODIFIED,26
+BNSS,347,347,Local inspection.,CrPC,310,NO_CHANGE,27
+BNSS,348,348,"Power to summon material witness, or examine person present.",CrPC,311,NO_CHANGE,27
+BNSS,349,349,Power of Magistrate to order person to give specimen signatures or handwriting.,CrPC,311A,MODIFIED,27
+BNSS,350,350,Expenses of complainants and witnesses.,CrPC,312,NO_CHANGE,27
+BNSS,351,351,Power to examine the accused.,CrPC,313,NO_CHANGE,27
+BNSS,352,352,Oral arguments and memorandum of arguments.,CrPC,314,NO_CHANGE,27
+BNSS,353,353,Accused person to be competent witness.,CrPC,315,NO_CHANGE,27
+BNSS,354,354,No influence to be used to induce disclosure.,CrPC,316,NO_CHANGE,27
+BNSS,355,355,Provision for inquiries and trial being held in the absence of accused in certain cases.,CrPC,317,MODIFIED,27
+BNSS,356,356,"Inquiry, trial or judgment in absentia of proclaimed offender.",CrPC,,NEW,27
+BNSS,357,357,Procedure where accused does not understand proceedings.,CrPC,318,NO_CHANGE,27
+BNSS,358,358,Power to proceed against other persons appearing to be guilty of offence.,CrPC,319,NO_CHANGE,27
+BNSS,359,359,Compounding of offences.,CrPC,320,MODIFIED,27
+BNSS,360,360,Withdrawal from prosecution.,CrPC,321,MODIFIED,28
+BNSS,361,361,Procedure in cases which Magistrate cannot dispose of.,CrPC,322,NO_CHANGE,28
+BNSS,362,362,"Procedure when, after commencement of inquiry or trial, Magistrate finds case should be committed.",CrPC,323,NO_CHANGE,28
+BNSS,363,363,"Trial of persons previously convicted of offences against coinage, stamp-law or property.",CrPC,324,NO_CHANGE,28
+BNSS,364,364,Procedure when Magistrate cannot pass sentence sufficiently severe.,CrPC,325,NO_CHANGE,28
+BNSS,365,365,Conviction or commitment on evidence partly recorded by one Magistrate and partly by another.,CrPC,326,NO_CHANGE,28
+BNSS,366,366,Court to be open.,CrPC,327,NO_CHANGE,28
+BNSS,367,367,Procedure in case of accused being person of unsound mind.,CrPC,328,MODIFIED,28
+BNSS,368,368,Procedure in case of person of unsound mind tried before Court.,CrPC,329,MODIFIED,28
+BNSS,369,369,Release of person with mental illness pending investigation or trial.,CrPC,330,MODIFIED,28
+BNSS,370,370,Resumption of inquiry or trial.,CrPC,331,NO_CHANGE,28
+BNSS,371,371,Procedure on accused appearing before Magistrate or Court.,CrPC,332,NO_CHANGE,28
+BNSS,372,372,When accused appears to have been of sound mind.,CrPC,333,NO_CHANGE,28
+BNSS,373,373,Judgment of acquittal on ground of unsoundness of mind.,CrPC,334,NO_CHANGE,29
+BNSS,374,374,Person acquitted on ground of unsoundness of mind to be detained in safe custody.,CrPC,335,MODIFIED,29
+BNSS,375,375,Power of State Government to empower officer-in-charge to discharge.,CrPC,336,NO_CHANGE,29
+BNSS,376,376,Procedure where prisoner of unsound mind is reported capable of making his defence.,CrPC,337,MODIFIED,29
+BNSS,377,377,Procedure where person of unsound mind detained is declared fit to be released.,CrPC,338,MODIFIED,29
+BNSS,378,378,Delivery of person of unsound mind to care of relative or friend.,CrPC,339,MODIFIED,29
+BNSS,379,379,Procedure in cases mentioned in section 215.,CrPC,340,NO_CHANGE,29
+BNSS,380,380,Appeal.,CrPC,341,NO_CHANGE,29
+BNSS,381,381,Power to order costs.,CrPC,342,NO_CHANGE,29
+BNSS,382,382,Procedure of Magistrate taking cognizance.,CrPC,343,NO_CHANGE,29
+BNSS,383,383,Summary procedure for trial for giving false evidence.,CrPC,344,MODIFIED,29
+BNSS,384,384,Procedure in certain cases of contempt.,CrPC,345,MODIFIED,29
+BNSS,385,385,Procedure where Court considers that case should not be dealt with under section 384.,CrPC,346,NO_CHANGE,29
+BNSS,386,386,When Registrar or Sub- Registrar to be deemed a Civil Court.,CrPC,347,NO_CHANGE,29
+BNSS,387,387,Discharge of offender on submission of apology.,CrPC,348,NO_CHANGE,29
+BNSS,388,388,Imprisonment or committal of person refusing to answer or produce document.,CrPC,349,NO_CHANGE,29
+BNSS,389,389,Summary procedure for punishment for non- attendance by a witness in obedience to summons.,CrPC,350,MODIFIED,30
+BNSS,390,390,"Appeals from convictions under sections 383, 384, 388 and 389.",CrPC,351,NO_CHANGE,30
+BNSS,391,391,Certain Judges and Magistrates not to try certain offences when committed before themselves.,CrPC,352,NO_CHANGE,30
+BNSS,392,392,Judgment.,CrPC,353,MODIFIED,30
+BNSS,393,393,Language and contents of judgment.,CrPC,354,NO_CHANGE,30
+BNSS,394,394,Order for notifying address of previously convicted offender.,CrPC,356,MODIFIED,30
+BNSS,395,395,Order to pay compensation.,CrPC,357,NO_CHANGE,30
+BNSS,396,396,"Victim compensation scheme. Compensation to be in addition to fine under section 65, section 70 and sub- section (1) of section 124 of the Bharatiya Nyaya Sanhita, 2023 [under section 326A or section 376D of Indian Penal Code].",CrPC,357A,NO_CHANGE,30
+BNSS,397,397,Treatment of victims.,CrPC,357C,MODIFIED,30
+BNSS,398,398,Witness protection scheme.,CrPC,,NEW,30
+BNSS,399,399,Compensation to persons groundlessly arrested.,CrPC,358,NO_CHANGE,30
+BNSS,400,400,Order to pay costs in non- cognizable cases.,CrPC,359,MODIFIED,30
+BNSS,401,401,Order to release on probation of good conduct or after admonition.,CrPC,360,MODIFIED,31
+BNSS,402,402,Special reasons to be recorded in certain cases.,CrPC,361,MODIFIED,31
+BNSS,403,403,Court not to alter judgment.,CrPC,362,NO_CHANGE,31
+BNSS,404,404,Copy of judgment to be given to the accused and other persons.,CrPC,363,MODIFIED,31
+BNSS,405,405,Judgment when to be translated,CrPC,364,MODIFIED,31
+BNSS,406,406,Court of Session to send copy of finding and sentence to District Magistrate.,CrPC,365,NO_CHANGE,31
+BNSS,407,407,Sentence of death to be submitted by Court of Session for confirmation.,CrPC,366,MODIFIED,31
+BNSS,408,408,Power to direct further inquiry to be made or additional evidence to be taken.,CrPC,367,NO_CHANGE,31
+BNSS,409,409,Power of High Court to confirm sentence or annul conviction.,CrPC,368,NO_CHANGE,31
+BNSS,410,410,Confirmation or new sentence to be signed by two Judges.,CrPC,369,NO_CHANGE,31
+BNSS,411,411,Procedure in case of difference of opinion.,CrPC,370,NO_CHANGE,31
+BNSS,412,412,Procedure in cases submitted to High Court for confirmation.,CrPC,371,MODIFIED,31
+BNSS,413,413,No appeal to lie unless otherwise provided.,CrPC,372,NO_CHANGE,31
+BNSS,414,414,Appeal from orders requiring security or refusal to accept or rejecting surety for keeping peace or good behaviour.,CrPC,373,NO_CHANGE,31
+BNSS,415,415,Appeals from convictions.,CrPC,374,MODIFIED,32
+BNSS,416,416,No appeal in certain cases when accused pleads guilty.,CrPC,375,MODIFIED,32
+BNSS,417,417,No appeal in petty cases.,CrPC,376,MODIFIED,32
+BNSS,418,418,Appeal by the State Government against sentence.,CrPC,377,MODIFIED,32
+BNSS,419,419,Appeal in case of acquittal.,CrPC,378,MODIFIED,32
+BNSS,420,420,Appeal against conviction by High Court in certain cases.,CrPC,379,NO_CHANGE,32
+BNSS,421,421,Special right of appeal in certain cases.,CrPC,380,MODIFIED,32
+BNSS,422,422,Appeal to Court of Session how heard.,CrPC,381,MODIFIED,32
+BNSS,423,423,Petition of appeal.,CrPC,382,MODIFIED,32
+BNSS,424,424,Procedure when appellant in jail.,CrPC,383,NO_CHANGE,32
+BNSS,425,425,Summary dismissal of appeal.,CrPC,384,MODIFIED,32
+BNSS,426,426,Procedure for hearing appeals not dismissed summarily.,CrPC,385,MODIFIED,32
+BNSS,427,427,Powers of the Appellate Court.,CrPC,386,MODIFIED,32
+BNSS,428,428,Judgments of Subordinate Appellate Court.,CrPC,387,NO_CHANGE,32
+BNSS,429,429,Order of High Court on appeal to be certified to lower Court.,CrPC,388,NO_CHANGE,32
+BNSS,430,430,Suspension of sentence pending the appeal; release of appellant on bail.,CrPC,389,MODIFIED,32
+BNSS,431,431,Arrest of accused in appeal from acquittal,CrPC,390,NO_CHANGE,32
+BNSS,432,432,Appellate Court may take further evidence or direct it to be taken.,CrPC,391,MODIFIED,32
+BNSS,433,433,Procedure where Judges of Court of Appeal are equally divided.,CrPC,392,NO_CHANGE,32
+BNSS,434,434,Finality of judgments and orders on appeal.,CrPC,393,NO_CHANGE,33
+BNSS,435,435,Abatement of appeals.,CrPC,394,NO_CHANGE,33
+BNSS,436,436,Reference to High Court.,CrPC,395,MODIFIED,33
+BNSS,437,437,Disposal of case according to decision of High Court.,CrPC,396,NO_CHANGE,33
+BNSS,438,438,Calling for records to exercise powers of revision.,CrPC,397,MODIFIED,33
+BNSS,439,439,Power to order inquiry.,CrPC,398,NO_CHANGE,33
+BNSS,440,440,Sessions Judge's powers of revision.,CrPC,399,NO_CHANGE,33
+BNSS,441,441,Power of Additional Sessions Judge.,CrPC,400,NO_CHANGE,33
+BNSS,442,442,High Court's powers of revision.,CrPC,401,MODIFIED,33
+BNSS,443,443,Power of High Court to withdraw or transfer revision cases.,CrPC,402,NO_CHANGE,33
+BNSS,444,444,Option of Court to hear parties.,CrPC,403,MODIFIED,33
+BNSS,445,445,High Court's order to be certified to lower Court.,CrPC,405,NO_CHANGE,33
+BNSS,446,446,Power of Supreme Court to transfer cases and appeals.,CrPC,406,MODIFIED,33
+BNSS,447,447,Power of High Court to transfer cases and appeals.,CrPC,407,MODIFIED,33
+BNSS,448,448,Power of Sessions Judge to transfer cases and appeals.,CrPC,408,MODIFIED,33
+BNSS,449,449,Withdrawal of cases and appeals by Session Judge.,CrPC,409,MODIFIED,33
+BNSS,450,450,Withdrawal of cases by Judicial Magistrate.,CrPC,410,NO_CHANGE,33
+BNSS,451,451,Making over or withdrawal of cases by Executive Magistrates.,CrPC,411,NO_CHANGE,33
+BNSS,452,452,Reasons to be recorded.,CrPC,412,NO_CHANGE,33
+BNSS,453,453,Execution of order passed under section 409.,CrPC,413,NO_CHANGE,33
+BNSS,454,454,Execution of sentence of death passed by High Court.,CrPC,414,NO_CHANGE,33
+BNSS,455,455,Commutation of sentence of death in case of appeal to Supreme Court.,CrPC,415,NO_CHANGE,34
+BNSS,456,456,Postponement of capital sentence on pregnant woman.,CrPC,416,MODIFIED,34
+BNSS,457,457,Power to appoint place of imprisonment.,CrPC,417,MODIFIED,34
+BNSS,458,458,Execution of sentence of imprisonment.,CrPC,418,NO_CHANGE,34
+BNSS,459,459,Direction of warrant for execution.,CrPC,419,NO_CHANGE,34
+BNSS,460,460,Warrant with whom to be lodged.,CrPC,420,NO_CHANGE,34
+BNSS,461,461,Warrant for levy of fine.,CrPC,421,MODIFIED,34
+BNSS,462,462,Effect of such warrant.,CrPC,422,NO_CHANGE,34
+BNSS,463,463,Warrant for levy of fine issued by a Court in any territory to which this Sanhita does not extend.,CrPC,423,NO_CHANGE,34
+BNSS,464,464,Suspension of execution of sentence of imprisonment.,CrPC,424,MODIFIED,34
+BNSS,465,465,Who may issue warrant.,CrPC,425,NO_CHANGE,34
+BNSS,466,466,Sentence on escaped convict when to take effect.,CrPC,426,NO_CHANGE,34
+BNSS,467,467,Sentence on offender already sentenced for another offence.,CrPC,427,NO_CHANGE,34
+BNSS,468,468,Period of detention undergone by the accused to be set off against the sentence of imprisonment.,CrPC,428,NO_CHANGE,34
+BNSS,469,469,Saving.,CrPC,429,NO_CHANGE,34
+BNSS,470,470,Return of warrant on execution of sentence.,CrPC,430,NO_CHANGE,34
+BNSS,471,471,Money ordered to be paid recoverable as a fine.,CrPC,431,NO_CHANGE,34
+BNSS,472,472,Mercy Petition in death sentence cases.,CrPC,,NEW,34
+BNSS,473,473,Power to suspend or remit sentences.,CrPC,432,MODIFIED,35
+BNSS,474,474,Power to commute sentence.,CrPC,433,MODIFIED,35
+BNSS,475,475,Restriction on powers of remission or commutation in certain cases.,CrPC,433A,NO_CHANGE,35
+BNSS,476,476,Concurrent power of Central Government in case of death sentences.,CrPC,434,NO_CHANGE,35
+BNSS,477,477,State Government to act after concurrence with Central Government in certain cases.,CrPC,435,MODIFIED,35
+BNSS,478,478,In what cases bail to be taken.,CrPC,436,MODIFIED,35
+BNSS,479,479,Maximum period for which an undertrial prisoner can be detained.,CrPC,436A,MODIFIED,35
+BNSS,480,480,When bail may be taken in case of non-bailable offence.,CrPC,437,MODIFIED,35
+BNSS,481,481,Bail to require accused to appear before next appellate Court.,CrPC,437A,MODIFIED,35
+BNSS,482,482,Direction for grant of bail to person apprehending arrest.,CrPC,438,NO_CHANGE,35
+BNSS,483,483,Special powers of High Court or Court of Session regarding bail.,CrPC,439,NO_CHANGE,35
+BNSS,484,484,Amount of bond and reduction thereof.,CrPC,440,NO_CHANGE,35
+BNSS,485,485,"Bond of accused and sureties. bond” in sub-section (1). In subsection (2) and (3), “or bail bond” is added.",CrPC,441,MODIFIED,35
+BNSS,486,486,Declaration by sureties.,CrPC,441A,MODIFIED,36
+BNSS,487,487,Discharge from custody.,CrPC,442,MODIFIED,36
+BNSS,488,488,Power to order sufficient bail when that first taken is insufficient.,CrPC,443,MODIFIED,36
+BNSS,489,489,Discharge of sureties.,CrPC,444,MODIFIED,36
+BNSS,490,490,Deposit instead of recognizance.,CrPC,445,MODIFIED,36
+BNSS,491,491,Procedure when bond has been forfeited.,CrPC,446,MODIFIED,36
+BNSS,492,492,Cancellation of bond and bail bond.,CrPC,446A,MODIFIED,36
+BNSS,493,493,Procedure in case of insolvency of death of surety or when a bond is forfeited.,CrPC,447,MODIFIED,36
+BNSS,494,494,Bond required from child.,CrPC,448,MODIFIED,36
+BNSS,495,495,Appeal from orders under section 491.,CrPC,449,MODIFIED,36
+BNSS,496,496,Power to direct levy of amount due on certain recognizances.,CrPC,450,MODIFIED,36
+BNSS,497,497,Order for custody and disposal of property pending trial in certain cases.,CrPC,451,MODIFIED,36
+BNSS,498,498,Order for disposal of property at conclusion of trial.,CrPC,452,MODIFIED,36
+BNSS,499,499,Payment to innocent purchaser of money found on accused.,CrPC,453,MODIFIED,36
+BNSS,500,500,Appeal against orders under section 498 or section 499.,CrPC,454,MODIFIED,36
+BNSS,501,501,Destruction of libellous and other matter.,CrPC,455,MODIFIED,36
+BNSS,502,502,Power to restore possession of immovable property.,CrPC,456,MODIFIED,36
+BNSS,503,503,Procedure by police upon seizure of property.,CrPC,457,NO_CHANGE,37
+BNSS,504,504,Procedure where no claimant appears within six months.,CrPC,458,MODIFIED,37
+BNSS,505,505,Power to sell perishable property.,CrPC,459,MODIFIED,37
+BNSS,506,506,Irregularities which do not vitiate proceedings.,CrPC,460,NO_CHANGE,37
+BNSS,507,507,Irregularities which vitiate proceedings.,CrPC,461,MODIFIED,37
+BNSS,508,508,Proceedings in wrong place.,CrPC,462,NO_CHANGE,37
+BNSS,509,509,Non-compliance with provisions of section 183 or section 316.,CrPC,463,NO_CHANGE,37
+BNSS,510,510,"Effect of omission to frame, or absence of, or error in, charge.",CrPC,464,NO_CHANGE,37
+BNSS,511,511,"Finding or sentence when reversible by reason of error, omission or irregularity.",CrPC,465,NO_CHANGE,37
+BNSS,512,512,Defect or error not to make attachment unlawful.,CrPC,466,MODIFIED,37
+BNSS,513,513,Definitions.,CrPC,467,NO_CHANGE,37
+BNSS,514,514,Bar to taking cognizance after lapse of the period of limitation.,CrPC,468,MODIFIED,37
+BNSS,515,515,Commencement of the period of limitation.,CrPC,469,NO_CHANGE,37
+BNSS,516,516,Exclusion of time in certain cases.,CrPC,470,NO_CHANGE,37
+BNSS,517,517,Exclusion of date on which Court is closed.,CrPC,471,NO_CHANGE,37
+BNSS,518,518,Continuing offence.,CrPC,472,NO_CHANGE,37
+BNSS,519,519,Extension of period of limitation in certain cases.,CrPC,473,NO_CHANGE,37
+BNSS,520,520,Trials before High Courts.,CrPC,474,NO_CHANGE,37
+BNSS,521,521,Delivery to commanding officers of persons liable to be tried by Court-martial.,CrPC,475,MODIFIED,38
+BNSS,522,522,Forms.,CrPC,476,NO_CHANGE,38
+BNSS,523,523,Power of High Court to make rules.,CrPC,477,MODIFIED,38
+BNSS,524,524,Power to alter functions allocated to Executive Magistrate in certain cases.,CrPC,478,NO_CHANGE,38
+BNSS,525,525,Case in which Judge or Magistrate is personally interested.,CrPC,479,NO_CHANGE,38
+BNSS,526,526,Practicing advocate not to sit as Magistrate in certain Courts.,CrPC,480,MODIFIED,38
+BNSS,527,527,Public servant concerned in sale not to purchase or bid for property.,CrPC,481,NO_CHANGE,38
+BNSS,528,528,Saving of inherent powers of High Court.,CrPC,482,MODIFIED,38
+BNSS,529,529,Duty of High Court to exercise continuous superintendence over Courts.,CrPC,483,MODIFIED,38
+BNSS,530,530,Trial and proceedings to be held in electronic mode.,CrPC,,NEW,38
+BNSS,531,531,Repeal and savings.,CrPC,484,MODIFIED,38
+BSA,1,1,"Short title, application and commencement.",IEA,1,MODIFIED,1
+BSA,2,2,Definitions.,IEA,3,MODIFIED,1
+BSA,2(1)(a),2,"""Court"".",IEA,3,NO_CHANGE,1
+BSA,2(1)(b),2,"""conclusive proof"".",IEA,4,MODIFIED,1
+BSA,2(1)(c),2,"""disproved"".",IEA,3,MODIFIED,1
+BSA,2(1)(d),2,"""document"".",IEA,3,MODIFIED,1
+BSA,2(1)(e),2,"""evidence"".",IEA,3,MODIFIED,1
+BSA,2(1)(f),2,"""fact"".",IEA,3,MODIFIED,1
+BSA,2(1)(g),2,"""facts in issue"".",IEA,3,NO_CHANGE,1
+BSA,2(1)(h),2,"""may presume"".",IEA,4,NO_CHANGE,1
+BSA,2(1)(i),2,"""not proved"".",IEA,3,NO_CHANGE,1
+BSA,2(1)(j),2,"""proved"".",IEA,3,NO_CHANGE,1
+BSA,2(1)(k),2,"""relevant"".",IEA,3,NO_CHANGE,1
+BSA,2(1)(l),2,"""shall presume"".",IEA,4,NO_CHANGE,1
+BSA,2(2),2,Words and expressions.,IEA,,NEW,1
+BSA,3,3,Evidence maybe given of facts in issue and relevant facts.,IEA,5,NO_CHANGE,2
+BSA,4,4,Relevancy of facts forming part of same transaction.,IEA,6,NO_CHANGE,2
+BSA,5,5,"Facts which are occasion, cause or effect of facts in issue or relevant facts.",IEA,7,MODIFIED,2
+BSA,6,6,"Motive, preparation and previous or subsequent conduct.",IEA,8,MODIFIED,2
+BSA,7,7,Facts necessary to explain or introduce fact in issue or relevant facts.,IEA,9,MODIFIED,2
+BSA,8,8,Things said or done by conspirator in reference to common design.,IEA,10,NO_CHANGE,2
+BSA,9,9,When facts not otherwise relevant become relevant.,IEA,11,NO_CHANGE,2
+BSA,10,10,Facts tending to enable Court to determine amount are relevant in suits for damages.,IEA,12,NO_CHANGE,2
+BSA,11,11,Facts relevant when right or custom is in question.,IEA,13,NO_CHANGE,2
+BSA,12,12,"Facts showing existence of state of mind, or of body or bodily feeling.",IEA,14,MODIFIED,2
+BSA,13,13,Facts bearing on question whether act was accidental or intentional.,IEA,15,MODIFIED,2
+BSA,14,14,Existence of course of business when relevant.,IEA,16,NO_CHANGE,2
+BSA,15,15,Admission defined.,IEA,17,NO_CHANGE,2
+BSA,16,16,Admission by party to proceeding or his agent.,IEA,18,MODIFIED,2
+BSA,17,17,Admissions by persons whose position must be proved as against party to suit.,IEA,19,NO_CHANGE,2
+BSA,18,18,Admissions by persons expressly referred to by party to suit.,IEA,20,NO_CHANGE,2
+BSA,19,19,"Proof of admissions against persons making them, and by or on their behalf.",IEA,21,MODIFIED,2
+BSA,20,20,When oral admissions as to contents of documents are relevant.,IEA,22,NO_CHANGE,2
+BSA,21,21,Admissions in civil cases when relevant.,IEA,23,MODIFIED,3
+BSA,22(1),22,"Confession caused by inducement, threat, coercion or promise, when irrelevant in criminal proceeding.",IEA,24,MODIFIED,3
+BSA,23(1),23,Confession to police officer.,IEA,25,MODIFIED,3
+BSA,23(2),23,Confession by accused while in custody of police not to be proved against him.,IEA,26,MODIFIED,3
+BSA,24,24,Consideration of proved confession affecting person making it and others jointly under trial for same offence.,IEA,30,MODIFIED,3
+BSA,25,25,"Admissions not conclusive proof, but may estop.",IEA,31,NO_CHANGE,3
+BSA,26,26,"Cases in which statement of relevant fact by person who is dead or cannot be found, etc., is relevant.",IEA,32,MODIFIED,3
+BSA,27,27,"Relevancy of certain evidence for proving, in subsequent proceeding, truth of facts therein stated.",IEA,33,NO_CHANGE,3
+BSA,28,28,Entries in books of account when relevant.,IEA,34,NO_CHANGE,3
+BSA,29,29,Relevancy of entry in public record or an electronic record made in performance of duty.,IEA,35,NO_CHANGE,4
+BSA,30,30,"Relevancy of statements in maps, charts and plans.",IEA,36,NO_CHANGE,4
+BSA,31,31,Relevancy of statement as to fact of public nature contained in certain Acts or notifications.,IEA,37,MODIFIED,4
+BSA,32,32,Relevancy of statements as to any law contained in law books including electronic or digital form.,IEA,38,MODIFIED,4
+BSA,33,33,"What evidence to be given when statement forms part of a conversation, document, electronic record, book or series of letters or papers.",IEA,39,NO_CHANGE,4
+BSA,34,34,Previous judgments relevant to bar a second suit or trial.,IEA,40,NO_CHANGE,4
+BSA,35,35,"Relevancy of certain judgments in probate, etc., jurisdiction.",IEA,41,MODIFIED,4
+BSA,36,36,"Relevancy and effect of judgments, orders or decrees, other than those mentioned in section35[41 IEA].",IEA,42,NO_CHANGE,4
+BSA,37,37,"Judgments, etc., other than those mentioned in sections 34, 35 and 36 [40to 42 IEA] when relevant.",IEA,43,NO_CHANGE,4
+BSA,38,38,"Fraud or collusion in obtaining judgment, or incompetency of Court, may be proved.",IEA,44,NO_CHANGE,4
+BSA,39(1),39,Opinions of experts.,IEA,45,MODIFIED,4
+BSA,39(2),39,Opinion of Examiner of Electronic Evidence.,IEA,45A,MODIFIED,5
+BSA,40,40,Facts bearing upon opinions of experts.,IEA,46,NO_CHANGE,5
+BSA,41(1),41,"Opinion as to handwriting and signature, when relevant.",IEA,47,MODIFIED,5
+BSA,41(2),41,"Opinion as to electronic signature, when relevant.",IEA,47A,MODIFIED,5
+BSA,42,42,"Opinion as to existence of general custom or right, when relevant.",IEA,48,NO_CHANGE,5
+BSA,43,43,"Opinion as to usages, tenets, etc., when relevant.",IEA,49,MODIFIED,5
+BSA,44,44,"Opinion on relationship, when relevant.",IEA,50,NO_CHANGE,5
+BSA,45,45,"Grounds of opinion, when relevant.",IEA,51,NO_CHANGE,5
+BSA,46,46,"In civil cases character to prove conduct imputed, irrelevant.",IEA,52,NO_CHANGE,5
+BSA,47,47,In criminal cases previous good character relevant.,IEA,53,NO_CHANGE,5
+BSA,48,48,Evidence of character or previous sexual experience not relevant in certain cases.,IEA,53A,NO_CHANGE,5
+BSA,49,49,"Previous bad character not relevant, except in reply.",IEA,54,NO_CHANGE,5
+BSA,50,50,Character as affecting damages.,IEA,55,NO_CHANGE,5
+BSA,51,51,Fact judicially noticeable need not be proved.,IEA,56,NO_CHANGE,5
+BSA,52,52,Facts of which Court shall take judicial notice.,IEA,57,MODIFIED,5
+BSA,53,53,Facts admitted need not be proved.,IEA,58,NO_CHANGE,5
+BSA,54,54,Proof of facts by oral evidence.,IEA,59,MODIFIED,5
+BSA,55,55,Oral evidence to be direct.,IEA,60,MODIFIED,5
+BSA,56,56,Proof of contents of documents.,IEA,61,NO_CHANGE,5
+BSA,57,57,Primary evidence.,IEA,62,MODIFIED,5
+BSA,58,58,Secondary evidence.,IEA,63,MODIFIED,5
+BSA,59,59,Proof of documents by primary evidence.,IEA,64,NO_CHANGE,6
+BSA,60,60,Cases in which secondary evidence relating to documents may be given.,IEA,65,MODIFIED,6
+BSA,61,61,Electronic or digital record.,IEA,,NEW,6
+BSA,62,62,Special provisions as to evidence relating to electronic record.,IEA,65A,NO_CHANGE,6
+BSA,63,63,Admissibility of electronic records.,IEA,65B,MODIFIED,6
+BSA,64,64,Rules as to notice to produce.,IEA,66,MODIFIED,6
+BSA,65,65,Proof of signature and handwriting of person alleged to have signed or written document produced.,IEA,67,NO_CHANGE,6
+BSA,66,66,Proof as to electronic signature.,IEA,67A,NO_CHANGE,6
+BSA,67,67,Proof of execution of document required by law to be attested.,IEA,68,NO_CHANGE,7
+BSA,68,68,Proof where no attesting witness found.,IEA,69,MODIFIED,7
+BSA,69,69,Admission of execution by party to attested document.,IEA,70,NO_CHANGE,7
+BSA,70,70,Proof when attesting witness denies execution.,IEA,71,NO_CHANGE,7
+BSA,71,71,Proof of document not required by law to be attested.,IEA,72,NO_CHANGE,7
+BSA,72,72,"Comparison of signature, writing or seal with others admitted or proved.",IEA,73,MODIFIED,7
+BSA,73,73,Proof as to verification of digital signature.,IEA,73A,NO_CHANGE,7
+BSA,74(1),74,Public and private documents.,IEA,74,MODIFIED,7
+BSA,74(2),74,Public and private documents.,IEA,75,MODIFIED,7
+BSA,75,75,Certified copies of public documents.,IEA,76,NO_CHANGE,7
+BSA,76,76,Proof of documents by production of certified copies.,IEA,77,NO_CHANGE,7
+BSA,77,77,Proof of other official documents.,IEA,78,MODIFIED,7
+BSA,78,78,Presumption as to genuineness of certified copies.,IEA,79,MODIFIED,7
+BSA,79,79,"Presumption as to documents produced as record of evidence, etc.",IEA,80,MODIFIED,7
+BSA,80,80,"Presumption as to Gazettes, newspapers, [private Acts of parliament] and other documents.",IEA,81,MODIFIED,8
+BSA,81,81,Presumption as to Gazettes in electronic or digital record.,IEA,81A,MODIFIED,8
+BSA,82,82,Presumption as to maps or plans made by authority of Government.,IEA,83,NO_CHANGE,8
+BSA,83,83,Presumption as to collections of laws and reports of decisions.,IEA,84,NO_CHANGE,8
+BSA,84,84,Presumption as to powers-of- attorney.,IEA,85,NO_CHANGE,8
+BSA,85,85,Presumption as to electronic agreements.,IEA,85A,MODIFIED,8
+BSA,86,86,Presumption as to electronic records and electronic signatures.,IEA,85B,NO_CHANGE,8
+BSA,87,87,Presumption as to Electronic Signature Certificates.,IEA,85C,NO_CHANGE,8
+BSA,88,88,Presumption as to certified copies of foreign judicial records.,IEA,86,MODIFIED,8
+BSA,89,89,"Presumption as to books, maps and charts.",IEA,87,NO_CHANGE,8
+BSA,90,90,Presumption as to electronic messages.,IEA,88A,MODIFIED,8
+BSA,91,91,"Presumption as to due execution, etc., of documents not produced.",IEA,89,NO_CHANGE,8
+BSA,92,92,Presumption as to documents thirty years old.,IEA,90,MODIFIED,8
+BSA,93,93,Presumption as to electronic records five years old.,IEA,90A,MODIFIED,8
+BSA,94,94,"Evidence of terms of contracts, grants and other dispositions of property reduced to form of document.",IEA,91,NO_CHANGE,8
+BSA,95,95,Exclusion of evidence of oral agreement.,IEA,92,MODIFIED,8
+BSA,96,96,Exclusion of evidence to explain or amend ambiguous document.,IEA,93,MODIFIED,9
+BSA,97,97,Exclusion of evidence against application of document to existing facts.,IEA,94,NO_CHANGE,9
+BSA,98,98,Evidence as to document unmeaning in reference to existing facts.,IEA,95,MODIFIED,9
+BSA,99,99,Evidence as to application of language which can apply to one only of several persons.,IEA,96,MODIFIED,9
+BSA,100,100,"Evidence as to application of language to one of two sets of facts, to neither of which the whole correctly applies.",IEA,97,NO_CHANGE,9
+BSA,101,101,"Evidence as to meaning of illegible characters, etc.",IEA,98,MODIFIED,9
+BSA,102,102,Who may give evidence of agreement varying terms of document.,IEA,99,NO_CHANGE,9
+BSA,103,103,Saving of provisions of Indian Succession Act relating to wills.,IEA,100,MODIFIED,9
+BSA,104,104,Burden of proof.,IEA,101,NO_CHANGE,9
+BSA,105,105,On whom burden of proof lies.,IEA,102,NO_CHANGE,9
+BSA,106,106,Burden of proof as to particular fact.,IEA,103,NO_CHANGE,9
+BSA,107,107,Burden of proving fact to be proved to make evidence admissible.,IEA,104,NO_CHANGE,9
+BSA,108,108,Burden of proving that case of accused comes within exceptions.,IEA,105,MODIFIED,9
+BSA,109,109,Burden of proving fact especially within knowledge.,IEA,106,NO_CHANGE,9
+BSA,110,110,Burden of proving death of person known to have been alive within thirty years.,IEA,107,NO_CHANGE,9
+BSA,111,111,Burden of proving that person is alive who has not been heard of for seven years.,IEA,108,MODIFIED,10
+BSA,112,112,"Burden of proof as to relationship in the cases of partners, landlord and tenant, principal and agent.",IEA,109,NO_CHANGE,10
+BSA,113,113,Burden of proof as to ownership.,IEA,110,NO_CHANGE,10
+BSA,114,114,Proof of good faith in transactions where one party is in relation of active confidence.,IEA,111,MODIFIED,10
+BSA,115,115,Presumption as to certain offences.,IEA,111A,MODIFIED,10
+BSA,116,116,"Birth during marriage, conclusive proof of legitimacy.",IEA,112,MODIFIED,10
+BSA,117,117,Presumption as to abetment of suicide by a married woman.,IEA,113A,MODIFIED,10
+BSA,118,118,Presumption as to dowry death.,IEA,113B,MODIFIED,10
+BSA,119,119,Court may presume existence of certain facts.,IEA,114,MODIFIED,10
+BSA,120,120,Presumption as to absence of consent in certain prosecution for rape.,IEA,114A,MODIFIED,10
+BSA,121,121,Estoppel.,IEA,115,NO_CHANGE,10
+BSA,122,122,Estoppel of tenant and of licensee of person in possession.,IEA,116,MODIFIED,10
+BSA,123,123,"Estoppel of acceptor of bill of exchange, bailee or licensee.",IEA,117,NO_CHANGE,10
+BSA,124,124,Who may testify.,IEA,118,MODIFIED,10
+BSA,125,125,Witness unable to communicate verbally.,IEA,119,NO_CHANGE,10
+BSA,126,126,Competency of husband and wife as witnesses in certain cases.,IEA,120,MODIFIED,10
+BSA,127,127,Judges and Magistrates.,IEA,121,NO_CHANGE,10
+BSA,128,128,Communications during marriage.,IEA,122,NO_CHANGE,10
+BSA,129,129,Evidence as to affairs of State.,IEA,123,NO_CHANGE,10
+BSA,130,130,Official communications.,IEA,124,NO_CHANGE,10
+BSA,131,131,Information as to commission of offences.,IEA,125,NO_CHANGE,10
+BSA,132(1)&(2),132,Professional communications.,IEA,126,MODIFIED,11
+BSA,132(3),132,"Professional communications to apply interpreters, etc"".",IEA,127,MODIFIED,11
+BSA,133,133,Privilege not waived by volunteering evidence.,IEA,128,MODIFIED,11
+BSA,134,134,Confidential communication with legal advisers.,IEA,129,MODIFIED,11
+BSA,135,135,Production of title-deeds of witness not a party.,IEA,130,NO_CHANGE,11
+BSA,136,136,"Production of documents or electronic records which another person, having possession, could refuse to produce.",IEA,131,NO_CHANGE,11
+BSA,137,137,Witness not excused from answering on ground that answer will criminate.,IEA,132,MODIFIED,11
+BSA,138,138,Accomplice.,IEA,133,MODIFIED,11
+BSA,139,139,Number of witnesses.,IEA,134,NO_CHANGE,11
+BSA,140,140,Order of production and examination of witnesses.,IEA,135,NO_CHANGE,11
+BSA,141,141,Judge to decide as to admissibility of evidence.,IEA,136,MODIFIED,11
+BSA,142,142,Examination of witnesses.,IEA,137,MODIFIED,11
+BSA,143,143,Order of examinations.,IEA,138,MODIFIED,11
+BSA,144,144,Cross- examination of person called to produce a document.,IEA,139,NO_CHANGE,11
+BSA,145,145,Witnesses to character.,IEA,140,NO_CHANGE,11
+BSA,146(1),146,Leading questions.,IEA,141,MODIFIED,11
+BSA,146(2)&(3),146,When they (leading) must not be asked.,IEA,142,MODIFIED,11
+BSA,146(4),146,When they (leading) may be asked.,IEA,143,MODIFIED,11
+BSA,147,147,Evidence as to matters in writing.,IEA,144,NO_CHANGE,11
+BSA,148,148,Cross- examination as to previous statements in writing.,IEA,145,NO_CHANGE,11
+BSA,149,149,Questions lawful in cross- examination.,IEA,146,MODIFIED,12
+BSA,150,150,When witness to be compelled to answer.,IEA,147,NO_CHANGE,12
+BSA,151,151,Court to decide when question shall be asked and when witness compelled to answer.,IEA,148,MODIFIED,12
+BSA,152,152,Question not to be asked without reasonable grounds.,IEA,149,MODIFIED,12
+BSA,153,153,Procedure of Court in case of question being asked without reasonable grounds.,IEA,150,MODIFIED,12
+BSA,154,154,Indecent and scandalous questions.,IEA,151,NO_CHANGE,12
+BSA,155,155,Questions intended to insult or annoy.,IEA,152,NO_CHANGE,12
+BSA,156,156,Exclusion of evidence to contradict answers to questions testing veracity.,IEA,153,MODIFIED,12
+BSA,157,157,Question by party to his own witness.,IEA,154,NO_CHANGE,12
+BSA,158,158,Impeaching credit of witness.,IEA,155,MODIFIED,12
+BSA,159,159,"Questions tending to corroborate evidence of relevant fact, admissible.",IEA,156,NO_CHANGE,12
+BSA,160,160,Former statements of witness may be proved to corroborate later testimony as to same fact.,IEA,157,NO_CHANGE,12
+BSA,161,161,What matters may be proved in connection with proved statement relevant under section 26 or 27. [ section 32 or 33].,IEA,158,NO_CHANGE,12
+BSA,162,162,Refreshing memory.,IEA,159,MODIFIED,12
+BSA,163,163,Testimony to facts stated in document mentioned in section 162[159].,IEA,160,NO_CHANGE,12
+BSA,164,164,Right of adverse party as to writing used to refresh memory.,IEA,161,MODIFIED,12
+BSA,165,165,Production of documents.,IEA,162,MODIFIED,13
+BSA,166,166,"Giving, as evidence, of document called for and produced on notice.",IEA,163,NO_CHANGE,13
+BSA,167,167,"Using, as evidence, of document production of which was refused on notice.",IEA,164,NO_CHANGE,13
+BSA,168,168,Judge's power to put questions or order production.,IEA,165,MODIFIED,13
+BSA,169,169,No new trial for improper admission or rejection of evidence.,IEA,167,NO_CHANGE,13
+BSA,170,170,Repeal and savings.,IEA,,NEW,13
