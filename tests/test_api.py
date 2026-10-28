@@ -135,10 +135,12 @@ def test_document_upload_and_status_endpoint_success():
     }]
 
     with patch("backend.routers.document_router.get_supabase_client", return_value=mock_client), \
-         patch("backend.routers.document_router.read_case_file_with_gemini", return_value="IN THE HIGH COURT OF DELHI. SUIT NO 100 OF 2024. Plaintiff vs Defendant."), \
-         patch("backend.routers.document_router.upload_case_file", return_value="https://supabase.co/storage/v1/case.pdf"), \
-         patch("backend.routers.document_router.summarize_case", return_value="Mock Summary"), \
-         patch("backend.routers.document_router.extract_timeline", return_value="2024: Suit filed"):
+        patch("backend.routers.document_router.read_case_file_with_gemini", return_value="IN THE HIGH COURT OF DELHI. SUIT NO 100 OF 2024. Plaintiff vs Defendant."), \
+        patch("backend.routers.document_router.is_legal_document", return_value=True), \
+        patch("backend.routers.document_router.classify_document", return_value={"is_legal_relevant": True, "document_type": "judgment"}), \
+        patch("backend.routers.document_router.upload_case_file", return_value="https://supabase.co/storage/v1/case.pdf"), \
+        patch("backend.routers.document_router.summarize_case", return_value="Mock Summary"), \
+        patch("backend.routers.document_router.extract_timeline", return_value="2024: Suit filed"):
 
         files = {"file": ("test_legal_case.pdf", b"%PDF-1.4 mock content", "application/pdf")}
         resp = client.post("/document/upload", files=files)
