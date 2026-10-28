@@ -7,7 +7,12 @@ import re
 from typing import Hashable
 
 
-_TOKEN_PATTERN = re.compile(r"[^\W_]+", re.UNICODE)
+# A token is a maximal run of chars that are either plain \w (letters/digits in any script
+# that Python's regex engine already treats as word chars) OR anywhere in the Devanagari
+# Unicode block (U+0900-U+097F). That block also covers vowel signs (matras) and the virama,
+# which \w alone does NOT count as word characters -- without this, "न्याय" was being split
+# into separate tokens at every matra/virama.
+_TOKEN_PATTERN = re.compile(r"(?:[^\W_]|[\u0900-\u097F])+", re.UNICODE)
 
 
 def tokens(text: str) -> list[str]:
@@ -71,7 +76,10 @@ def reciprocal_rank_fusion(
     weights: Sequence[float] | None = None,
     k: int = 60,
 ) -> dict[Hashable, float]:
-    """Combine ranked identifiers using weighted reciprocal-rank fusion."""
+    """Combine ranked identifiers using weighted reciprocal-rank fusion.
+    An item appearing in several rankings keeps its single BEST (highest) weighted score
+    rather than summing across rankings -- this avoids double-counting the same result
+    just because both retrieval strategies happened to surface it."""
     if k < 0:
         raise ValueError("k must be non-negative")
     if weights is None:
@@ -86,5 +94,6 @@ def reciprocal_rank_fusion(
             if item in seen:
                 continue
             seen.add(item)
-            fused[item] = fused.get(item, 0.0) + weight / (k + rank)
+            score = weight / (k + rank)
+            fused[item] = max(fused.get(item, 0.0), score)
     return fused

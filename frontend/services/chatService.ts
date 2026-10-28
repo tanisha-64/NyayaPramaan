@@ -1,4 +1,5 @@
-import { apiPost, apiGet, apiPatch, apiDelete } from "./apiClient";
+import { apiPost, apiGet, apiPatch, apiDelete, apiGetBlob } from "./apiClient";
+import type { PramaanCard } from "@/components/chat/AnswerCard";
 
 export type LegalClaim = {
   claim: string;
@@ -37,6 +38,7 @@ export type ChatSession = {
 };
 
 export type ChatHistoryMessage = {
+  id?: string;
   role: 'user' | 'assistant';
   content: string;
   sources?: unknown;
@@ -59,6 +61,7 @@ export type ChatResponse = {
   verdict_state?: string;
   claim_verdicts?: { claim: string; verdict: string; page_numbers: number[]; reason?: string }[];
   sources?: Source[];
+  pramaan_cards?: PramaanCard[];
   claims?: LegalClaim[];
   verification_summary?: VerificationSummary;
   quality_note?: string;
@@ -66,6 +69,8 @@ export type ChatResponse = {
   suggestions?: string[];
   model_used?: string;
   session_id?: string;
+  message_id?: string;
+  user_message_id?: string;
 };
 
 export function askQuestion(
@@ -90,6 +95,13 @@ export function getSessionMessages(sessionId: string) {
 export function renameSession(sessionId: string, title: string) { return apiPatch<{ updated: boolean }>(`/chat/sessions/${sessionId}`, { title }); }
 export function togglePin(sessionId: string, pinned: boolean) { return apiPatch<{ updated: boolean }>(`/chat/sessions/${sessionId}`, { pinned }); }
 export function deleteSession(sessionId: string) { return apiDelete<{ deleted: boolean }>(`/chat/sessions/${sessionId}`); }
+export function deleteMessagesFrom(sessionId: string, messageId: string) {
+  return apiDelete<{ deleted: boolean }>(`/chat/sessions/${sessionId}/messages/from/${messageId}`);
+}
 export function clearAllSessions() {
   return apiDelete<{ status: string; cleared_sessions: number }>("/chat/sessions/clear/all");
+}
+
+export function exportSessionPdf(sessionId: string) {
+  return apiGetBlob(`/chat/sessions/${sessionId}/export`);
 }

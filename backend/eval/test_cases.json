@@ -1,0 +1,28 @@
+[
+  {
+    "id": "t1",
+    "query": "Section 303 BNS",
+    "case_id": null,
+    "expected_section": "303"
+  },
+  {
+    "id": "t2",
+    "query": "What is the punishment for theft under BNS?",
+    "case_id": null,
+    "expected_section": "303"
+  },
+  {
+    "id": "t3",
+    "query": "What happened on the date of hearing?",
+    "case_id": "PASTE_A_REAL_CASE_ID_HERE",
+    "expected_pages": [2, 3]
+  },
+  {
+    "id": "t4",
+    "query": "What is the punishment for theft under BNS?",
+    "case_id": null,
+    "expected_section": "303",
+    "evidence_override": "Bharatiya Nyaya Sanhita Section 303: Whoever commits theft shall be punished with imprisonment for a term up to three years, or with fine, or with both.",
+    "expected_answer_sample": "Under BNS Section 303, theft is punishable with imprisonment up to three years, or fine, or both."
+  }
+]

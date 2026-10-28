@@ -68,3 +68,23 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   formData.append("file", file);
   return request<T>(path, { method: "POST", body: formData }, true);
 }
+
+
+export async function apiGetBlob(path: string): Promise<{ blob: Blob; filename: string | null }> {
+  if (!API_BASE_URL) {
+    throw new Error("Backend URL is not configured. Set NEXT_PUBLIC_API_BASE_URL in the deployment environment and redeploy.");
+  }
+  const headers = await authHeaders();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  const res = await fetch(`${API_BASE_URL}${cleanPath}`, { headers });
+  if (res.status === 401) {
+    await handleUnauthorized();
+    throw new Error("Session expired. Redirecting to login...");
+  }
+  if (!res.ok) {
+    throw new Error(`Could not fetch file (status ${res.status}).`);
+  }
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  return { blob: await res.blob(), filename: match?.[1] || null };
+}

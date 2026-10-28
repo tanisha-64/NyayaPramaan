@@ -12,6 +12,17 @@ type Source = {
   excerpt?: string
 }
 
+export type PramaanCard = {
+  act: string
+  section: string
+  act_name?: string | null
+  heading?: string | null
+  quote?: string | null
+  source_url?: string | null
+  page?: number | null
+  verified: boolean
+}
+
 const STATUS: Record<string, { bg: string; text: string; icon: string; label: string }> = {
   verified: { bg: 'rgba(31,122,77,0.18)', text: '#2ECC71', icon: '✅', label: 'Verified' },
   partial: { bg: 'rgba(184,134,46,0.18)', text: '#D9A441', icon: '🟡', label: 'Partially supported' },
@@ -41,6 +52,48 @@ function splitName(name: string): { base: string; loc: string } {
   let base = rawBase.replace(/\.(pdf|docx?|txt|png|jpe?g)$/i, '').replace(/[_]+/g, ' ').trim()
   if (base.length > 38) base = base.slice(0, 35).trimEnd() + '…'
   return { base: base || 'Source', loc: rest.join(' — ') }
+}
+
+function PramaanDeck({ cards }: { cards: PramaanCard[] }) {
+  if (!cards.length) return null
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 11, color: 'rgba(247,245,240,0.65)', marginBottom: 6 }}>🔖 Pramaan (Proof)</div>
+      {cards.map((c, i) => (
+        <div key={i} style={{
+          marginBottom: 6, padding: '8px 12px', borderRadius: 10,
+          background: c.verified ? 'rgba(31,122,77,0.10)' : 'rgba(184,86,46,0.12)',
+          border: `1px solid ${c.verified ? 'rgba(46,204,113,0.3)' : 'rgba(224,106,71,0.4)'}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, flexWrap: 'wrap' }}>
+            <span style={{ color: c.verified ? '#2ECC71' : '#E06A47', fontWeight: 600 }}>
+              {c.verified ? '✅' : '⚠️'} {c.act} Section {c.section}
+            </span>
+            {c.act_name && <span style={{ color: 'rgba(247,245,240,0.5)' }}>· {c.act_name}</span>}
+          </div>
+          {c.verified ? (
+            <>
+              {c.quote && (
+                <div style={{ marginTop: 4, fontSize: 11.5, color: 'rgba(247,245,240,0.65)', borderLeft: '2px solid rgba(46,204,113,0.5)', paddingLeft: 8 }}>
+                  {c.quote}
+                </div>
+              )}
+              {c.source_url && (
+                <a href={c.source_url} target="_blank" rel="noopener noreferrer"
+                   style={{ display: 'inline-block', marginTop: 4, fontSize: 11, color: '#5B8CFF' }}>
+                  View official text{c.page ? ` (Page ${c.page})` : ''} →
+                </a>
+              )}
+            </>
+          ) : (
+            <div style={{ marginTop: 4, fontSize: 11.5, color: '#E06A47' }}>
+              Could not be verified against our official statute database — please confirm on India Code before relying on this.
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function EvidenceDeck({ sources }: { sources: Source[] }) {
@@ -143,9 +196,6 @@ function EvidenceDeck({ sources }: { sources: Source[] }) {
           {[...visible].reverse().map(({ s, k }) => renderCard(s, k, false))}
         </div>
       )}
-      {n > 1 && !open && (
-        <div style={{ fontSize: 10, color: 'rgba(247,245,240,0.35)', marginTop: 4 }}>Tap the card for the next evidence</div>
-      )}
     </div>
   )
 }
@@ -155,11 +205,12 @@ const navBtn: React.CSSProperties = {
   width: 22, height: 22, cursor: 'pointer', lineHeight: '20px', fontSize: 14,
 }
 
-export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNote, departmentSuggestion, verified, verdictState }: {
+export function AnswerCard({ answer, conclusion, usefulness, sources, pramaanCards, qualityNote, departmentSuggestion, verified, verdictState }: {
   answer: string
   conclusion?: string
   usefulness?: string
   sources?: Source[]
+  pramaanCards?: PramaanCard[]
   qualityNote?: string
   departmentSuggestion?: string | null
   verified?: boolean
@@ -170,6 +221,7 @@ export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNot
   const key = verdictState ? (VERDICT[verdictState] ?? 'unverified') : (verified ? 'verified' : 'unverified')
   const badge = key === 'none' ? null : STATUS[key]
   const list = (sources || []).filter((s) => s && (s.name || s.excerpt))
+  const pramaan = (pramaanCards || []).filter((c) => c && c.act && c.section)
 
   return (
     <div style={{ maxWidth: '90%' }}>
@@ -200,6 +252,7 @@ export function AnswerCard({ answer, conclusion, usefulness, sources, qualityNot
         </div>
       )}
 
+      {!notApplicable && pramaan.length > 0 && <PramaanDeck cards={pramaan} />}
       {!notApplicable && list.length > 0 && <EvidenceDeck sources={list} />}
 
       {!notApplicable && usefulness && USEFULNESS[usefulness] && (

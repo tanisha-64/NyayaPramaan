@@ -27,6 +27,9 @@ _DOC = re.compile(
     r"|इस\s*(केस|फाइल|दस्तावेज़)|सुनवाई|तारीख",
     re.I,
 )
+# A document IS attached and the question asks about evidence/the claim/the dispute inside it --
+# this ALWAYS means "look in the document first". Only applied when has_document, below.
+_EVIDENCE = re.compile(r"\b(evidence|proves?|proof|claims?|disputes?)\b", re.I)
 # Statute / general-law markers
 _STATUTE = re.compile(
     r"\b(section|sec|dhara|article|schedule)\b\s*\.?\s*\d+"
@@ -58,7 +61,8 @@ def prefilter_label(query: str, has_document: bool) -> str | None:
             return "CASE_SPECIFIC"
         return "GENERAL_LAW"
 
-    # a document IS attached
+    # a document IS attached -- "what evidence/claim/dispute..." always means "check the document"
+    doc = doc or bool(_EVIDENCE.search(q))
     if doc and statute:
         return "MIXED"
     if doc:

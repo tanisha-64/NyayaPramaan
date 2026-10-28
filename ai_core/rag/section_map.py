@@ -55,3 +55,17 @@ def mapping_note(sb, act: str, section: str, hi: bool = True) -> str:
     tail = (f"{CUTOFF} se pehle ke offences par purana kanoon hi lagta hai." if hi
             else f"Offences before {CUTOFF} are still governed by the old law.")
     return "\n\n🔁 " + ("Naya/purana kanoon:" if hi else "Old ↔ new law:") + "\n" + "\n".join(lines) + "\n" + tail
+
+
+def new_law_rows(sb, act: str, section: str, limit: int = 2) -> list[dict]:
+    out, seen = [], set()
+    for m in lookup(sb, act, section):
+        k = (m["new_act"], m["new_top"])
+        if k in seen or len(out) >= limit:
+            continue
+        seen.add(k)
+        try:
+            out += sb.table("statute_sections").select("*").eq("act", m["new_act"]).eq("section", m["new_top"]).limit(1).execute().data or []
+        except Exception:
+            pass
+    return out

@@ -1,9 +1,12 @@
 """Chat Router -> backend/routers/chat_router.py
 Hybrid (vector + lexical) document retrieval, exact date extraction, law-only gate, vetted web sources,
 owner-checked cases, parallel post-steps, honest LLM-down handling, chat-style answers, multi-question messages."""
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor
+from collections import defaultdict, deque
+from fastapi.responses import Response
+from fpdf import FPDF
 import json
 import logging
 import os
@@ -12,6 +15,9 @@ import threading
 import time
 import uuid
 
+from ai_core.rag.legal_scope import in_scope, suggestions_for, hint_for, fixed_answer, OUT_MSG
+from ai_core.rag.section_map import mapping_note, new_law_rows, OLD2NEW
+from ai_core.rag.statutes import source_host, explicit_lookup, find_sections, statute_sources, statute_text, statute_evidence
 from ai_core.guardrails.input_guard import check_input_safety
 from ai_core.guardrails.output_guard import redact_pii
 from ai_core.router.adaptive_router import choose_model
@@ -23,9 +29,6 @@ from ai_core.rag.web_evidence import web_evidence
 from ai_core.rag.self_rag import self_reflect
 from ai_core.rag.case_text_fallback import search_case_text, answer_date_question, content_tokens
 from ai_core.router.domain_gate import greeting_reply
-from ai_core.rag.legal_scope import in_scope, suggestions_for, OUT_MSG
-from ai_core.rag.section_map import mapping_note
-from ai_core.rag.statutes import explicit_lookup, find_sections, statute_sources, statute_text, statute_evidence
 from ai_core.router.multi_question import split_questions, merge_answers
 from ai_core.formatting.grounding import ground_answer
 from ai_core.llm_gateway import call_llm, is_llm_failure
@@ -44,10 +47,31 @@ from backend.auth.supabase_auth import get_current_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 _ctx = threading.local()  # quiet=True while one part of a multi-question message runs (saved once, merged)
+# ----------------------------------------------------------------------------- rate limiting (in-memory, per user)
+_RATE_LIMIT = 10          # max requests
+_RATE_WINDOW = 60         # per this many seconds
+_rate_lock = threading.Lock()
+_rate_buckets: dict[str, deque] = defaultdict(deque)
+
+
+def _check_rate_limit(user_id: str):
+    now = time.time()
+    with _rate_lock:
+        bucket = _rate_buckets[user_id]
+        while bucket and now - bucket[0] > _RATE_WINDOW:
+            bucket.popleft()
+        if len(bucket) >= _RATE_LIMIT:
+            retry_after = int(_RATE_WINDOW - (now - bucket[0])) + 1
+            raise HTTPException(status_code=429, detail="Too many requests. Please wait a moment and try again.",
+                                 headers={"Retry-After": str(retry_after)})
+        bucket.append(now)
+
 
 # Owner column in `cases` (set CASE_OWNER_COLUMN="" only if your table has none; then fix the schema).
 CASE_OWNER_COLUMN = os.getenv("CASE_OWNER_COLUMN", "user_id")
-LANGUAGE_INSTRUCTION = "Detect whether the question is in English, Hindi, or Hinglish and respond in the SAME language/style."
+LANGUAGE_INSTRUCTION = ("Answer in the SAME language AND SCRIPT as the question. If the question is typed in English/Roman letters (including Hinglish like \"FIR kaise karein\"), "
+                        "answer in Roman-letter Hinglish or English and NEVER use Devanagari. Use Devanagari only when the question itself is in Devanagari. "
+                        "Cite only sections that appear in the evidence; do not add numbers or days that are not in it.")
 LENGTH_INSTRUCTION = "Keep it as short as the question allows: 2-4 lines for simple questions, a few tidy lines for complex ones."
 LLM_DOWN_MSG = "The AI service is busy right now. Please try again in a few seconds."
 
@@ -66,6 +90,12 @@ _HI_WORDS = ["kya", "kaun", "kaunsa", "kaunse", "kaunsi", "hai", "hain", "mein",
              "btao", "batao", "kare", "karein", "rakha", "rakhi", "mera", "meri", "mere", "kab", "hui", "iski", "isme", "tarikh"]
 _PERSONAL = re.compile(r"\b(my|me|i|we|our|mera|meri|mere|mujhe|hamara|hamare|humne)\b", re.I)
 _TOC = re.compile(r"\.{6,}")  # table-of-contents dotted lines
+_NO_ANSWER = re.compile(
+    r"in the evidence[:,]?\s*none|could not verify|could not confirm|no (official|verified) source|"
+    r"not in our verified statute database|i won'?t guess|koi official source nahi mila|"
+    r"verified source nahi mila|andaze se jawab nahi dunga",
+    re.I,
+)
 
 
 class QueryRequest(BaseModel):
@@ -81,6 +111,16 @@ def is_meta_summary_query(query: str) -> bool:
 
 def is_hindi_or_hinglish(query: str) -> bool:
     return bool(re.search(r"[ऀ-ॿ]", query)) or any(re.search(rf"\b{w}\b", query.lower()) for w in _HI_WORDS)
+
+
+_CONCISE = re.compile(r"\b(concise|brief|short|shortly|summary|summar(y|ize|ise)|tl;?dr|in short|"
+                      r"chhota|chota|chhote|chote|sankshipt|saral|simple|aasan|asan|ek line|one line|"
+                      r"jaldi|short me|concise me|sankshep)\b", re.I)
+
+
+def wants_concise(query: str) -> bool:
+    """True when the user explicitly asked for a short/brief/simple answer in the message itself."""
+    return bool(_CONCISE.search(query or ""))
 
 
 def general_legal_answer(query, model, audience, history=""):
@@ -141,11 +181,12 @@ def ensure_valid_session(session_id, user_id, fallback_title, case_id=None):
 
 def save_message(session_id, role, content, sources=None):
     if not session_id or getattr(_ctx, "quiet", False):
-        return
+        return None
     client = get_supabase_client()
-    client.table("chat_messages").insert(
+    res = client.table("chat_messages").insert(
         {"session_id": session_id, "role": role, "content": content, "sources": sources or []}).execute()
     client.table("chat_sessions").update({"updated_at": "now()"}).eq("id", session_id).execute()
+    return res.data[0]["id"] if res.data else None
 
 
 def link_document_to_session(session_id, case_id, filename):
@@ -165,10 +206,9 @@ def _load_case(client, case_id: str, user_id: str):
 
 def _reply(session_id, label, answer, save=True, sources=None, **extra):
     """Standard response; `extra` overrides any default key."""
-    if save:
-        save_message(session_id, "assistant", answer, sources=sources)
+    message_id = save_message(session_id, "assistant", answer, sources=sources) if save else None
     return {"answer": answer, "conclusion": None, "verified": False, "sources": sources or [], "usefulness": "low",
-            "session_id": session_id, "routing_label": label, **extra}
+            "session_id": session_id, "routing_label": label, "message_id": message_id, **extra}
 
 
 # ----------------------------------------------------------------------------- real pages, summary sampling
@@ -341,20 +381,37 @@ def _post_steps(query, answer, evidence, model, want_dept):
                 safe(f_sug, []), safe(f_dep, None) if f_dep else None)
 
 
+def _simple_explain(statute: str, model: str, hi: bool) -> str:
+    """Short, plain-language gist of a verbatim section, for a non-lawyer reader. Never replaces the verbatim
+    text (that stays above, untouched) -- this is an extra, easy-to-read line under it."""
+    lang = "simple Hinglish (Roman Hindi + English mix), jaise ek aam aadmi se baat kar rahe ho" if hi \
+        else "simple, plain English, as if explaining to someone with no legal background"
+    prompt = (f"Neeche ek Indian law ka official section diya hai. Isko {lang} me 2-3 short lines me samjhao -- "
+              f"sirf ismein jo likha hai wahi batao, kuch naya mat jodo, koi legal jargon mat use karo "
+              f"(jaise 'dishonestly', 'movable property' jaise words ko roz-marra ki bhasha me badlo). "
+              f"No heading, no bullet points, just plain lines.\n\nSection:\n{statute[:2500]}")
+    try:
+        out = call_llm(model, prompt)
+        return "" if is_llm_failure(out) else out.strip()
+    except Exception:  # noqa: BLE001  -- simplification is a nice-to-have, never blocks the verbatim answer
+        return ""
+
+
 def _plain(key: str, query: str) -> str:
     hi = is_hindi_or_hinglish(query)
     if key == "no_evidence":
         return (f"Is document me '{query.strip()}' se jude koi supporting evidence nahi mile." if hi
                 else f"No supporting evidence was found in the uploaded document regarding {query.strip()}.")
-    return ("Is sawal ka bharosemand jawab dene ke liye document se zaroori hissa nahi mil paya. "
+    return ("Is sawal ka jawab dene ke liye document me se पर्याप्त संबंधित अंश retrieve नहीं कर पाया. "
             "Kripya sawal thoda aur specific karke poochhiye." if hi else
-            "I could not find a passage in this document that reliably answers that. "
+            "I could not retrieve sufficient relevant passages from the document to answer that reliably. "
             "Try rephrasing with a name, date or keyword from the document.")
 
 
 # ----------------------------------------------------------------------------- endpoint
 @router.post("/ask")
 def ask_legal_question(request: QueryRequest, response: Response, user=Depends(get_current_user)):
+    _check_rate_limit(user.id)
     request_id, t0 = uuid.uuid4().hex[:12], time.perf_counter()
     try:
         parts = split_questions(request.query)
@@ -380,7 +437,7 @@ def _handle_multi(request: QueryRequest, user_id: str, parts: list[str], request
     if not safety["is_safe"]:
         return {"blocked": True, "reason": safety["reason"]}
     session_id = ensure_valid_session(request.session_id, user_id, query, case_id=request.case_id)
-    save_message(session_id, "user", query)
+    user_message_id = save_message(session_id, "user", query)
 
     def one(part):
         _ctx.quiet = True  # the user message and the merged answer are saved once, below
@@ -396,7 +453,8 @@ def _handle_multi(request: QueryRequest, user_id: str, parts: list[str], request
         results = list(ex.map(one, parts))
     merged = merge_answers(parts, results, STATE_PARTIALLY_GROUNDED)
     merged["session_id"] = session_id
-    save_message(session_id, "assistant", merged["answer"], sources=merged["sources"])
+    merged["user_message_id"] = user_message_id
+    merged["message_id"] = save_message(session_id, "assistant", merged["answer"], sources=merged["sources"])
     return merged
 
 
@@ -407,10 +465,11 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
         return {"blocked": True, "reason": safety["reason"]}
 
     session_id = ensure_valid_session(request.session_id, user_id, query, case_id=request.case_id)
-    save_message(session_id, "user", query)
+    user_message_id = save_message(session_id, "user", query)
     history = get_recent_history(session_id, current_case_id=request.case_id)
     if not request.case_id and not in_scope(query):
-        return _reply(session_id, "OUT_OF_DOMAIN", OUT_MSG, usefulness=None, verdict_state="NOT_APPLICABLE", mode="refused")
+        return _reply(session_id, "OUT_OF_DOMAIN", OUT_MSG, usefulness=None, verdict_state="NOT_APPLICABLE",
+                      mode="refused", user_message_id=user_message_id)
     model = choose_model(query)
     has_document = bool(request.case_id)
     intent = classify_intent(query, has_document)
@@ -420,11 +479,12 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
 
     if label == "GREETING":
         return _reply(session_id, label, greeting_reply(is_hindi_or_hinglish(query)), usefulness=None,
-                      verdict_state="NOT_APPLICABLE", mode="greeting", suggestions=[
+                      verdict_state="NOT_APPLICABLE", mode="greeting", user_message_id=user_message_id, suggestions=[
                           "What is the punishment for theft under BNS?",
                           "My landlord is not returning my deposit, what can I do?", "How do I file an FIR?"])
     if label == "OUT_OF_DOMAIN":
-        return _reply(session_id, label, REFUSAL_MESSAGE, usefulness=None, verdict_state="NOT_APPLICABLE", mode="refused")
+        return _reply(session_id, label, REFUSAL_MESSAGE, usefulness=None, verdict_state="NOT_APPLICABLE",
+                      mode="refused", user_message_id=user_message_id)
 
     client = get_supabase_client()
     filename, doc_status, case_text, row = None, "ready", "", None
@@ -437,15 +497,16 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
             link_document_to_session(session_id, request.case_id, filename)
         elif doc_label:
             return _reply(session_id, label, "The requested document could not be found. "
-                          "Please select or re-upload a valid document.", no_documentary_evidence_found=True)
+                          "Please select or re-upload a valid document.", no_documentary_evidence_found=True,
+                          user_message_id=user_message_id)
 
     if doc_label and row:  # indexing status gates
         if doc_status == "processing":
             return _reply(session_id, label, "Document is still being indexed. Please wait a moment and try again.",
-                          indexing_in_progress=True)
+                          indexing_in_progress=True, user_message_id=user_message_id)
         if doc_status == "failed":
             return _reply(session_id, label, "Document is not indexed correctly or indexing failed. "
-                          "Please re-upload the document.", indexing_failed=True)
+                          "Please re-upload the document.", indexing_failed=True, user_message_id=user_message_id)
 
     # ---- META-SUMMARY: summarise slices of the WHOLE file (cached), else the stored summary
     if doc_label and row and is_meta_summary_query(query):
@@ -468,7 +529,8 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
                     "verification_status": "unverified", "jurisdiction": None,
                     "section": "Full-document summary", "excerpt": summary[:500]}]
             return _reply(session_id, label, f"{summary}\n\n📄 Source: {filename} (full-document summary)",
-                          sources=src, usefulness="high", verdict_state=STATE_VERIFICATION_PENDING)
+                          sources=src, usefulness="high", verdict_state=STATE_VERIFICATION_PENDING,
+                          user_message_id=user_message_id)
 
     # ---- DATE / HEARING / YEAR questions: exact extraction, no LLM
     if label == "CASE_SPECIFIC" and row and case_text:
@@ -483,7 +545,7 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
             return _reply(session_id, label, dated["answer"], sources=src, usefulness="high" if events else "low",
                           verified=bool(events), verdict_state=STATE_GROUNDED if events else STATE_NO_EVIDENCE_FOUND,
                           claim_verdicts=[], retrieval_method="exact_extraction", suggestions=[],
-                          no_documentary_evidence_found=not events)
+                          no_documentary_evidence_found=not events, user_message_id=user_message_id)
 
     # ---- gather DOCUMENT evidence
     document_evidence, document_chunks = "", []
@@ -493,38 +555,72 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
         document_chunks, info = _hybrid_retrieve(query, request.case_id, case_text,
                                                  pages=_load_pages(client, request.case_id))
         logger.info("[RETRIEVAL] request_id=%s case_id=%s chunks=%d info=%s pages=%s", request_id, request.case_id,
-                    len(document_chunks), info, [c.get("page_number") for c in document_chunks])
+            len(document_chunks), info, [c.get("page_number") for c in document_chunks])
         if document_chunks:
             weak = info["lexical"] == 0 and info["top_semantic"] is not None and info["top_semantic"] < 0.15
             if weak and label == "CASE_SPECIFIC":
                 return _reply(session_id, label, _plain("no_evidence", query), no_documentary_evidence_found=True,
-                              verdict_state=STATE_NO_EVIDENCE_FOUND)
+                              verdict_state=STATE_NO_EVIDENCE_FOUND, user_message_id=user_message_id)
             document_evidence = _evidence_text(document_chunks)
         elif label == "CASE_SPECIFIC":
             return _reply(session_id, label, _plain("retrieval", query), retrieval_insufficient=True,
-                          verdict_state=STATE_RETRIEVAL_INSUFFICIENT)
+                          verdict_state=STATE_RETRIEVAL_INSUFFICIENT, user_message_id=user_message_id)
 
     # ---- gather GENERAL evidence: official statute table -> knowledge base -> real web pages
     if label in ("GENERAL_LAW", "MIXED"):
         rows = find_sections(client, query)
-        if explicit_lookup(query):  # "section 303 BNS": answer ONLY from the official text, never from model memory
+        ex = explicit_lookup(query)
+        if ex:  # "section 303 BNS": answer ONLY from the official text, never from model memory
             hi = is_hindi_or_hinglish(query)
+            concise = wants_concise(query)
             if not rows:
-                ex = explicit_lookup(query)
+                alt = new_law_rows(client, ex[0], ex[1]) if ex[0] in OLD2NEW else []
+                if alt:  # old text not loaded (e.g. CrPC) -> show the verbatim text of the NEW law that replaced it
+                    def _one(a):
+                        simple = _simple_explain(statute_text(a), model, hi)
+                        tag = "🗣️ Saral bhasha me:" if hi else "🗣️ In simple words:"
+                        head_a = f"📌 {a['act_name']} — Section {a['section']}" + (f": {a['heading']}" if a.get("heading") else "")
+                        if concise:  # user asked for a short answer -> only the plain-language gist
+                            return head_a + (f"\n\n{tag} {simple}" if simple else f"\n\n{statute_text(a)[:400]}")
+                        return head_a + f"\n\n{statute_text(a)}" + (f"\n\n{tag} {simple}" if simple else "")
+                    body = "\n\n".join(_one(a) for a in alt)
+                    note = (f"{ex[0]} {ex[1]} ka original text hamare database me nahi hai; neeche uska naya kanoon wala section hai (verbatim)."
+                            if hi else f"{ex[0]} {ex[1]} text is not loaded here; below is the section of the new law that replaced it (verbatim).")
+                    return _reply(session_id, label, f"{note}\n\n{body}" + mapping_note(client, ex[0], ex[1], hi),
+                                  sources=statute_sources(alt), usefulness="high", verified=True,
+                                  verdict_state=STATE_GROUNDED, user_message_id=user_message_id)
+                note = mapping_note(client, ex[0], ex[1], hi).strip()
+                if ex[0] in OLD2NEW and note:  # e.g. IPC 56: one clear message, no contradiction
+                    return _reply(session_id, label, note, verdict_state="NOT_APPLICABLE", user_message_id=user_message_id)
                 msg = (f"{ex[0]} Section {ex[1]} abhi hamare verified statute database me nahi hai, isliye main andaza nahi lagaunga."
                        if hi else f"{ex[0]} Section {ex[1]} is not in our verified statute database yet, so I won't guess it. "
                                   "Please check the official text on India Code.")
-                msg += mapping_note(client, ex[0], ex[1], hi)
-                return _reply(session_id, label, msg, verdict_state=STATE_NO_EVIDENCE_FOUND)
+                return _reply(session_id, label, msg, verdict_state=STATE_NO_EVIDENCE_FOUND, user_message_id=user_message_id)
             r = rows[0]
             head = f"📌 {r['act_name']} — Section {r['section']}" + (f": {r['heading']}" if r.get("heading") else "")
-            body = (f"{head}\n\n{statute_text(r)}\n\n📄 Verbatim from the source PDF ({r['source_url'].split('/')[2]}), page {r.get('page')}."
-                    + mapping_note(client, r["act"], r["section"], hi))
-            return _reply(session_id, label, body,
-                          sources=statute_sources(rows), usefulness="high", verified=True, verdict_state=STATE_GROUNDED)
+            simple = _simple_explain(statute_text(r), model, hi)
+            tag = "🗣️ Saral bhasha me:" if hi else "🗣️ In simple words:"
+            src_line = f"\n\n📄 Verbatim from the source PDF ({source_host(r.get('source_url'))}), page {r.get('page')}."
+            if concise:  # user asked for a short answer -> plain-language gist only, full text stays in the evidence card
+                gist = f"{tag} {simple}" if simple else statute_text(r)[:400]
+                body = f"{head}\n\n{gist}{src_line}" + mapping_note(client, r["act"], r["section"], hi)
+            else:
+                simple_block = f"\n\n{tag} {simple}" if simple else ""
+                body = (f"{head}\n\n{statute_text(r)}{simple_block}{src_line}"
+                        + mapping_note(client, r["act"], r["section"], hi))
+            return _reply(session_id, label, body, sources=statute_sources(rows), usefulness="high", verified=True,
+                          verdict_state=STATE_GROUNDED, user_message_id=user_message_id)
+
+        fixed = fixed_answer(query, is_hindi_or_hinglish(query)) if rows else None
+        if fixed:   # hand-checked answer (e.g. Zero FIR); evidence cards come from the real BNSS text
+            return _reply(session_id, label, fixed, sources=statute_sources(rows), usefulness="high", verified=True,
+                          verdict_state=STATE_GROUNDED, suggestions=suggestions_for(query), user_message_id=user_message_id)
+
         if rows:
             general_evidence = "\n\n".join(f"{r['act_name']} Section {r['section']} ({r.get('heading')}): {statute_evidence(r)}" for r in rows)
             general_sources += statute_sources(rows, status="pending")
+            if hint_for(query):
+                general_evidence += "\n\n" + hint_for(query)
         try:
             matches = search_knowledge_base(embed_text(query, task_type="RETRIEVAL_QUERY"), query, match_count=3)
         except Exception as e:  # noqa: BLE001
@@ -547,8 +643,8 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
                                             "type": "statute" if "act_name" in m else "judgment", "url": None,
                                             "verification_status": "pending", "jurisdiction": m.get("jurisdiction_type")})
 
-    if not document_evidence and not general_evidence:
-        return _general_fallback(query, model, audience, session_id, history)
+        if not document_evidence and not general_evidence:
+            return _general_fallback(query, model, audience, session_id, history, has_document, user_message_id)
 
     evidence = (f"=== UPLOADED CASE FACTS ({filename}) ===\n{document_evidence}\n\n"
                 f"=== APPLICABLE INDIAN STATUTORY LAW & PRECEDENTS ===\n{general_evidence}"
@@ -556,7 +652,9 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
 
     hist = f"CONVERSATION CONTEXT (never invent beyond the evidence below):\n{history}\n\n" if history else ""
     head = f"{LANGUAGE_INSTRUCTION}\n{LENGTH_INSTRUCTION}\n{AUDIENCE_INSTRUCTIONS[audience]}\n{STYLE_GUIDE}\n{hist}"
-    tail = f"EVIDENCE:\n{evidence}\n\nCURRENT QUERY: {query}\n\nANSWER:"
+    script = ("" if re.search(r"[ऀ-ॿ]", query) else
+              "\nIMPORTANT: write the answer in Roman letters (English or Hinglish). Do NOT use Devanagari script.")
+    tail = f"EVIDENCE:\n{evidence}\n\nCURRENT QUERY: {query}{script}\n\nANSWER:"
     if label == "CASE_SPECIFIC":
         prompt = (f"You are NyayaPramaan, an evidence-grounded legal assistant for Indian case files.\n{head}"
                   f"STRICT CASE-SPECIFIC EVIDENCE CONTRACT:\n"
@@ -565,7 +663,9 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
                   f"3. Do NOT invent documents, dates, names or findings that are not in the evidence.\n"
                   f"4. If a person/document is only mentioned, say only what is written.\n"
                   f"5. If the evidence does not answer the question, reply EXACTLY: "
-                  f"'No supporting evidence was found in the uploaded document regarding {query}.'\n\n{tail}")
+                  f"'No supporting evidence was found in the uploaded document regarding {query}.'\n"
+                  f"6. STRICT NEGATIVE CONSTRAINT: never say or assume there is a registered sale deed, tax receipt, "
+                  f"probate certificate, or any other document unless it is explicitly present in the evidence below.\n\n{tail}")
     elif label == "MIXED":
         prompt = (f"{head}Answer in three short parts using the evidence ONLY:\n"
                   f"📄 Case facts (cite [Page N]) / ⚖️ Legal rule / 👉 How it applies.\n"
@@ -578,7 +678,7 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
     draft = call_llm(model, prompt)
     if is_llm_failure(draft):
         return _reply(session_id, label, LLM_DOWN_MSG, save=False, verdict_state=STATE_VERIFICATION_PENDING,
-                      llm_unavailable=True)
+                      llm_unavailable=True, user_message_id=user_message_id)
 
     # ---- TrustAgent: claim extraction + LLM-as-judge against the evidence
     claims, extraction_ok = extract_claims(draft)
@@ -608,9 +708,9 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
                 final_draft = filter_supported_claims_answer(draft, supported, unsupported, evidence, query)
         if label == "CASE_SPECIFIC" and verdict_state == STATE_NO_EVIDENCE_FOUND:
             return _reply(session_id, label, _plain("no_evidence", query), no_documentary_evidence_found=True,
-                          verdict_state=STATE_NO_EVIDENCE_FOUND)
+                          verdict_state=STATE_NO_EVIDENCE_FOUND, user_message_id=user_message_id)
     if from_crag and verdict_state in (STATE_NO_EVIDENCE_FOUND, STATE_CONTRADICTED):
-        return _general_fallback(query, model, audience, session_id, history)
+        return _general_fallback(query, model, audience, session_id, history, has_document, user_message_id)
 
     # ---- final text + sources
     final_answer = redact_pii(final_draft)
@@ -620,7 +720,11 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
     if label == "GENERAL_LAW":  # drop any section/number/Act that is not in the evidence
         final_answer = ground_answer(final_answer, evidence)
         if not final_answer:
-            return _general_fallback(query, model, audience, session_id, history)
+            return _general_fallback(query, model, audience, session_id, history, has_document, user_message_id)
+
+    if _NO_ANSWER.search(final_answer):  # answer says nothing was found -> no fake evidence/verdict UI
+        return _reply(session_id, label, final_answer, usefulness="high", verdict_state="NOT_APPLICABLE",
+                      mode="no_evidence_clean", user_message_id=user_message_id)
 
     doc_sources = (build_document_sources(filename, document_chunks, final_answer, claim_verdicts, verdict_state)
                    if document_chunks else [])
@@ -638,30 +742,36 @@ def _handle_ask(request: QueryRequest, user_id: str, request_id: str | None = No
     verified = verdict_state in (STATE_GROUNDED, STATE_PARTIALLY_GROUNDED) and accurate
     _log(query, final_answer, model, verified)
     return _reply(session_id, label, final_answer, sources=sources,
-                  conclusion=reflection.get("conclusion") if reflection.get("conclusion_needed", True) else None,
-                  usefulness=reflection.get("usefulness", "medium"), verified=verified, verdict_state=verdict_state,
-                  claim_verdicts=claim_verdicts, quality_note="" if accurate or not judgment.get("issue") else f"Quality-check note: {judgment['issue']}",
-                  department_suggestion=dept, model_used=model, suggestions=suggestions)
+                conclusion=reflection.get("conclusion") if reflection.get("conclusion_needed", True) else None,
+                usefulness=reflection.get("usefulness", "medium"), verified=verified, verdict_state=verdict_state,
+                claim_verdicts=claim_verdicts, quality_note="" if accurate or not judgment.get("issue") else f"Quality-check note: {judgment['issue']}",
+                department_suggestion=dept, model_used=model, suggestions=suggestions, user_message_id=user_message_id)
 
 
-def _no_source(query, session_id):
+def _no_source(query, session_id, has_document=False, user_message_id=None):
     hi = is_hindi_or_hinglish(query)
+    note = ((" Yeh general jawab tumhare uploaded document ke against check nahi hua hai." if hi else
+             " This general answer was not checked against your uploaded document.") if has_document else "")
     msg = ("Is sawal ke liye mujhe koi official source nahi mila, isliye main andaze se jawab nahi dunga. India Code "
-           "(indiacode.nic.in) par dekhein ya vakil se poochhein.\n\n☎️ Helplines: Emergency 112 · NALSA Legal Aid 15100 · "
+           "(indiacode.nic.in) par dekhein ya vakil se poochhein." + note +
+           "\n\n☎️ Helplines: Emergency 112 · NALSA Legal Aid 15100 · "
            "Women 181 · Cyber Crime 1930 · Child 1098" if hi else
            "I could not find an official source for this, so I won't answer from memory. Please check India Code "
-           "(indiacode.nic.in) or ask a lawyer.\n\n☎️ Helplines: Emergency 112 · NALSA Legal Aid 15100 · Women 181 · "
+           "(indiacode.nic.in) or ask a lawyer." + note +
+           "\n\n☎️ Helplines: Emergency 112 · NALSA Legal Aid 15100 · Women 181 · "
            "Cyber Crime 1930 · Child 1098")
-    return _reply(session_id, "GENERAL_LAW", msg, usefulness=None, verdict_state="NOT_APPLICABLE", mode="no_source")
+    return _reply(session_id, "GENERAL_LAW", msg, usefulness=None, verdict_state="NOT_APPLICABLE", mode="no_source",
+                  user_message_id=user_message_id)
 
 
-def _general_fallback(query, model, audience, session_id, history):
+def _general_fallback(query, model, audience, session_id, history, has_document=False, user_message_id=None):
     if os.getenv("ALLOW_MEMORY_GUIDANCE", "0") != "1":     # default: never answer a legal question from model memory
-        return _no_source(query, session_id)
+        return _no_source(query, session_id, has_document, user_message_id)
+
     ans = general_legal_answer(query, model, audience, history=history)
     if is_llm_failure(ans):
         return _reply(session_id, "GENERAL_LAW", LLM_DOWN_MSG, save=False, verdict_state=STATE_VERIFICATION_PENDING,
-                      llm_unavailable=True)
+                      llm_unavailable=True, user_message_id=user_message_id)
     ans = ground_answer(tidy_answer(redact_pii(ans)))  # no evidence -> sections, days, amounts, Acts are removed
     if not ans:
         ans = ("Mujhe iske specific provisions ka verified source nahi mila. Kripya India Code par official text dekhein "
@@ -680,7 +790,7 @@ def _general_fallback(query, model, audience, session_id, history):
                   sources=card,
                   conclusion=reflection.get("conclusion") if reflection.get("conclusion_needed", True) else None,
                   usefulness=reflection.get("usefulness", "medium"), verdict_state="GENERAL_INFO",
-                  mode="general_knowledge", model_used=model, suggestions=suggestions)
+                  mode="general_knowledge", model_used=model, suggestions=suggestions, user_message_id=user_message_id)
 
 
 def _log(query, answer, model, verified):
@@ -743,7 +853,7 @@ def get_session_messages(session_id: str, user=Depends(get_current_user)):
             .eq("id", session_id).eq("user_id", user.id).execute())
     if not info.data:
         return {"messages": [], "case_id": None, "case_filename": None}
-    msgs = (client.table("chat_messages").select("role, content, sources, created_at")
+    msgs = (client.table("chat_messages").select("id, role, content, sources, created_at")
             .eq("session_id", session_id).order("created_at").execute().data)
     return {"messages": msgs, "case_id": info.data[0]["case_id"], "case_filename": info.data[0]["case_filename"]}
 
@@ -760,3 +870,83 @@ def update_session(session_id: str, body: SessionUpdate, user=Depends(get_curren
 def delete_session(session_id: str, user=Depends(get_current_user)):
     get_supabase_client().table("chat_sessions").delete().eq("id", session_id).eq("user_id", user.id).execute()
     return {"deleted": True}
+
+
+@router.delete("/sessions/{session_id}/messages/from/{message_id}")
+def delete_messages_from(session_id: str, message_id: str, user=Depends(get_current_user)):
+    """Edit & resend: delete this message + everything after it, so the edited question gets a fresh answer."""
+    client = get_supabase_client()
+    owns = client.table("chat_sessions").select("id").eq("id", session_id).eq("user_id", user.id).execute()
+    if not owns.data:
+        return {"deleted": False}
+    target = client.table("chat_messages").select("created_at").eq("id", message_id).eq("session_id", session_id).execute()
+    if not target.data:
+        return {"deleted": False}
+    client.table("chat_messages").delete().eq("session_id", session_id).gte("created_at", target.data[0]["created_at"]).execute()
+    return {"deleted": True}
+
+
+_EMOJI_RE = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF\U0001F1E6-\U0001F1FF]+")
+
+def _strip_emoji(text: str) -> str:
+    return _EMOJI_RE.sub("", text or "")
+
+
+def _devanagari_font_path():
+    """Find a Devanagari-capable TTF with no manual download needed:
+    project assets folder first, then fonts that already ship with Windows/Linux."""
+    candidates = [
+        os.path.join(os.path.dirname(__file__), "..", "assets", "fonts", "NotoSansDevanagari-Regular.ttf"),
+        r"C:\Windows\Fonts\Nirmala.ttf",
+        r"C:\Windows\Fonts\NirmalaUI.ttf",
+        r"C:\Windows\Fonts\mangal.ttf",
+        r"C:\Windows\Fonts\Mangal.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansDevanagari-Regular.ttf",
+        "/usr/share/fonts/truetype/lohit-devanagari/Lohit-Devanagari.ttf",
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _ascii_safe(text: str) -> str:
+    """Only used when no Devanagari font is found: drop characters the fallback
+    core font (latin-1 only) can't render, instead of crashing the export."""
+    return (text or "").encode("latin-1", "ignore").decode("latin-1")
+
+
+def _build_chat_pdf(title: str, messages: list[dict]) -> bytes:
+    pdf = FPDF()
+    pdf.add_page()
+
+    font_name, unicode_ok = "Arial", False
+    font_path = _devanagari_font_path()
+    if font_path:
+        try:
+            pdf.add_font("Noto", "", font_path, uni=True)
+            font_name, unicode_ok = "Noto", True
+        except Exception as e:  # noqa: BLE001 -- export must never 500 over a font problem
+            logger.warning("pdf font load failed, falling back to Arial: %s", type(e).__name__)
+
+    def clean(text: str) -> str:
+        text = _strip_emoji(text)
+        return text if unicode_ok else _ascii_safe(text)
+
+    pdf.set_font(font_name, size=14)
+    pdf.multi_cell(0, 10, clean(title))
+    pdf.set_font(font_name, size=9)
+    pdf.set_text_color(120, 120, 120)
+    pdf.multi_cell(0, 6, "NyayaPramaan -- exported chat. General legal information, not professional advice.")
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(4)
+    for m in messages:
+        who = "You" if m["role"] == "user" else "NyayaPramaan"
+        pdf.set_font(font_name, size=11)
+        pdf.set_text_color(43, 92, 224) if m["role"] == "user" else pdf.set_text_color(20, 20, 20)
+        pdf.multi_cell(0, 7, f"{who}:")
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font(font_name, size=10)
+        pdf.multi_cell(0, 6, clean(m["content"]))
+        pdf.ln(3)
+    return bytes(pdf.output(dest="S"))

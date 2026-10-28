@@ -15,4 +15,5 @@ frontend/.next/
 *.log
 app/
 *.pdf
-
+backend/eval/eval_report.json
+.venv/

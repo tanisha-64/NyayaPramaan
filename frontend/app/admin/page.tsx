@@ -3,13 +3,15 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { RoleGuard } from '@/components/auth/RoleGuard'
-import { getAdminMetrics, getJudgmentsCount, AdminMetrics } from '@/services/adminService'
+import { getAdminMetrics, getJudgmentsCount, getAdminActivity, getAdminHealth, AdminMetrics, AdminActivity, HealthCheck } from '@/services/adminService'
 
 function AdminContent() {
   const { user, signOut } = useAuth()
 
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null)
   const [judgmentCount, setJudgmentCount] = useState<number | null>(null)
+  const [activity, setActivity] = useState<AdminActivity | null>(null)
+  const [health, setHealth] = useState<HealthCheck[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -20,9 +22,13 @@ function AdminContent() {
   async function fetchData() {
     setLoading(true)
     try {
-      const [m, j] = await Promise.allSettled([getAdminMetrics(), getJudgmentsCount()])
+      const [m, j, a, h] = await Promise.allSettled([
+        getAdminMetrics(), getJudgmentsCount(), getAdminActivity(), getAdminHealth(),
+      ])
       if (m.status === 'fulfilled') setMetrics(m.value)
       if (j.status === 'fulfilled') setJudgmentCount(j.value.total_judgments)
+      if (a.status === 'fulfilled') setActivity(a.value)
+      if (h.status === 'fulfilled') setHealth(h.value.checks)
     } catch (err) {
       console.error('Failed to load admin metrics:', err)
     }
@@ -48,24 +54,11 @@ function AdminContent() {
 
   const accuracyPercent = metrics?.citation_accuracy_rate != null
     ? Math.round(metrics.citation_accuracy_rate * 100)
-    : 98
+    : null
 
-  const modelUsage = metrics?.model_usage_breakdown || {
-    'groq/openai/gpt-oss-20b': 24,
-    'gemini-2.5-flash': 18,
-    'sentence-transformers/all-mpnet-base-v2': 42,
-  }
-
+  const modelUsage = metrics?.model_usage_breakdown || {}
+  const hasModelUsage = Object.keys(modelUsage).length > 0
   const totalModelCalls = Object.values(modelUsage).reduce((a, b) => a + b, 0) || 1
-
-  const TRUST_PIPELINE = [
-    { name: 'NeMo & Input Guardrails', status: 'Active & Enforcing', ok: true },
-    { name: 'Hybrid pgvector RAG (Statutes + Judgments)', status: 'Operational', ok: true },
-    { name: 'CRAG (Corrective Live Web Verifier)', status: 'Fallback Ready', ok: true },
-    { name: 'TrustAgent 4-Level Claim Checker', status: 'Enforcing Citations', ok: true },
-    { name: 'Self-RAG Critique & Refinement', status: 'Online', ok: true },
-    { name: 'LLM-as-Judge Final Evaluator', status: 'Active', ok: true },
-  ]
 
   return (
     <div className="min-h-screen bg-[#141414] text-[#E8E6E1] font-mono antialiased">
@@ -132,25 +125,25 @@ function AdminContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <KPICard
             label="TOTAL QUERIES"
-            value={metrics?.total_queries ?? 48}
+            value={metrics?.total_queries ?? 0}
             sublabel="across all portals"
             color="#D9A441"
           />
           <KPICard
             label="EVIDENCE VERIFIED"
-            value={metrics?.verified_count ?? 46}
+            value={metrics?.verified_count ?? 0}
             sublabel="pgvector cross-checked"
             color="#10B981"
           />
           <KPICard
             label="CITATION ACCURACY"
-            value={`${accuracyPercent}%`}
+            value={accuracyPercent != null ? `${accuracyPercent}%` : '—'}
             sublabel="4-level TrustAgent"
             color="#D9A441"
           />
           <KPICard
             label="INDEXED JUDGMENTS"
-            value={judgmentCount != null ? judgmentCount.toLocaleString() : '26,000+'}
+            value={judgmentCount != null ? judgmentCount.toLocaleString() : '—'}
             sublabel="SC & HC cases"
             color="#5B8DEF"
           />
@@ -169,124 +162,93 @@ function AdminContent() {
               </p>
             </div>
 
-            <div className="space-y-3.5">
-              {Object.entries(modelUsage).map(([model, count]) => {
-                const pct = Math.round((count / totalModelCalls) * 100)
-                return (
-                  <div key={model} className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-mono text-[#E8E6E1]/70 truncate max-w-[250px]">{model}</span>
-                      <span className="text-[#D9A441] font-bold tabular-nums">{count} ({pct}%)</span>
+            {hasModelUsage ? (
+              <div className="space-y-3.5">
+                {Object.entries(modelUsage).map(([model, count]) => {
+                  const pct = Math.round((count / totalModelCalls) * 100)
+                  return (
+                    <div key={model} className="space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-mono text-[#E8E6E1]/70 truncate max-w-[250px]">{model}</span>
+                        <span className="text-[#D9A441] font-bold tabular-nums">{count} ({pct}%)</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${pct}%`,
+                            background: `linear-gradient(90deg, #D9A441, #E5B84A)`,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-700"
-                        style={{
-                          width: `${pct}%`,
-                          background: `linear-gradient(90deg, #D9A441, #E5B84A)`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[#E8E6E1]/35 font-mono">No queries logged yet.</p>
+            )}
           </section>
 
-          {/* Right: Trust Pipeline Health */}
+          {/* Right: Trust Pipeline Health — real checks from /admin/health */}
           <section className="lg:col-span-6 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
             <div className="border-b border-[#D9A441]/10 pb-2.5">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
                 CORE TRUST ENGINE STATUS
               </h2>
               <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
-                7-step anti-hallucination pipeline health
+                Live pings — database, LLM gateway, citation verifier
               </p>
             </div>
 
-            <div className="space-y-2">
-              {TRUST_PIPELINE.map((item, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg border border-[#D9A441]/08 bg-[#D9A441]/[0.03] p-3 text-[11px]"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${item.ok ? 'bg-emerald-400' : 'bg-red-400'} animate-pulse-dot`} />
-                    <span className="font-mono text-[#E8E6E1]/70">{item.name}</span>
+            {health.length > 0 ? (
+              <div className="space-y-2">
+                {health.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between rounded-lg border border-[#D9A441]/08 bg-[#D9A441]/[0.03] p-3 text-[11px]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`h-1.5 w-1.5 rounded-full ${item.ok ? 'bg-emerald-400' : 'bg-red-400'} animate-pulse-dot`} />
+                      <span className="font-mono text-[#E8E6E1]/70">{item.name}</span>
+                    </div>
+                    <span className={`text-[10px] font-bold tracking-wider px-2 py-0.5 rounded border uppercase ${item.ok ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : 'text-red-400 bg-red-500/10 border-red-500/20'}`}>
+                      {item.status}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-bold tracking-wider text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 uppercase">
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-[#E8E6E1]/35 font-mono">Could not run health checks.</p>
+            )}
           </section>
         </div>
 
-
-        {/* User Activity & Feedback Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* User Activity Stats */}
-          <section className="rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
-            <div className="border-b border-[#D9A441]/10 pb-2.5">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
-                PLATFORM USER ACTIVITY
-              </h2>
-              <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
-                Real-time user engagement metrics
-              </p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: 'Total Registered Users', value: metrics?.total_queries ? Math.ceil(metrics.total_queries / 3) : 18, icon: '👥', color: '#5B8DEF' },
-                { label: 'Active Users (Today)', value: metrics?.total_queries ? Math.ceil(metrics.total_queries / 10) : 5, icon: '🟢', color: '#10B981' },
-                { label: 'Queries This Week', value: metrics?.total_queries ?? 48, icon: '💬', color: '#D9A441' },
-                { label: 'Documents Processed', value: metrics?.verified_count ?? 46, icon: '📄', color: '#A78BFA' },
-              ].map((stat) => (
-                <div key={stat.label} className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-sm">{stat.icon}</span>
-                    <span className="text-[11px] font-mono text-[#E8E6E1]/70">{stat.label}</span>
-                  </div>
-                  <span className="text-sm font-black tabular-nums" style={{ color: stat.color }}>{stat.value}</span>
+        {/* User Activity — real counts from /admin/activity */}
+        <section className="rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
+          <div className="border-b border-[#D9A441]/10 pb-2.5">
+            <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
+              PLATFORM USER ACTIVITY
+            </h2>
+            <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
+              Real counts from the database
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'Total Registered Users', value: activity?.total_registered_users ?? '—', icon: '👥', color: '#5B8DEF' },
+              { label: 'Active Users (Today)', value: activity?.active_users_today ?? '—', icon: '🟢', color: '#10B981' },
+            ].map((stat) => (
+              <div key={stat.label} className="flex items-center justify-between rounded-lg border border-white/[0.05] bg-white/[0.02] px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-sm">{stat.icon}</span>
+                  <span className="text-[11px] font-mono text-[#E8E6E1]/70">{stat.label}</span>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Platform Feedback */}
-          <section className="rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
-            <div className="border-b border-[#D9A441]/10 pb-2.5">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
-                PLATFORM FEEDBACK
-              </h2>
-              <p className="text-[10px] text-[#E8E6E1]/35 mt-0.5 font-mono">
-                Recent user satisfaction responses
-              </p>
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: 'Very Satisfied', pct: 72, color: '#10B981' },
-                { label: 'Satisfied', pct: 18, color: '#D9A441' },
-                { label: 'Neutral', pct: 7, color: '#94A3B8' },
-                { label: 'Needs Improvement', pct: 3, color: '#EF4444' },
-              ].map((fb) => (
-                <div key={fb.label} className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-mono text-[#E8E6E1]/70">{fb.label}</span>
-                    <span className="font-bold tabular-nums" style={{ color: fb.color }}>{fb.pct}%</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{ width: `${fb.pct}%`, backgroundColor: fb.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+                <span className="text-sm font-black tabular-nums" style={{ color: stat.color }}>{stat.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   )

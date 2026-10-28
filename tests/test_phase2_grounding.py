@@ -43,7 +43,7 @@ def test_phase2_test1_plaintiff_title_no_fabricated_deeds():
     req = QueryRequest(query="What evidence supports the plaintiff's title?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "land_dispute_suit.pdf",
         "status": "ready",
@@ -102,7 +102,7 @@ def test_document_summary_is_not_mislabeled_as_verified():
     case_id = str(uuid.uuid4())
     req = QueryRequest(query="summary btao iski", case_id=case_id)
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "judgment.pdf",
         "status": "ready",
@@ -128,7 +128,7 @@ def test_phase2_test2_cyber_harassment_refusal_on_land_document():
     req = QueryRequest(query="What evidence proves cyber harassment?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "land_record.pdf",
         "status": "ready",
@@ -163,7 +163,7 @@ def test_phase2_test3_absent_topic_hard_stop_refusal():
     req = QueryRequest(query="What evidence proves bribery and corruption by the defendant?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "rent_agreement.pdf",
         "status": "ready",
@@ -194,7 +194,7 @@ def test_phase2_test4_present_topic_strictly_grounded():
     req = QueryRequest(query="What does the document say about monthly rent?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "lease_deed.pdf",
         "status": "ready",
@@ -238,7 +238,7 @@ def test_phase2_test5_general_law_with_document_attached():
     req = QueryRequest(query="What is section 351 BNS?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "arbitration_award.pdf",
         "status": "ready",
@@ -246,22 +246,24 @@ def test_phase2_test5_general_law_with_document_attached():
         "case_text": "Commercial dispute text."
     }]
 
-    bns_match = [{
+    bns_rows = [{
+        "act": "BNS",
         "act_name": "Bharatiya Nyaya Sanhita, 2023",
-        "section_number": "351",
-        "full_text": "Section 351 defines assault under BNS 2023.",
-        "source_type": "statute"
+        "section": "351",
+        "heading": "Assault",
+        "text": "Section 351 defines assault under BNS 2023.",
+        "page": 120,
+        "source_url": "https://www.indiacode.nic.in/bns.pdf",
     }]
 
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
          patch("backend.routers.chat_router.search_document_chunks") as mock_doc_search, \
-         patch("backend.routers.chat_router.search_knowledge_base", return_value=bns_match) as mock_kb, \
-         patch("backend.routers.chat_router.call_llm") as mock_llm:
-        mock_llm.return_value = "Section 351 of the Bharatiya Nyaya Sanhita (BNS), 2023 defines the offence of assault."
+         patch("backend.routers.chat_router.find_sections", return_value=bns_rows), \
+         patch("backend.routers.chat_router.mapping_note", return_value=""), \
+         patch("backend.routers.chat_router.call_llm", return_value="Section 351 of the Bharatiya Nyaya Sanhita (BNS), 2023 defines the offence of assault."):
         res = _handle_ask(req, user_id="u1")
 
         mock_doc_search.assert_not_called()
-        mock_kb.assert_called_once()
         assert "Bharatiya Nyaya Sanhita" in res["answer"]
         assert res["routing_label"] == "GENERAL_LAW"
 
@@ -273,7 +275,7 @@ def test_phase2_test6_post_generation_hallucination_hard_stop():
     req = QueryRequest(query="What evidence proves the boundary wall was constructed in 1990?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "suit_record.pdf",
         "status": "ready",
@@ -328,7 +330,7 @@ def test_phase2_1_golden_test_a_gorakhram_plaintiff_evidence():
     req = QueryRequest(query=query, case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
         "status": "ready",
@@ -416,7 +418,7 @@ def test_phase2_1_golden_test_b_gorakhram_cyber_harassment_refusal():
     req = QueryRequest(query="What evidence proves cyber harassment in this case?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_vs_Laxmibai.pdf",
         "status": "ready",
@@ -450,7 +452,7 @@ def test_phase2_1_golden_test_c_gorakhram_plaintiff_possession():
     req = QueryRequest(query="What does the judgment say about the plaintiff's possession?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_vs_Laxmibai.pdf",
         "status": "ready",
@@ -496,7 +498,7 @@ def test_phase2_1_golden_test_d_intentionally_unsupported_topic():
     req = QueryRequest(query="What evidence proves the defendant engaged in offshore tax evasion in Panama?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "civil_suit_1950.pdf",
         "status": "ready",
@@ -530,7 +532,7 @@ def test_phase2_1_golden_test_e_simulated_retrieval_failure():
     req_hi = QueryRequest(query="Is case me plaintiff ne kya claim kiya hai?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "case_file.pdf",
         "status": "ready",
@@ -568,7 +570,7 @@ def test_phase2_1_golden_test_f_simulated_judge_infra_failure():
     req = QueryRequest(query="What evidence supports the plaintiff's claim?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "valid_case.pdf",
         "status": "ready",
@@ -620,7 +622,7 @@ def test_phase2_1_golden_test_g_hallucinated_draft_unsupported_claims_removed():
     req = QueryRequest(query="What evidence supports the plaintiff's claim?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "mortgage_suit.pdf",
         "status": "ready",
@@ -736,7 +738,7 @@ def test_phase2_2_chat_router_dynamic_case_text_chunking_fallback():
     req = QueryRequest(query="What does the judgment say about the plaintiff's possession?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_vs_Laxmibai.pdf",
         "status": "ready",
@@ -795,7 +797,7 @@ def test_phase2_3_gorakhram_hinglish_plaintiff_evidence_retrieval_and_pages():
     req = QueryRequest(query=query, case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
         "status": "ready",
@@ -856,7 +858,7 @@ def test_phase2_3_gorakhram_plaintiff_possession_query_variants():
     req_hinglish = QueryRequest(query="Plaintiff ka possession", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_vs_Laxmibai.pdf",
         "status": "ready",
@@ -901,7 +903,7 @@ def test_phase2_3_cyber_harassment_with_doc_attached_returns_no_evidence():
     req = QueryRequest(query="What evidence proves cyber harassment?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_Sadhuram_vs_Laxmibai_1950.pdf",
         "status": "ready",
@@ -937,7 +939,7 @@ def test_phase2_3_general_cyber_law_question_distinct_from_document():
     req = QueryRequest(query="What is the punishment under section 66E of the Information Technology Act?", case_id=case_id)
 
     mock_client = MagicMock()
-    mock_client.table().select().eq().execute.return_value.data = [{
+    mock_client.table().select().eq().eq().execute.return_value.data = [{
         "id": case_id,
         "filename": "Gorakhram_1950.pdf",
         "status": "ready",
@@ -945,17 +947,24 @@ def test_phase2_3_general_cyber_law_question_distinct_from_document():
         "case_text": "Mortgage text."
     }]
 
-    statute_match = [{
+    statute_rows = [{
+        "act": "IT Act",
         "act_name": "Information Technology Act, 2000",
-        "section_number": "66E",
-        "full_text": "Punishment for violation of privacy under Section 66E.",
-        "source_type": "statute"
+        "section": "66E",
+        "heading": "Punishment for violation of privacy",
+        "text": "Punishment for violation of privacy under Section 66E.",
+        "page": 40,
+        "source_url": "https://www.indiacode.nic.in/it-act.pdf",
     }]
 
     with patch("backend.routers.chat_router.get_supabase_client", return_value=mock_client), \
          patch("backend.routers.chat_router.search_document_chunks") as mock_doc_search, \
-         patch("backend.routers.chat_router.search_knowledge_base", return_value=statute_match), \
-         patch("backend.routers.chat_router.call_llm", return_value="Section 66E of the IT Act penalizes capturing or transmitting private images."):
+         patch("backend.routers.chat_router.find_sections", return_value=statute_rows), \
+         patch("backend.routers.chat_router.statute_evidence", return_value="Punishment for violation of privacy under Section 66E."), \
+         patch("backend.routers.chat_router.hint_for", return_value=None), \
+         patch("backend.routers.chat_router.mapping_note", return_value=""), \
+         patch("backend.routers.chat_router.ground_answer", side_effect=lambda ans, *a, **kw: ans), \
+         patch("backend.routers.chat_router.call_llm", return_value="Section 66E of the Information Technology Act, 2000 penalizes capturing or transmitting private images."):
 
         res = _handle_ask(req, user_id="u1")
 

@@ -6,7 +6,7 @@ import re
 from ai_core.rag.case_text_fallback import content_tokens
 from ai_core.rag.legal_scope import topic_sections
 
-_ACT = r"(bnss|bns|bsa|ipc|crpc)"
+_ACT = r"(bnss|bns|bsa|ipc|crpc|iea|indian evidence act|evidence act|ni act|nia|negotiable instruments act)"
 _NUM = r"(\d{1,3}[A-Za-z]{0,2})"
 _EXPLICIT = re.compile(rf"\b(?:section|sec|s|dhara)\.?\s*{_NUM}\b.{{0,30}}?\b{_ACT}\b|\b{_ACT}\b\s*(?:section|sec|s|dhara)?\.?\s*{_NUM}\b", re.I)
 _GENERIC = {"punish", "punishment", "law", "legal", "bns", "bnss", "bsa", "ipc", "crpc", "section", "act", "under",
@@ -22,7 +22,8 @@ _NOISE = re.compile(r"\d*\s*This Bare Act is a government source.*?educational p
 def _clean(text: str) -> str:
     t = _NOISE.sub(" ", text or "")
     t = re.sub(r"\b\d{1,3}\[", "", t).replace("[", "").replace("]", "")   # footnote markers like 1[...]
-    return _AMEND.sub("", re.sub(r"[ \t]+", " ", t)).strip()
+    t = _AMEND.sub("", re.sub(r"[ \t]+", " ", t)).strip()
+    return re.sub(r"(?<=[.)\]])\s+Of [A-Z][^.]{3,120}$", "", t)
 
 
 def explicit_lookup(query: str):
@@ -32,7 +33,12 @@ def explicit_lookup(query: str):
         return None
     g = m.groups()
     num, act = (g[0], g[1]) if g[0] else (g[3], g[2])
-    return act.upper(), num.upper()
+    act = act.upper()
+    if act in ('NI ACT', 'NIA', 'NEGOTIABLE INSTRUMENTS ACT'):
+        act = 'NI'
+    elif act in ('INDIAN EVIDENCE ACT', 'EVIDENCE ACT'):
+        act = 'IEA'
+    return act, num.upper()
 
 
 def find_sections(client, query: str, limit: int = 3) -> list[dict]:
@@ -83,11 +89,11 @@ def statute_sources(rows: list[dict], status: str = "verified") -> list[dict]:
              "excerpt": re.sub(r"\s+", " ", _clean(r["text"]))[:500]} for r in rows]
 
 
-def statute_text(r: dict, limit: int = 1500) -> str:
+def statute_text(r: dict, limit: int = 6000) -> str:
     return _clean(r["text"])[:limit]
 
 
-def statute_evidence(r: dict, limit: int = 1800) -> str:
+def statute_evidence(r: dict, limit: int = 3500) -> str:
     """Text given to the LLM: the opening plus every 'shall be punished' sentence further down (long sections such as
     BNS 303 put the penalty after pages of explanations)."""
     t = _clean(r["text"])
@@ -95,3 +101,7 @@ def statute_evidence(r: dict, limit: int = 1800) -> str:
         return t
     pun = re.findall(r"[^.]*shall be punished[^.]*\.", t[700:])[:3]
     return (t[:700] + " ... " + " ".join(p.strip() for p in pun))[:limit]
+
+def source_host(url: str) -> str:
+    parts = (url or "").split("/")
+    return parts[2] if len(parts) > 2 and parts[2] else "source PDF"

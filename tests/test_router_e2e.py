@@ -26,6 +26,7 @@ class Q:
             ok = self.filters.get("id") == CASE_ID and self.filters.get("user_id", "u1") == row["owner"]
             r.data = [row] if ok else []
         elif self.t == "document_chunks": r.data = self.db.get("chunks", [])
+        elif self.t in ("section_map", "statute_sections"): r.data = self.db.get(self.t, [])
         elif self.t == "chat_sessions": r.data = [{"id": "s1", "user_id": "u1", "case_id": None}]
         else: r.data = [{"id": "s1"}]
         return r
@@ -105,7 +106,7 @@ def test_document_question_works_without_rpc_or_chunks(R):
     assert s and all(x["name"] and x["excerpt"] and x["verification_status"] != "" for x in s)
     assert s[0]["page"] == 3 and s[0]["verification_status"] == "verified"
     assert "**" not in out["answer"]                  # tidy_answer applied
-    assert out["suggestions"] == ["a?", "b?", "c?"]
+    assert len(out["suggestions"]) == 5      # fixed templates now (no LLM call)
 
 def test_sources_only_pages_used_not_all_chunks(R):
     out = ask(R, "is estoppel applicable to the plaintiffs")
@@ -146,19 +147,6 @@ def test_greeting_is_friendly_and_has_no_sources(R):
     out = ask(R, "hello", case=None)
     assert "NyayaPramaan" in out["answer"] and out["sources"] == [] and out["verdict_state"] == "NOT_APPLICABLE"
     assert R._calls["llm"] == 0
-
-def test_vet_external_drops_irrelevant_homepage():
-    import importlib
-    R_ = importlib.import_module("backend.routers.chat_router")
-    homepage = {"full_text": "Supreme Court of India eCourts portal", "source_links": [{"title": "Supreme Court of India", "url": "https://www.sci.gov.in/"}]}
-    assert R_._vet_external("what is love", homepage) is None
-    assert R_._vet_external("what is crime", homepage) is None
-    good = {"full_text": "Crime is an act punishable by law under the penal code",
-            "source_links": [{"title": "Penal law", "url": "https://indiankanoon.org/doc/123/"},
-                             {"title": "blog", "url": "https://someblog.com/post"}]}
-    assert R_._vet_external("what is law", good) is None   # one-word question: no web citation
-    kept = R_._vet_external("what is a crime under the penal code", good)
-    assert kept and [l["url"] for l in kept["source_links"]] == ["https://indiankanoon.org/doc/123/"]
 
 def test_dates_use_real_pages_from_chunks_when_text_has_no_markers(R):
     cl = R.get_supabase_client()

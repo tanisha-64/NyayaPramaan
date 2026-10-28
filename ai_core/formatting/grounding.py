@@ -8,10 +8,13 @@ _ACT = re.compile(r"\b(?:[A-Z][A-Za-z.&']+\s+){0,4}(?:Act|Code|Sanhita|Adhiniyam
 # helplines verified & used in our prompt + facts the prompt itself states (BNS 2023 in force 1 July 2024, IPC 1860)
 ALLOWED = {"112", "181", "1930", "1098", "15100", "1", "2023", "2024", "1860"}
 
+_WORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+          "ten": "10", "twelve": "12", "fifteen": "15", "twenty": "20", "thirty": "30", "forty-five": "45", "sixty": "60",
+          "ninety": "90", "hundred": "100", "one hundred and eighty": "180", "one hundred and twenty": "120"}
 
 def ground_answer(answer: str, evidence: str = "", allowed=ALLOWED) -> str:
     ev = (evidence or "").lower()
-    ev_nums = set(_NUM.findall(ev)) | set(allowed)
+    ev_nums = set(_NUM.findall(ev)) | set(allowed) | {d for w, d in _WORDS.items() if re.search(rf"\b{w}\b", ev)}
     lines = []
     for line in (answer or "").split("\n"):
         keep = []

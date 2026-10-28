@@ -6,10 +6,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
+from backend.routers import wizard_router
 
 load_dotenv()
 
 from backend.routers import chat_router, document_router, case_router, search_router, admin_router, quiz_router, news_router, game_router
+from backend.routers import tools_router
 
 app = FastAPI(title="NyayaPramaan API")
 
@@ -45,6 +47,7 @@ app.add_middleware(
 )
 
 app.include_router(chat_router.router, prefix="/chat")
+app.include_router(wizard_router.router, prefix="/wizards", tags=["wizards"])
 app.include_router(document_router.router, prefix="/document")
 app.include_router(case_router.router, prefix="/case")
 app.include_router(search_router.router, prefix="/search")
@@ -52,6 +55,7 @@ app.include_router(admin_router.router, prefix="/admin")
 app.include_router(quiz_router.router, prefix="/quiz")
 app.include_router(news_router.router, prefix="/news")
 app.include_router(game_router.router, prefix="/game")
+app.include_router(tools_router.router, prefix="/tools", tags=["tools"])
 
 
 @app.get("/health")
