@@ -16,6 +16,8 @@ jobs:
           python-version: "3.11"
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest tests/ -v
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
   frontend-build:
     runs-on: ubuntu-latest
