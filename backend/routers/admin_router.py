@@ -3,7 +3,8 @@ Admin Router (synopsis Section 4.1 -- Client layer, Admin console).
 Read-only metrics: cost, safety-violations, citation-accuracy trend --
 the "Control Tower Dashboard" described in the synopsis.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+IST = timezone(timedelta(hours=5, minutes=30))
 from fastapi import APIRouter, Depends
 from ai_core.rag.vector_store import get_supabase_client
 from ai_core.llm_gateway import call_llm, is_llm_failure
@@ -57,8 +58,10 @@ def get_activity(user=Depends(get_current_user)):
 
     active_users_today = None
     try:
-        today_start = datetime.now(timezone.utc).strftime("%Y-%m-%dT00:00:00+00:00")
-        rows = client.table("chat_sessions").select("user_id").gte("updated_at", today_start).execute().data
+        now_ist = datetime.now(IST)
+        ist_midnight = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = ist_midnight.astimezone(timezone.utc).isoformat()
+        rows = client.table("chat_sessions").select("user_id").gte("updated_at", today_start_utc).execute().data
         active_users_today = len({r["user_id"] for r in rows if r.get("user_id")})
     except Exception:  # noqa: BLE001
         active_users_today = None

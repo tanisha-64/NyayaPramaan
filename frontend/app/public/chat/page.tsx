@@ -489,8 +489,9 @@ export default function PublicChat() {
             )}
 
             {uploadError && (
-              <div style={{ marginBottom: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(224,106,71,0.1)', border: '1px solid rgba(224,106,71,0.3)', fontSize: 12, color: '#E06A47' }}>
-                ⚠️ {uploadError}
+              <div style={{ marginBottom: 8, padding: '6px 12px', borderRadius: 8, background: 'rgba(224,106,71,0.1)', border: '1px solid rgba(224,106,71,0.3)', fontSize: 12, color: '#E06A47', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span>⚠️ {uploadError}</span>
+                <button onClick={() => setUploadError(null)} title="Dismiss" style={{ background: 'none', border: 'none', color: '#E06A47', cursor: 'pointer', fontSize: 13, flexShrink: 0 }}>✕</button>
               </div>
             )}
 
