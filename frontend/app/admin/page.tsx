@@ -150,9 +150,9 @@ function AdminContent() {
         </div>
 
         {/* 2-Column: Model Usage + Trust Pipeline */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Left: Model Routing Breakdown */}
-          <section className="lg:col-span-6 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
+          <section className="w-full lg:w-1/2 min-w-0 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
             <div className="border-b border-[#D9A441]/10 pb-2.5">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
                 MULTI-MODEL ROUTING & LLM GATEWAY
@@ -191,7 +191,7 @@ function AdminContent() {
           </section>
 
           {/* Right: Trust Pipeline Health — real checks from /admin/health */}
-          <section className="lg:col-span-6 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
+          <section className="w-full lg:w-1/2 min-w-0 rounded-xl border border-[#D9A441]/10 bg-[#1A1A1A] p-5 space-y-4">
             <div className="border-b border-[#D9A441]/10 pb-2.5">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#D9A441]">
                 CORE TRUST ENGINE STATUS
