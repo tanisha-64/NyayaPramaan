@@ -13,7 +13,7 @@ frontend/node_modules/
 frontend/.next/
 .pytest_cache/
 *.log
-app/
+/app/
 *.pdf
 backend/eval/eval_report.json
 .venv/
