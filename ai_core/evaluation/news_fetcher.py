@@ -28,6 +28,18 @@ DEFAULT_LEGAL_IMAGES = [
     "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=800&q=80",
 ]
 
+# Keyword -> themed image, so the picture at least matches the story's
+# subject area instead of being assigned randomly. Checked in order;
+# first match wins.
+KEYWORD_IMAGES = [
+    (["supreme court"], "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80"),
+    (["high court"], "https://images.unsplash.com/photo-1436450412740-6b988f486c6b?auto=format&fit=crop&w=800&q=80"),
+    (["arrest", "bail", "fir", "custody", "criminal", "crime", "ipc", "bns", "bnss"], "https://images.unsplash.com/photo-1453733197781-704fa5988299?auto=format&fit=crop&w=800&q=80"),
+    (["tax", "gst", "corporate", "insolvency", "ibc", "bond", "bank", "financial"], "https://images.unsplash.com/photo-1479142506502-19b3a3b7ff33?auto=format&fit=crop&w=800&q=80"),
+    (["consumer", "e-commerce", "market"], "https://images.unsplash.com/photo-1505664194779-8beaceb93744?auto=format&fit=crop&w=800&q=80"),
+    (["data", "privacy", "dpdp", "cyber"], "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=800&q=80"),
+]
+
 CURATED_LEGAL_NEWS = [
     {
         "title": "Supreme Court Reiterates: Right to Speedy Trial is Inalienable Part of Article 21",
@@ -101,6 +113,35 @@ def _entry_datetime(entry) -> datetime:
     return datetime.min.replace(tzinfo=timezone.utc)
 
 
+def _entry_real_image(entry) -> str | None:
+    """Pull an actual thumbnail out of the RSS entry itself, if the feed
+    provided one (media:thumbnail / media:content / enclosure). Costs
+    nothing extra — it's already-downloaded data, just unused until now."""
+    try:
+        media = entry.get("media_thumbnail")
+        if media and isinstance(media, list) and media[0].get("url"):
+            return media[0]["url"]
+        media = entry.get("media_content")
+        if media and isinstance(media, list) and media[0].get("url"):
+            return media[0]["url"]
+        for link in entry.get("links", []):
+            if link.get("type", "").startswith("image/") and link.get("href"):
+                return link["href"]
+    except Exception:
+        pass
+    return None
+
+
+def _image_for_title(title: str, fallback_index: int) -> str:
+    """Pick a themed stock image based on keywords in the title; falls back
+    to round-robin if nothing matches."""
+    lowered = title.lower()
+    for keywords, image_url in KEYWORD_IMAGES:
+        if any(kw in lowered for kw in keywords):
+            return image_url
+    return DEFAULT_LEGAL_IMAGES[fallback_index % len(DEFAULT_LEGAL_IMAGES)]
+
+
 def _fetch_feed(feed_url: str):
     """Fetch an RSS feed with a hard timeout so a slow/unreachable feed never
     stalls the request (feedparser.parse(url) has no timeout on its own)."""
@@ -148,7 +189,7 @@ def fetch_legal_news() -> tuple[list[dict], bool]:
 
         link = entry.get("link", "https://main.sci.gov.in")
         pub_date = entry.get("published", "") or datetime.now(timezone.utc).isoformat()
-        image = DEFAULT_LEGAL_IMAGES[len(articles) % len(DEFAULT_LEGAL_IMAGES)]
+        image = _entry_real_image(entry) or _image_for_title(title, len(articles))
 
         articles.append({
             "title": title,
