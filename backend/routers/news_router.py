@@ -16,18 +16,19 @@ def get_legal_news():
         cached = client.table("daily_news").select("articles").eq("news_date", today).eq("location", "india").execute()
         if cached.data and cached.data[0].get("articles"):
             articles = cached.data[0]["articles"]
-            # Validate that cached articles are not generic google placeholders
             if articles and not all(a.get("title") == "Google News" for a in articles):
                 return {"articles": articles}
     except Exception as e:
         print(f"[news_router] Cache lookup notice: {e}")
 
-    articles = fetch_legal_news()
-    if articles:
+    articles, used_fallback = fetch_legal_news()
+
+    # Only cache genuine RSS results — never lock in the static fallback
+    # list as "today's news" for the rest of the day.
+    if articles and not used_fallback:
         try:
             client.table("daily_news").upsert({"news_date": today, "location": "india", "articles": articles}).execute()
         except Exception as e:
             print(f"[news_router] Cache save notice: {e}")
 
     return {"articles": articles}
-
