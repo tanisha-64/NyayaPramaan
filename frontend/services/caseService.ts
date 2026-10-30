@@ -1,4 +1,4 @@
-import { apiGet, apiPut, apiDelete } from "./apiClient";
+import { apiGet, apiPut, apiDelete, apiPost } from "./apiClient";
 
 export type CaseSummary = {
   id: string;
@@ -35,6 +35,10 @@ export function saveCaseNotes(caseId: string, notes: string) {
 
 export function getCaseBrief(caseId: string) {
   return apiGet<CaseBriefResponse>(`/case/${caseId}/brief`);
+}
+
+export function regenerateSummary(caseId: string) {
+  return apiPost<{ case_id: string; summary: string }>(`/case/${caseId}/regenerate-summary`, {});
 }
 
 export function deleteCase(caseId: string) {

@@ -3,10 +3,32 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { RoleGuard } from '@/components/auth/RoleGuard'
-import { listCases, CaseSummary, deleteCase } from '@/services/caseService'
+import { listCases, CaseSummary, deleteCase, regenerateSummary } from '@/services/caseService'
 import { searchPrecedents, PrecedentResult, SearchFilters } from '@/services/searchService'
-import { uploadDocument, ACCEPTED_FORMATS, validateFileType } from '@/services/documentService'
+import { uploadDocument, ACCEPTED_FORMATS, validateFileType, retryIndexing } from '@/services/documentService'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+
+const STUCK_SUMMARY_PATTERNS = [
+  'experiencing high demand',
+  'please try again',
+  'summary generation in progress',
+  'summary unavailable',
+]
+
+function isBadSummary(summary?: string): boolean {
+  if (!summary) return false
+  const lower = summary.toLowerCase()
+  return STUCK_SUMMARY_PATTERNS.some((p) => lower.includes(p))
+}
+
+const STUCK_PROCESSING_MINUTES = 10
+
+function isStuckProcessing(c: CaseSummary): boolean {
+  if (c.status !== 'processing') return false
+  const created = new Date(c.created_at).getTime()
+  if (Number.isNaN(created)) return false
+  return Date.now() - created > STUCK_PROCESSING_MINUTES * 60 * 1000
+}
 
 const COURTS = [
   'All Courts',
@@ -33,6 +55,9 @@ function ProfessionalDashboardContent() {
   const [loadingCases, setLoadingCases] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null)
+  const [retryingId, setRetryingId] = useState<string | null>(null)
+  const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null)
 
   // Filterable Precedent Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -69,18 +94,7 @@ function ProfessionalDashboardContent() {
     setLoadingCases(false)
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Validate file before upload
-    const validationError = validateFileType(file)
-    if (validationError) {
-      alert(validationError)
-      e.target.value = ''
-      return
-    }
-
+  async function doUpload(file: File) {
     setUploading(true)
     try {
       await uploadDocument(file)
@@ -99,7 +113,53 @@ function ProfessionalDashboardContent() {
       alert(`Upload Notice: ${msg}`)
     }
     setUploading(false)
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file before upload
+    const validationError = validateFileType(file)
+    if (validationError) {
+      alert(validationError)
+      e.target.value = ''
+      return
+    }
+
+    // Duplicate filename check — ask before re-uploading the same file
+    const isDuplicate = cases.some((c) => c.filename?.toLowerCase() === file.name.toLowerCase())
+    if (isDuplicate) {
+      setPendingUploadFile(file)
+      e.target.value = ''
+      return
+    }
+
+    await doUpload(file)
     e.target.value = ''
+  }
+
+  async function handleRegenerateSummary(caseId: string) {
+    setRegeneratingId(caseId)
+    try {
+      const result = await regenerateSummary(caseId)
+      setCases((prev) => prev.map((c) => (c.id === caseId ? { ...c, summary: result.summary } : c)))
+    } catch (err: any) {
+      alert(`Could not regenerate summary: ${err?.message || 'Unknown error'}`)
+    }
+    setRegeneratingId(null)
+  }
+
+  async function handleRetryIndexing(caseId: string) {
+    setRetryingId(caseId)
+    try {
+      await retryIndexing(caseId)
+      await refreshCases()
+    } catch (err: any) {
+      alert(`Retry failed: ${err?.message || 'Unknown error'}`)
+      await refreshCases()
+    }
+    setRetryingId(null)
   }
 
   async function handleDelete(id: string) {
@@ -237,21 +297,26 @@ function ProfessionalDashboardContent() {
             )}
 
             <div className="space-y-3">
-              {cases.map((c) => (
+              {cases.map((c) => {
+                const stuck = isStuckProcessing(c)
+                const badSummary = c.status === 'ready' && isBadSummary(c.summary)
+                return (
                 <div
                   key={c.id}
                   className="group relative rounded-2xl border border-[#2B5CE0]/12 bg-gradient-to-b from-[#0C1624]/90 to-[#0F1B2E]/90 p-5 shadow-lg transition-all hover:border-[#2B5CE0]/40 hover:bg-[#121E38]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm">📄</span>
                         <h3 className="text-xs font-bold text-white group-hover:text-[#5B8DEF] transition-colors truncate max-w-[240px]">
                           {c.filename || 'Case Record'}
                         </h3>
                         {c.status && c.status !== 'ready' && (
                           <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold border ${
-                            c.status === 'processing'
+                            stuck
+                              ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                              : c.status === 'processing'
                               ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 animate-pulse'
                               : c.status === 'rejected'
                               ? 'bg-red-500/10 border-red-500/30 text-red-300'
@@ -259,15 +324,24 @@ function ProfessionalDashboardContent() {
                               ? 'bg-red-500/10 border-red-500/30 text-red-400'
                               : 'bg-slate-500/10 border-slate-500/30 text-slate-400'
                           }`}>
-                            {c.status === 'processing' ? '⏳ Processing' : c.status === 'rejected' ? '⚠ Rejected' : c.status === 'failed' ? '✕ Failed' : c.status}
+                            {stuck ? '⚠ Stuck' : c.status === 'processing' ? '⏳ Processing' : c.status === 'rejected' ? '⚠ Rejected' : c.status === 'failed' ? '✕ Failed' : c.status}
+                          </span>
+                        )}
+                        {badSummary && (
+                          <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold border bg-amber-500/10 border-amber-500/30 text-amber-300">
+                            ⚠ Summary Failed
                           </span>
                         )}
                       </div>
                       <p className="mt-2 text-xs leading-relaxed text-slate-300 line-clamp-3">
                         {c.status === 'rejected'
                           ? 'This document was not identified as a legal case file.'
+                          : stuck
+                          ? 'Indexing seems stuck — click "Retry Indexing" below.'
                           : c.status === 'processing'
                           ? 'Analyzing document, extracting text and building index...'
+                          : badSummary
+                          ? 'Summary generation failed earlier — click "Regenerate Summary" below.'
                           : c.summary || 'Indexing extracted facts & chronological timeline...'}
                       </p>
                     </div>
@@ -281,12 +355,32 @@ function ProfessionalDashboardContent() {
                     </button>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between border-t border-[#2B5CE0]/10 pt-3 text-[11px]">
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#2B5CE0]/10 pt-3 text-[11px]">
                     <span className="text-slate-400">
                       {new Date(c.created_at).toLocaleDateString()}
                     </span>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {badSummary && (
+                        <button
+                          onClick={() => handleRegenerateSummary(c.id)}
+                          disabled={regeneratingId === c.id}
+                          className="flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                          title="Summary generation failed earlier — click to retry"
+                        >
+                          {regeneratingId === c.id ? '⏳ Regenerating...' : '🔄 Regenerate Summary'}
+                        </button>
+                      )}
+                      {stuck && (
+                        <button
+                          onClick={() => handleRetryIndexing(c.id)}
+                          disabled={retryingId === c.id}
+                          className="flex items-center gap-1 rounded-lg bg-red-500/15 border border-red-500/30 px-2.5 py-1 text-[11px] font-semibold text-red-300 hover:bg-red-500/25 transition-all disabled:opacity-50 cursor-pointer"
+                          title="Indexing appears stuck — click to retry"
+                        >
+                          {retryingId === c.id ? '⏳ Retrying...' : '⟳ Retry Indexing'}
+                        </button>
+                      )}
                       <Link
                         href={`/app/cases/${c.id}`}
                         className="flex items-center gap-1 rounded-lg bg-[#2B5CE0]/20 border border-[#2B5CE0]/30 px-3 py-1 text-[11px] font-semibold text-[#5B8DEF] hover:bg-[#2B5CE0] hover:text-white transition-all no-underline"
@@ -297,7 +391,7 @@ function ProfessionalDashboardContent() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           </section>
 
@@ -486,6 +580,19 @@ function ProfessionalDashboardContent() {
         message="This will permanently delete the case summary, timeline, and associated vector chunks."
         onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
         onCancel={() => setConfirmDeleteId(null)}
+      />
+
+      {/* Duplicate Upload Confirmation Modal */}
+      <ConfirmDialog
+        open={!!pendingUploadFile}
+        title="This file is already in your library"
+        message={`"${pendingUploadFile?.name}" matches an existing case filename. Upload it again as a separate entry?`}
+        onConfirm={() => {
+          const f = pendingUploadFile
+          setPendingUploadFile(null)
+          if (f) doUpload(f)
+        }}
+        onCancel={() => setPendingUploadFile(null)}
       />
     </div>
   )

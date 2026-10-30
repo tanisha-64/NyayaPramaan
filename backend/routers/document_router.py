@@ -169,6 +169,43 @@ def get_document_status(case_id: str, user=Depends(get_current_user)):
     }
 
 
+@router.post("/{case_id}/retry-indexing")
+def retry_indexing(case_id: str, user=Depends(get_current_user)):
+    """Re-runs page indexing for a case stuck in 'processing' status (e.g. the
+    background task was killed mid-run by a server restart/OOM). Re-chunks from
+    the already-stored extracted text, no re-upload needed."""
+    client = get_supabase_client()
+    result = client.table("cases").select("case_text").eq("id", case_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Document not found")
+    case_text = result.data[0].get("case_text", "")
+    if not case_text or len(case_text.strip()) < 20:
+        raise HTTPException(status_code=422, detail="No extracted text available to re-index.")
+
+    client.table("cases").update({"status": "processing"}).eq("id", case_id).execute()
+    try:
+        from ai_core.rag.document_chunker import chunk_text_into_pages
+        pages_indexed = chunk_text_into_pages(case_text, case_id)
+        if pages_indexed > 0:
+            client.table("cases").update({
+                "status": "ready",
+                "pages_processed": pages_indexed,
+                "total_pages": pages_indexed,
+                "rejection_reason": None,
+            }).eq("id", case_id).execute()
+            return {"status": "ready", "pages_processed": pages_indexed}
+        client.table("cases").update({
+            "status": "failed",
+            "rejection_reason": "Retry failed: no text chunks could be extracted.",
+        }).eq("id", case_id).execute()
+        raise HTTPException(status_code=500, detail="Retry failed — no text chunks could be extracted.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        client.table("cases").update({"status": "failed", "rejection_reason": str(e)}).eq("id", case_id).execute()
+        raise HTTPException(status_code=500, detail=f"Retry failed: {str(e)}")
+
+
 @router.delete("/{case_id}")
 def delete_document(case_id: str, user=Depends(get_current_user)):
     client = get_supabase_client()

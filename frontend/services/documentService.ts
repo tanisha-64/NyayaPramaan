@@ -1,4 +1,4 @@
-import { apiUpload, apiGet, apiDelete } from "./apiClient";
+import { apiUpload, apiGet, apiDelete, apiPost } from "./apiClient";
 
 export type UploadResponse = {
   case_id: string;
@@ -63,6 +63,10 @@ export function uploadDocument(file: File, signal?: AbortSignal) {
 
 export function getCaseStatus(caseId: string) {
   return apiGet<CaseStatus>(`/document/${caseId}/status`);
+}
+
+export function retryIndexing(caseId: string) {
+  return apiPost<{ status: string; pages_processed?: number }>(`/document/${caseId}/retry-indexing`, {});
 }
 
 export function deleteDocument(caseId: string) {

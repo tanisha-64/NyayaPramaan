@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from ai_core.rag.vector_store import get_supabase_client
 from ai_core.timeline.extractor import extract_timeline
 from ai_core.llm_gateway import call_llm
+from ai_core.rag.summarizer import summarize_case
 from backend.auth.supabase_auth import get_current_user
 
 router = APIRouter()
@@ -37,6 +38,26 @@ def save_case_notes(case_id: str, payload: NotesPayload, user=Depends(get_curren
     client = get_supabase_client()
     result = client.table("cases").update({"notes": payload.notes}).eq("id", case_id).eq("user_id", user.id).execute()
     return {"status": "success", "notes": payload.notes}
+
+
+@router.post("/{case_id}/regenerate-summary")
+def regenerate_summary(case_id: str, user=Depends(get_current_user)):
+    """Re-runs summarization for a case whose stored summary is actually an
+    old LLM-failure message (e.g. 'high demand, try again'). Fixes cases
+    stuck forever showing an error as their permanent summary."""
+    client = get_supabase_client()
+    result = client.table("cases").select("case_text").eq("id", case_id).eq("user_id", user.id).execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Case not found")
+    case_text = result.data[0].get("case_text", "")
+    if not case_text or len(case_text.strip()) < 50:
+        raise HTTPException(status_code=422, detail="No extracted text available to summarize yet.")
+    try:
+        summary = summarize_case(case_text)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Summary generation failed again: {str(e)}")
+    client.table("cases").update({"summary": summary}).eq("id", case_id).execute()
+    return {"case_id": case_id, "summary": summary}
 
 
 @router.get("/{case_id}/brief")
@@ -115,4 +136,4 @@ def delete_case(case_id: str, user=Depends(get_current_user)):
     client.table("document_chunks").delete().eq("case_id", case_id).execute()
     client.table("session_documents").delete().eq("case_id", case_id).execute()
     client.table("cases").delete().eq("id", case_id).eq("user_id", user.id).execute()
-    return {"deleted": case_id}
+    return {"deleted": case_id}
