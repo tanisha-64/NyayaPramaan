@@ -1,7 +1,7 @@
 # ⚖️ NyayaPramaan (न्यायप्रमाण)
 
 > **Enterprise Verifiable, Citational, and Transparent AI Platform for the Indian Legal System**  
-> *Architected to eliminate hallucinations in statutory interpretation, case analysis, and citizen rights navigation through deterministic grounding, multi-stage verification, and cryptographic auditability.*
+> *Architected to systematically mitigate hallucinations in statutory interpretation, case analysis, and citizen rights navigation through deterministic grounding, multi-stage verification, and cryptographic auditability.*
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-tanisha--64%2FNyayaPramaan-181717?style=flat&logo=github)](https://github.com/tanisha-64/NyayaPramaan)
 [![Next.js](https://img.shields.io/badge/Frontend-Next.js%2016%20(App%20Router)-black?style=flat&logo=next.js)](https://nextjs.org/)
@@ -61,7 +61,7 @@
 
 **NyayaPramaan (न्यायप्रमाण)** is a production-grade, citation-backed legal intelligence platform engineered specifically for the Indian jurisprudential ecosystem. The name derives from Sanskrit: *Nyaya* (Justice / Legal Reasoning) and *Pramaan* (Cognitive Proof / Evidentiary Grounds). 
 
-Unlike generic probabilistic large language models that generate plausible-sounding but completely fictitious sections and judgments, NyayaPramaan operates under a **strictly zero-hallucination paradigm**:
+Unlike generic probabilistic large language models that generate plausible-sounding but completely fictitious sections and judgments, NyayaPramaan operates under a **hallucination-reduction-first paradigm**:
 - Statements of law must resolve to verbatim gazette statutory records or official judicial rulings.
 - Generated claims are deconstructed into atomic factual units and verified against retrieved evidence before presentation.
 - If verified authority cannot be retrieved, the system explicitly refuses to guess and refers the user to official government sources and emergency helplines.
@@ -88,7 +88,7 @@ Deploying Large Language Models in legal operations exposes severe, systemic vul
 
 ## 3. Objectives
 
-- **Absolute Grounding**: Guarantee that statutory citations, limitation periods, penalty amounts, and case laws delivered to users originate from verified source documents.
+- **Absolute Grounding**: Aim to ensure that statutory citations, limitation periods, penalty amounts, and case laws delivered to users originate from verified source documents.
 - **Bi-Directional Statutory Conversion**: Provide deterministic cross-referencing between old Indian enactments (IPC/CrPC/IEA) and new enactments (BNS/BNSS/BSA) with automatic cut-off date enforcement.
 - **Democratized Legal Rights**: Empower citizens with plain-language, bilingual (English & Romanized Hinglish) conversational legal guidance, interactive procedural wizards, and voice-assisted workflows.
 - **Advocate & Researcher Acceleration**: Equip legal professionals with rapid case file ingestion, automated case brief generation, visual chronological timeline extraction, and hybrid precedent discovery.
@@ -101,9 +101,9 @@ Deploying Large Language Models in legal operations exposes severe, systemic vul
 | Pillar | Technical Implementation | Operational Impact |
 | :--- | :--- | :--- |
 | **Zero-Wait Ingestion** | Async FastAPI background worker with instant 200 OK & real-time polling | 150+ page case records upload instantly without HTTP connection timeouts. |
-| **TrustAgent™ Engine** | Atomic claim extractor, independent LLM judge, and bracket citation stripper | Eradicates unbacked claims; delivers colour-coded verification badges per claim. |
+| **TrustAgent™ Engine** | Atomic claim extractor, independent LLM judge, and bracket citation stripper | Systematically identifies and reduces unbacked claims; delivers colour-coded verification badges per claim. |
 | **Statute Mapping** | 1,316 mapped entries across BNS, BNSS, BSA, IPC, CrPC, and IEA (`data/section_map.csv`) | Instant conversion with change-type classification (`MODIFIED`, `NEW`, `NO_CHANGE`). |
-| **Multi-Provider Fallback** | 3-tier circuit-breaker gateway: Google Gemini ➔ Groq Llama ➔ OpenRouter | Zero downtime; seamless transition if any upstream LLM provider hits rate limits. |
+| **Multi-Provider Fallback** | 3-tier circuit-breaker gateway: Google Gemini ➔ Groq Llama ➔ OpenRouter | Automatic failover; seamless transition if any upstream LLM provider hits rate limits. |
 | **Corrective RAG (CRAG)** | Hostname-strict domain allowlisting (`ddgs`) with PII pre-redaction | When internal retrieval is low-confidence, retrieves exclusively from official `.gov.in`/`.nic.in` sources. |
 | **SHA-256 Audit Trail** | Cryptographic hash chaining in Supabase (`query_log` table) | Tamper-evident, compliance-ready proof of retrieval integrity. |
 | **Indian PII Shield** | Automated regex masking of Aadhaar, PAN, phone numbers, and emails | Protects sensitive client and litigant personal data before cloud processing. |
@@ -178,7 +178,7 @@ flowchart TD
         Cors["CORS & Origin Whitelist"]
         RateLimit["Per-User Token Bucket Rate Limiter"]
         AuthGuard["JWT & RBAC Role Validator"]
-        Router["Modular REST Routers\n(/chat, /document, /case, /wizards, /admin, etc.)"]
+        Router["Modular REST Routers: chat, document, case, wizards, admin"]
     end
 
     subgraph SecurityPipeline["Input Safety & Guardrail Subsystem"]
@@ -201,12 +201,12 @@ flowchart TD
         LexSearch["Case Text Fallback & Exact Term Match"]
         RRF["Reciprocal Rank Fusion (RRF)"]
         StatuteTable["Verbatim Bare Act Store (statute_sections)"]
-        SectionMap["Old ↔ New Law Engine (section_map)"]
+        SectionMap["Old to New Law Engine (section_map)"]
         CRAG["Corrective RAG: Gov-Domain Web Search"]
     end
 
-    subgraph VerificationSubsystem["TrustAgent™ Verification Engine"]
-        LLMGateway["Multi-Provider Gateway: Gemini ➔ Groq ➔ OpenRouter"]
+    subgraph VerificationSubsystem["TrustAgent Verification Engine"]
+        LLMGateway["Multi-Provider Gateway: Gemini to Groq to OpenRouter"]
         DraftLLM["Draft Legal Response Generator"]
         ClaimExt["Atomic Claim Extractor (Markdown-Safe)"]
         LLMJudge["LLM-as-a-Judge (Claim-by-Claim Evidence Verifier)"]
@@ -215,17 +215,22 @@ flowchart TD
     end
 
     subgraph StorageLayer["Data & Persistence Layer (Supabase PostgreSQL 15)"]
-        DB_Cases[(cases table)]
-        DB_Chunks[(document_chunks with vector 768)]
-        DB_Statutes[(statute_sections)]
-        DB_Map[(section_map: 1,316 rows)]
-        DB_Log[(query_log with SHA-256 hash chains)]
+        DB_Cases[("cases table")]
+        DB_Chunks[("document_chunks: vector 768")]
+        DB_Statutes[("statute_sections")]
+        DB_Map[("section_map: 1,316 rows")]
+        DB_Log[("query_log: SHA-256 hash chains")]
         CloudStorage["Supabase Storage: Encrypted PDF Files"]
     end
 
     Browser --> AuthUI
-    Browser --> ChatUI & DashUI & AdminUI
-    ChatUI & DashUI & AdminUI -->|Bearer JWT| Cors --> RateLimit --> AuthGuard --> Router
+    Browser --> ChatUI
+    Browser --> DashUI
+    Browser --> AdminUI
+    ChatUI -->|Bearer JWT| Cors
+    DashUI -->|Bearer JWT| Cors
+    AdminUI -->|Bearer JWT| Cors
+    Cors --> RateLimit --> AuthGuard --> Router
 
     Router --> SecurityPipeline
     SecurityPipeline --> DomainGate --> MultiQ
@@ -236,11 +241,17 @@ flowchart TD
     BgWorker --> DB_Cases
 
     MultiQ --> HybridRAG
-    HybridRAG --> VecStore & LexSearch --> RRF
-    HybridRAG --> StatuteTable & SectionMap
+    HybridRAG --> VecStore
+    HybridRAG --> LexSearch
+    VecStore --> RRF
+    LexSearch --> RRF
+    HybridRAG --> StatuteTable
+    HybridRAG --> SectionMap
     RRF -.->|Low Confidence| CRAG
 
-    RRF & StatuteTable & SectionMap --> VerificationSubsystem
+    RRF --> VerificationSubsystem
+    StatuteTable --> VerificationSubsystem
+    SectionMap --> VerificationSubsystem
     VerificationSubsystem --> LLMGateway --> DraftLLM --> ClaimExt --> LLMJudge --> CitationChk --> OutGuard
     OutGuard --> DB_Log
     OutGuard --> Router --> Browser
@@ -267,7 +278,7 @@ sequenceDiagram
     Client->>Gateway: POST /chat/ask { query, session_id, case_id }
     Gateway->>Guard: Validate Input Safety (Jailbreak / Injection)
     alt Unsafe or Jailbreak Attempt
-        Guard-->>Client: 400 Refusal: "blocked pattern detected"
+        Guard-->>Client: 400 Refusal: Blocked pattern detected
     end
 
     Guard->>Guard: Verify Legal Domain & Split Multi-Questions
@@ -277,7 +288,7 @@ sequenceDiagram
         RAG->>DB: Query document_chunks (vector <=> embedding)
         DB-->>RAG: Semantic Chunks
         RAG->>RAG: Lexical full-text scan + RRF fusion
-    else Explicit Statute Mentioned ("BNS 303" / "IPC 420")
+    else Explicit Statute Mentioned (BNS 303 or IPC 420)
         RAG->>DB: Query statute_sections (exact section lookup)
         DB-->>RAG: Verbatim Bare Act Text + Heading + India Code URL
         RAG->>DB: Query section_map (Fetch old/new conversion)
@@ -360,29 +371,35 @@ The conversion system (`ai_core/rag/section_map.py`) is grounded in a database t
 ```mermaid
 flowchart LR
     subgraph LegacyCodes["Legacy Codes (Offences before 1 July 2024)"]
-        IPC["Indian Penal Code, 1860\n(IPC)"]
-        CrPC["Code of Criminal Procedure, 1973\n(CrPC)"]
-        IEA["Indian Evidence Act, 1872\n(IEA)"]
+        IPC["Indian Penal Code, 1860 (IPC)"]
+        CrPC["Code of Criminal Procedure, 1973 (CrPC)"]
+        IEA["Indian Evidence Act, 1872 (IEA)"]
     end
 
     subgraph MappingEngine["Deterministic Section Map Engine (section_map table)"]
         Lookup["section_map.lookup(act, section)"]
-        CutoffRule{"Offence Date Check\n1 July 2024 Cutoff"}
-        ChangeClass["Change Classification:\n• NO_CHANGE\n• MODIFIED\n• NEW"]
+        CutoffRule{"Offence Date: Before or After 1 July 2024?"}
+        ChangeClass["Change Type: NO_CHANGE / MODIFIED / NEW"]
     end
 
     subgraph ModernSanitas["Modern Sanhitas (Offences on/after 1 July 2024)"]
-        BNS["Bharatiya Nyaya Sanhita, 2023\n(BNS)"]
-        BNSS["Bharatiya Nagarik Suraksha Sanhita, 2023\n(BNSS)"]
-        BSA["Bharatiya Sakshya Adhiniyam, 2023\n(BSA)"]
+        BNS["Bharatiya Nyaya Sanhita, 2023 (BNS)"]
+        BNSS["Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS)"]
+        BSA["Bharatiya Sakshya Adhiniyam, 2023 (BSA)"]
     end
 
-    IPC --> Lookup --> BNS
-    CrPC --> Lookup --> BNSS
-    IEA --> Lookup --> BSA
+    IPC --> Lookup
+    CrPC --> Lookup
+    IEA --> Lookup
+    Lookup --> BNS
+    Lookup --> BNSS
+    Lookup --> BSA
 
-    ModernSanitas --> Lookup --> LegacyCodes
-    Lookup --> CutoffRule --> ChangeClass
+    BNS --> Lookup
+    BNSS --> Lookup
+    BSA --> Lookup
+    Lookup --> CutoffRule
+    CutoffRule --> ChangeClass
 ```
 
 When a user inquires about an old section (e.g. *"What is Section 302 IPC?"*), the system returns:
@@ -404,21 +421,22 @@ flowchart TD
     CRAG_Init --> RedactQuery[Redact PII from Search Terms]
     RedactQuery --> SearchWeb[Bounded DuckDuckGo Web Search: max 3 attempts]
     
-    SearchWeb --> FilterHost{Strict Hostname Allowlist Check}
-    FilterHost -->|Official Gov Domain\n*.gov.in, *.nic.in, *.sci.gov.in| RankTier1[Rank Tier 1: Primary Authority]
-    FilterHost -->|Secondary Legal Portal\nlivelaw.in, barandbench.com, indiankanoon.org| RankTier2[Rank Tier 2: Commentary]
-    FilterHost -->|Non-Legal or Disallowed\nwikipedia, quora, reddit| Discard[Discard Result]
+    SearchWeb --> FilterHost{"Strict Hostname Allowlist Check"}
+    FilterHost -->|"Official Gov Domain: .gov.in, .nic.in, .sci.gov.in"| RankTier1["Rank Tier 1: Primary Authority"]
+    FilterHost -->|"Secondary Legal Portal: livelaw.in, barandbench.com, indiankanoon.org"| RankTier2["Rank Tier 2: Commentary"]
+    FilterHost -->|"Non-Legal or Disallowed: wikipedia, quora, reddit"| Discard["Discard Result"]
     
-    RankTier1 & RankTier2 --> ConstructPrompt
-    ConstructPrompt --> GatewayCall[Multi-Model LLM Gateway]
-    GatewayCall --> RawAnswer[Draft Legal Answer]
+    RankTier1 --> ConstructPrompt
+    RankTier2 --> ConstructPrompt
+    ConstructPrompt --> GatewayCall["Multi-Model LLM Gateway"]
+    GatewayCall --> RawAnswer["Draft Legal Answer"]
     
-    RawAnswer --> SelfRAG[Self-RAG Reflection Step]
-    SelfRAG --> EvalSufficiency[Determine Usefulness: High / Medium / Low]
-    SelfRAG --> EvalConclusion[Extract Single-Sentence Bottom Line]
-    SelfRAG --> ConclusionNeeded{Answer Already Brief?}
-    ConclusionNeeded -->|Yes| SkipBox[Omit Redundant Conclusion Box]
-    ConclusionNeeded -->|No| AttachBox[Attach Highlighted 'In Short' Takeaway]
+    RawAnswer --> SelfRAG["Self-RAG Reflection Step"]
+    SelfRAG --> EvalSufficiency["Determine Usefulness: High / Medium / Low"]
+    SelfRAG --> EvalConclusion["Extract Single-Sentence Bottom Line"]
+    SelfRAG --> ConclusionNeeded{"Answer Already Brief?"}
+    ConclusionNeeded -->|Yes| SkipBox["Omit Redundant Conclusion Box"]
+    ConclusionNeeded -->|No| AttachBox["Attach Highlighted In-Short Takeaway"]
 ```
 
 ---
@@ -429,11 +447,11 @@ The TrustAgent system (`ai_core/trustagent/`) sits between the generative LLM an
 
 ```mermaid
 flowchart TD
-    Raw[Draft Legal Answer from LLM] --> StripMD[Strip Markdown Tables, Pipes & Code Formatting]
-    StripMD --> ClaimExtractor[Atomic Claim Extractor: Isolate 3-6 Factual Propositions]
+    Raw["Draft Legal Answer from LLM"] --> StripMD["Strip Markdown Tables, Pipes & Code Formatting"]
+    StripMD --> ClaimExtractor["Atomic Claim Extractor: Isolate 3 to 6 Factual Propositions"]
     
-    ClaimExtractor --> LLMJudge[LLM-as-a-Judge: gemini-3.6-flash]
-    RetrievedEvidence[Retrieved Verbatim Statutory / Case Evidence] --> LLMJudge
+    ClaimExtractor --> LLMJudge["LLM-as-a-Judge: gemini-2.5-flash / gemini-3.6-flash"]
+    RetrievedEvidence["Retrieved Verbatim Statutory / Case Evidence"] --> LLMJudge
     
     subgraph ClaimEvaluation["Claim-Level Grounding Assessment"]
         LLMJudge --> V1{"Verdict for Claim N"}
@@ -444,34 +462,40 @@ flowchart TD
     end
     
     subgraph OverallState["Overall Document Grounding State"]
-        S1 & S2 & S3 & S4 --> StateEngine{Aggregate Verdicts}
-        StateEngine -->|All claims supported| G["GROUNDED (verified)"]
-        StateEngine -->|Some claims supported| PG["PARTIALLY_GROUNDED (partial)"]
-        StateEngine -->|All claims contradicted| C["CONTRADICTED (contradicted)"]
-        StateEngine -->|Zero evidence matched| NE["NO_EVIDENCE_FOUND (unverified)"]
-        StateEngine -->|API/Parser error| VP["VERIFICATION_PENDING (pending)"]
+        S1 --> StateEngine{"Aggregate Verdicts"}
+        S2 --> StateEngine
+        S3 --> StateEngine
+        S4 --> StateEngine
+        StateEngine -->|All claims supported| G["GROUNDED: verified"]
+        StateEngine -->|Some claims supported| PG["PARTIALLY_GROUNDED: partial"]
+        StateEngine -->|All claims contradicted| C["CONTRADICTED: contradicted"]
+        StateEngine -->|Zero evidence matched| NE["NO_EVIDENCE_FOUND: unverified"]
+        StateEngine -->|API or Parser error| VP["VERIFICATION_PENDING: pending"]
     end
     
-    OverallState --> DeterministicChk[Deterministic Citation Checker]
-    DeterministicChk --> BracketStripper[Remove [Page X] tags if Page X not in retrieved set]
-    DeterministicChk --> SpecificsAudit[Audit ungrounded dates, amounts, section numbers]
+    OverallState --> DeterministicChk["Deterministic Citation Checker"]
+    DeterministicChk --> BracketStripper["Remove unverified bracket page citations"]
+    DeterministicChk --> SpecificsAudit["Audit ungrounded dates, amounts, section numbers"]
     
-    DeterministicChk --> FilterAction{Overall Verdict Handling}
-    FilterAction -->|GROUNDED| DeliverFull[Deliver Answer with Verified Citations]
-    FilterAction -->|PARTIALLY_GROUNDED| FilterClaims[Filter Answer: Keep Supported Claims, Drop Unverified Claims]
-    FilterAction -->|CONTRADICTED| RewriteContradiction[Rewrite: Explicitly Note Contradiction with Official Source]
+    DeterministicChk --> FilterAction{"Overall Verdict Handling"}
+    FilterAction -->|GROUNDED| DeliverFull["Deliver Answer with Verified Citations"]
+    FilterAction -->|PARTIALLY_GROUNDED| FilterClaims["Filter Answer: Keep Supported Claims, Drop Unverified Claims"]
+    FilterAction -->|CONTRADICTED| RewriteContradiction["Rewrite: Explicitly Note Contradiction with Official Source"]
     FilterAction -->|NO_EVIDENCE_FOUND| SafeRefusal["State: No verified source found. Advise India Code or Lawyer."]
     
-    DeliverFull & FilterClaims & RewriteContradiction & SafeRefusal --> Helplines[Append Official Helplines: 112, 181, 1930, 15100]
-    Helplines --> RedactOut[Redact Aadhaar / PAN / Phone PII]
-    RedactOut --> FinalClient[Deliver Structured Response to User]
+    DeliverFull --> Helplines["Append Official Helplines: 112, 181, 1930, 15100"]
+    FilterClaims --> Helplines
+    RewriteContradiction --> Helplines
+    SafeRefusal --> Helplines
+    Helplines --> RedactOut["Redact Aadhaar / PAN / Phone PII"]
+    RedactOut --> FinalClient["Deliver Structured Response to User"]
 ```
 
 ### TrustAgent Verdict Contract
 
 | Verification Status | Badge UI | Meaning | System Behaviour |
 | :--- | :---: | :--- | :--- |
-| `verified` (`GROUNDED`) | `✅ Verified Against Source` | 100% of factual propositions match verbatim statutory or judicial evidence. | Delivered in full with page citations and links. |
+| `verified` (`GROUNDED`) | `✅ Verified Against Source` | All extracted factual propositions match verbatim statutory or judicial evidence. | Delivered in full with page citations and links. |
 | `partial` (`PARTIALLY_GROUNDED`) | `🟡 Partially Supported` | Core legal premise is accurate, but peripheral details could not be matched. | Answer is filtered to retain confirmed assertions; unconfirmed details dropped. |
 | `contradicted` (`CONTRADICTED`) | `🔴 Contradicted by Source` | The AI generation directly asserts facts disproven by the official statute. | Answer rewritten to eliminate contradiction; alerts user to conflicting rule. |
 | `unverified` (`NO_EVIDENCE_FOUND`) | `⚪ Unverified / No Evidence` | No corresponding bare act or precedent exists in the repository. | AI memory answers suppressed; standard refusal message with helpline links emitted. |
@@ -502,25 +526,25 @@ sequenceDiagram
 
     Route->>Route: Classify Document (100+ patterns: AIR, SCC, Petitions, Orders)
     Route->>Store: Upload raw file to Supabase Cloud Storage
-    Route->>Store: Insert record into `cases` (status: 'processing')
+    Route->>Store: Insert record into cases table (status: processing)
     Route->>Route: Generate fast Synchronous Executive Brief & Timeline
-    Route->>Store: Update `cases` with summary
-    Route->>Worker: Dispatch `_background_index_pages`
-    Route-->>UI: Instant 200 OK { case_id, filename, summary, status: 'processing' }
+    Route->>Store: Update cases table with summary
+    Route->>Worker: Dispatch background indexing worker
+    Route-->>UI: Instant 200 OK (case_id, filename, summary, status: processing)
     Note over UI: Zero user wait time! User begins reading summary immediately.
 
-    loop While status == 'processing'
+    loop While status is processing
         UI->>Route: GET /document/{case_id}/status (every 3 seconds)
-        Route-->>UI: { pages_processed: 42, total_pages: 110, status: 'processing' }
+        Route-->>UI: Progress (pages_processed: 42, total_pages: 110, status: processing)
     end
 
     Worker->>Chunker: Chunk document into per-page segments with overlap
     Worker->>Gemini: Generate 768-dim embeddings in batches
-    Worker->>Store: Bulk insert into `document_chunks` table
-    Worker->>Store: Update `cases` table (status: 'ready', pages_processed: 110)
+    Worker->>Store: Bulk insert into document_chunks table
+    Worker->>Store: Update cases table (status: ready, pages_processed: 110)
 
     UI->>Route: GET /document/{case_id}/status
-    Route-->>UI: { status: 'ready', pages_processed: 110, total_pages: 110 }
+    Route-->>UI: Complete (status: ready, pages_processed: 110, total_pages: 110)
     Note over UI: UI enables instant Q&A on all 110 pages!
 ```
 
@@ -629,7 +653,7 @@ erDiagram
         uuid case_id FK
         int page_number
         text chunk_text
-        vector_768 embedding
+        vector embedding
         timestamp created_at
     }
 
@@ -649,7 +673,7 @@ erDiagram
         uuid session_id FK
         text role
         text content
-        jsonb sources
+        json sources
         timestamp created_at
     }
 
@@ -749,6 +773,7 @@ The database uses PostgreSQL stored procedures for cosine distance matching:
 | **ddgs (DuckDuckGo)** | Privacy-Preserving Web Search | `ai_core/rag/crag_corrector.py` | Headless, zero-API-key search for authoritative Indian legal portals during CRAG failover. |
 | **PyPDF / pdf2image** | Local PDF Parsing | `ai_core/rag/document_chunker.py` | Fast local extraction of structured digital PDFs prior to OCR fallback. |
 | **pytesseract** | Fallback OCR | `backend/Dockerfile` | Local open-source OCR fallback for degraded documents when external APIs are unreachable. |
+| **Langfuse / Ragas** | LLM Observability & Evaluation | `requirements.txt`, `backend/eval/` | Tracing, telemetry hooks, and automated legal retrieval evaluation metrics. |
 
 ### Database, Storage & Infrastructure
 
@@ -939,28 +964,30 @@ All protected endpoints require the following HTTP header:
 
 ```mermaid
 flowchart TD
-    Request[Incoming API Request] --> CheckAuth{Contains Authorization: Bearer JWT?}
+    Request["Incoming API Request"] --> CheckAuth{"Contains Authorization Bearer JWT?"}
     
-    CheckAuth -->|No / Invalid| Unauth[401 Unauthorized Response]
-    CheckAuth -->|Yes| VerifySupabase[Verify Token via Supabase Auth Client]
+    CheckAuth -->|No or Invalid| Unauth["401 Unauthorized Response"]
+    CheckAuth -->|Yes| VerifySupabase["Verify Token via Supabase Auth Client"]
     
-    VerifySupabase --> ResolveRole{Determine User Role}
-    ResolveRole --> EmailCheck{Email in ADMIN_EMAILS Whitelist?}
-    EmailCheck -->|Yes| AssignAdmin[Role: admin]
-    EmailCheck -->|No| CheckMeta[Read user_metadata.role]
-    CheckMeta -->|admin attempted| BlockEscalation[Demote to public: Prevent Role Escalation]
-    CheckMeta -->|professional| AssignProf[Role: professional]
-    CheckMeta -->|public / default| AssignPublic[Role: public]
+    VerifySupabase --> ResolveRole{"Determine User Role"}
+    ResolveRole --> EmailCheck{"Email in ADMIN_EMAILS Whitelist?"}
+    EmailCheck -->|Yes| AssignAdmin["Role: admin"]
+    EmailCheck -->|No| CheckMeta["Read user_metadata.role"]
+    CheckMeta -->|admin attempted| BlockEscalation["Demote to public: Prevent Escalation"]
+    CheckMeta -->|professional| AssignProf["Role: professional"]
+    CheckMeta -->|public or default| AssignPublic["Role: public"]
     
-    AssignAdmin & AssignProf & AssignPublic --> RouteGuard{Route Permission Check}
-    RouteGuard -->|Admin Endpoint & Not Admin| Forbidden[403 Forbidden]
-    RouteGuard -->|Allowed| TokenBucket{Per-User Token Bucket Check}
+    AssignAdmin --> RouteGuard{"Route Permission Check"}
+    AssignProf --> RouteGuard
+    AssignPublic --> RouteGuard
+    RouteGuard -->|Admin Endpoint & Not Admin| Forbidden["403 Forbidden"]
+    RouteGuard -->|Allowed| TokenBucket{"Per-User Token Bucket Check"}
     
-    TokenBucket -->|Over 10 requests / 60s| RateLimited["429 Too Many Requests (Retry-After header)"]
-    TokenBucket -->|Within Limit| InputCheck[Input Guardrail: Scan for Jailbreak Signatures]
+    TokenBucket -->|Over 10 requests / 60s| RateLimited["429 Too Many Requests: Retry-After"]
+    TokenBucket -->|Within Limit| InputCheck["Input Guardrail: Scan for Jailbreak Signatures"]
     
-    InputCheck -->|Matches Attack Pattern| BlockInput[400 Bad Request: Input Security Refusal]
-    InputCheck -->|Clean| ExecuteBusinessLogic[Execute Router Workflow]
+    InputCheck -->|Matches Attack Pattern| BlockInput["400 Bad Request: Input Security Refusal"]
+    InputCheck -->|Clean| ExecuteBusinessLogic["Execute Router Workflow"]
 ```
 
 ### Security & Privacy Controls
@@ -1061,20 +1088,20 @@ cp .env.example .env
 
 | Variable Name | Required | Default / Example Value | Description |
 | :--- | :---: | :--- | :--- |
-| `SUPABASE_URL` | **Yes** | `https://your-project.supabase.co` | Project URL from Supabase Settings ➔ API |
-| `SUPABASE_ANON_KEY` | **Yes** | `eyJhbGciOi...` | Public Anonymous Key for client verification |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | `eyJhbGciOi...` | Service Role Key for backend administrative queries |
-| `GEMINI_API_KEY` | **Yes** | `AIzaSy...` | Google AI Studio API key for Gemini OCR & Embeddings |
-| `GROQ_API_KEY` | **Yes** | `gsk_...` | Groq API Key for low-latency inference & claim judging |
-| `OPENROUTER_API_KEY` | Optional | `sk-or-...` | OpenRouter API Key for third-tier fallback models |
+| `SUPABASE_URL` | **Yes** | `https://<your-project-ref>.supabase.co` | Project URL from Supabase Settings ➔ API |
+| `SUPABASE_ANON_KEY` | **Yes** | `<your-supabase-anon-key>` | Public Anonymous Key for client verification |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | `<your-supabase-service-role-key>` | Service Role Key for backend administrative queries |
+| `GEMINI_API_KEY` | **Yes** | `<your-gemini-api-key>` | Google AI Studio API key for Gemini OCR & Embeddings |
+| `GROQ_API_KEY` | **Yes** | `<your-groq-api-key>` | Groq API Key for low-latency inference & claim judging |
+| `OPENROUTER_API_KEY` | Optional | `<your-openrouter-api-key>` | OpenRouter API Key for third-tier fallback models |
 | `GEMINI_MODEL` | Optional | `gemini/gemini-3.6-flash` | LiteLLM model identifier for primary inference |
 | `GROQ_MODEL` | Optional | `groq/openai/gpt-oss-20b` | LiteLLM model identifier for secondary inference |
-| `ADMIN_EMAILS` | Optional | `mitanisha74@gmail.com` | Comma-separated emails granted `admin` role |
+| `ADMIN_EMAILS` | Optional | `admin@example.com` | Comma-separated emails granted `admin` role (whitelisted) |
 | `FRONTEND_URL` | Optional | `http://localhost:3000` | Allowed origin for FastAPI CORS middleware |
 | `NEXT_PUBLIC_API_BASE_URL` | **Yes** | `http://localhost:8000` | Base backend URL consumed by Next.js client |
-| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | `https://your-project.supabase.co` | Supabase URL accessible to browser client |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | `eyJhbGciOi...` | Supabase Anonymous Key accessible to browser client |
-| `NEXT_PUBLIC_ADMIN_EMAIL` | Optional | `mitanisha74@gmail.com` | Primary admin email displayed in client UI |
+| `NEXT_PUBLIC_SUPABASE_URL` | **Yes** | `https://<your-project-ref>.supabase.co` | Supabase URL accessible to browser client |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Yes** | `<your-supabase-anon-key>` | Supabase Anonymous Key accessible to browser client |
+| `NEXT_PUBLIC_ADMIN_EMAIL` | Optional | `admin@example.com` | Primary admin contact email displayed in client UI |
 
 ---
 
@@ -1121,11 +1148,11 @@ NyayaPramaan provides multi-container orchestration via `docker-compose.yml`.
 
 ```mermaid
 flowchart LR
-    Host([Host Machine]) -->|Port 3000| FrontC["Frontend Container\n(node:20-alpine)\nNext.js Dev Server"]
-    Host -->|Port 8000| BackC["Backend Container\n(python:3.11-slim)\nTesseract + Poppler + FastAPI"]
+    Host(["Host Machine"]) -->|Port 3000| FrontC["Frontend Container: node:20-alpine (Next.js Dev Server)"]
+    Host -->|Port 8000| BackC["Backend Container: python:3.11-slim (FastAPI + Tesseract)"]
     
-    BackC --> CloudDB[(Supabase Database)]
-    BackC --> CloudAI[Google Gemini / Groq APIs]
+    BackC --> CloudDB[("Supabase Database")]
+    BackC --> CloudAI["Google Gemini / Groq APIs"]
 ```
 
 ### Running with Docker Compose
@@ -1160,23 +1187,23 @@ flowchart TD
     end
 
     subgraph FrontendHosting["Frontend Tier (Vercel)"]
-        NextApp["Next.js 16 Web Application\n(nyaya-pramaan.vercel.app)"]
+        NextApp["Next.js 16 Web Application (nyaya-pramaan.vercel.app)"]
     end
 
     subgraph BackendHosting["Backend Tier (Render / Cloud Container)"]
-        FastAPIApp["FastAPI REST Gateway (:8000)\nUvicorn Asynchronous Workers"]
+        FastAPIApp["FastAPI REST Gateway :8000 (Uvicorn Async Workers)"]
         TesseractService["Tesseract OCR & Poppler Engine"]
     end
 
     subgraph DataCloud["Database & Cloud Services"]
         SupaAuth["Supabase Authentication (JWT)"]
-        SupaDB["Supabase Managed PostgreSQL 15\n(pgvector extension)"]
+        SupaDB["Supabase Managed PostgreSQL 15 (pgvector extension)"]
         SupaStorage["Supabase Encrypted Storage"]
     end
 
     subgraph ExternalAITier["External AI & Verification Services"]
-        GeminiAPI["Google Gemini AI\n(OCR & 768d Embeddings)"]
-        GroqAPI["Groq Cloud Acceleration\n(Llama 3.3 70B & Claim Judging)"]
+        GeminiAPI["Google Gemini AI (OCR & 768d Embeddings)"]
+        GroqAPI["Groq Cloud Acceleration (Llama 3.3 70B & Claim Judging)"]
         GovPortals["Official India Code & Supreme Court Portals"]
     end
 
