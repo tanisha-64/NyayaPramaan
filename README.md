@@ -39,11 +39,11 @@
 - [14. Technology Stack](#14-technology-stack)
 - [15. Project Directory Structure](#15-project-directory-structure)
 - [16. API Specification and Endpoints](#16-api-specification-and-endpoints)
-- [17. Authentication and Security Guardrails](#17-authentication-and-security-guardrails)
+- [17. Authentication and Security](#17-authentication-and-security)
 - [18. Local Installation and Setup](#18-local-installation-and-setup)
 - [19. Environment Variables](#19-environment-variables)
 - [20. Running the Application](#20-running-the-application)
-- [21. Docker Container Orchestration](#21-docker-container-orchestration)
+- [21. Docker and Deployment](#21-docker-and-deployment)
 - [22. Deployment Architecture](#22-deployment-architecture)
 - [23. Testing and Evaluation Suite](#23-testing-and-evaluation-suite)
 - [24. Troubleshooting](#24-troubleshooting)
@@ -53,6 +53,8 @@
 - [28. Contributing](#28-contributing)
 - [29. License and Disclaimers](#29-license-and-disclaimers)
 - [30. Authors and Contact](#30-authors-and-contact)
+
+> **Architecture deep dives:** [AI, RAG and routing internals](docs/architecture.md) · [Data schema and security internals](docs/data-and-security.md)
 
 ---
 
@@ -115,32 +117,7 @@ Deploying large language models in legal work exposes several systemic problems:
 
 Role-Based Access Control is enforced both at the API layer (`backend/auth/supabase_auth.py`) and the UI layer (`frontend/components/auth/RoleGuard.tsx`).
 
-```mermaid
-flowchart TD
-    Auth["Supabase Authentication - JWT"]
-    Auth --> Pub["Public Citizen - role public"]
-    Auth --> Pro["Legal Professional - role professional"]
-    Auth --> Adm["Super Admin - role admin"]
-
-    Pub --> P1["Bilingual research chat"]
-    Pub --> P2["Voice input and output"]
-    Pub --> P3["Four guided procedure wizards"]
-    Pub --> P4["Rights game, daily quiz and legal news"]
-
-    Pro --> R0["Everything a citizen can do"]
-    Pro --> R1["Ingest client case dossiers"]
-    Pro --> R2["Executive case briefs"]
-    Pro --> R3["Chronological case timeline"]
-    Pro --> R4["Precedent search by court and year"]
-
-    Adm --> A0["Everything a professional can do"]
-    Adm --> A1["Control tower console"]
-    Adm --> A2["Database and LLM health checks"]
-    Adm --> A3["IST user analytics"]
-    Adm --> A4["Citation accuracy monitoring"]
-```
-
-### RBAC Feature Matrix
+📐 **Role hierarchy diagram:** [docs/architecture.md → Role-based access control](docs/architecture.md#1-role-based-access-control)
 
 | Feature / Workspace | Public (`public`) | Professional (`professional`) | Admin (`admin`) |
 | :--- | :---: | :---: | :---: |
@@ -185,10 +162,9 @@ flowchart TD
     end
 
     subgraph Ingest["Zero Blocking Ingestion"]
-        Upload["POST document upload"]
+        Upload["Document upload endpoint"]
         Worker["Background ingestion worker"]
         Reader["Gemini OCR and PDF extractor"]
-        Classifier["Legal document classifier"]
         Chunker["Page preserving chunker"]
         Embedder["Gemini 768 dimension embeddings"]
     end
@@ -205,17 +181,14 @@ flowchart TD
     subgraph Trust["TrustAgent Verification"]
         LLMGw["Multi provider LLM gateway"]
         Draft["Draft answer generator"]
-        Claims["Atomic claim extractor"]
-        Judge["LLM as a judge"]
-        CiteChk["Deterministic citation checker"]
-        OutGuard["PII redaction guard"]
+        Judge["Claim extractor and LLM judge"]
+        OutGuard["Citation check and PII redaction"]
     end
 
     subgraph Storage["Supabase PostgreSQL 15"]
         DBCases[("cases")]
         DBChunks[("document_chunks")]
         DBStatutes[("statute_sections")]
-        DBMap[("section_map")]
         DBLog[("query_log")]
         Files[("Encrypted PDF storage")]
     end
@@ -238,8 +211,7 @@ flowchart TD
     Upload --> Worker
     Worker --> Files
     Worker --> Reader
-    Reader --> Classifier
-    Classifier --> Chunker
+    Reader --> Chunker
     Chunker --> Embedder
     Embedder --> DBChunks
     Worker --> DBCases
@@ -250,7 +222,6 @@ flowchart TD
     MultiQ --> SecMap
     VecStore --> DBChunks
     Statutes --> DBStatutes
-    SecMap --> DBMap
     VecStore --> RRF
     LexSearch --> RRF
     RRF -->|"low confidence"| CRAG
@@ -260,10 +231,8 @@ flowchart TD
     SecMap --> LLMGw
     CRAG --> LLMGw
     LLMGw --> Draft
-    Draft --> Claims
-    Claims --> Judge
-    Judge --> CiteChk
-    CiteChk --> OutGuard
+    Draft --> Judge
+    Judge --> OutGuard
     OutGuard --> DBLog
     OutGuard --> Browser
 ```
@@ -286,23 +255,23 @@ sequenceDiagram
     participant Ledger as SHA-256 audit logger
 
     User->>Client: Enters legal question or speech input
-    Client->>Gateway: POST /chat/ask with query and session id
+    Client->>Gateway: POST chat ask with query and session id
     Gateway->>Guard: Validate input safety
     alt Unsafe or jailbreak attempt
         Guard-->>Client: 400 refusal, blocked pattern detected
     end
 
     Guard->>Guard: Verify legal domain and split multi questions
-    Guard->>RAG: Determine intent
+    Guard->>RAG: Determine retrieval intent
 
     alt Document attached
         RAG->>DB: Query document chunks by vector similarity
         DB-->>RAG: Semantic chunks
         RAG->>RAG: Lexical scan plus rank fusion
     else Explicit statute mentioned
-        RAG->>DB: Exact section lookup in statute_sections
+        RAG->>DB: Exact section lookup in statute sections
         DB-->>RAG: Verbatim bare act text and source URL
-        RAG->>DB: Query section_map for old and new mapping
+        RAG->>DB: Query section map for old and new mapping
         DB-->>RAG: Corresponding mapped provision
     else Broad legal query
         RAG->>DB: Hybrid search over knowledge base
@@ -321,8 +290,8 @@ sequenceDiagram
     Trust->>Trust: Append official helplines where relevant
     Trust->>Guard: Apply PII masking
 
-    Trust->>Ledger: Compute SHA-256 hash of payload plus previous hash
-    Ledger->>DB: Insert into query_log
+    Trust->>Ledger: Hash payload with previous hash
+    Ledger->>DB: Insert into query log
 
     Gateway-->>Client: Grounded answer, sources, claim badges, latency
     Client-->>User: Displays verified answer with evidence cards
@@ -334,64 +303,18 @@ sequenceDiagram
 
 ### 8.1 Multi-Tier LLM Gateway and Circuit Breaker
 
-The LLM abstraction in `ai_core/llm_gateway.py` implements a resilient fallback chain powered by `litellm`:
+`ai_core/llm_gateway.py` implements a resilient fallback chain powered by `litellm`:
 
-```mermaid
-flowchart TD
-    Req["LLM request"] --> Cache{"Response cache hit?"}
-    Cache -->|"yes"| Cached["Return cached response in under 5 ms"]
-    Cache -->|"no"| Breaker{"Is provider circuit breaker open?"}
-    Breaker --> T1["Tier 1 - Google Gemini Flash"]
-    T1 -->|"success"| Done["Return generated answer"]
-    T1 -->|"rate limit, auth error or timeout"| T2["Tier 2 - Groq Cloud Llama 3.3"]
-    T2 -->|"success"| Done
-    T2 -->|"failure"| T3["Tier 3 - OpenRouter backup"]
-    T3 -->|"success"| Done
-    T3 -->|"failure"| Refuse["Graceful message - service busy, try again shortly"]
-    T1 -.->|"disable provider for 60 seconds"| Breaker
-    T2 -.->|"disable provider for 60 seconds"| Breaker
-```
-
-- **In-memory response caching.** Prompt and model are hashed into a SHA-256 key; identical queries return in under 5 ms. Cache holds up to 256 responses and is thread-safe.
+- **Tier 1** Google Gemini Flash → **Tier 2** Groq Cloud (Llama 3.3 / GPT-OSS) → **Tier 3** OpenRouter backup.
+- **In-memory response caching.** Prompt and model are hashed into a SHA-256 key; identical queries return in under 5 ms. The cache holds up to 256 responses and is thread-safe.
 - **Circuit breaker.** On an auth error, HTTP 429, or timeout, the gateway disables that provider for 60 seconds (`BREAKER_SECS = 60`) and routes traffic to the next tier without retry latency.
+- If every tier fails, the user receives a graceful "service is busy" message rather than a fabricated answer.
+
+📐 **Gateway flow diagram:** [docs/architecture.md → Multi-tier LLM gateway](docs/architecture.md#2-multi-tier-llm-gateway-and-circuit-breaker)
 
 ### 8.2 Section Mapping Engine (Old Law ↔ New Law)
 
-`ai_core/rag/section_map.py` is backed by a database table populated from `data/section_map.csv`, containing **1,316 verified transitions**:
-
-```mermaid
-flowchart LR
-    subgraph Legacy["Legacy codes - offences before 1 July 2024"]
-        IPC["Indian Penal Code 1860"]
-        CrPC["Code of Criminal Procedure 1973"]
-        IEA["Indian Evidence Act 1872"]
-    end
-
-    subgraph Engine["Deterministic section map engine"]
-        Lookup["Lookup by act and section"]
-        Cutoff{"Offence date before 1 July 2024?"}
-        Change["Classify change type"]
-    end
-
-    subgraph Modern["Modern Sanhitas - offences on or after 1 July 2024"]
-        BNS["Bharatiya Nyaya Sanhita 2023"]
-        BNSS["Bharatiya Nagarik Suraksha Sanhita 2023"]
-        BSA["Bharatiya Sakshya Adhiniyam 2023"]
-    end
-
-    IPC --> Lookup
-    CrPC --> Lookup
-    IEA --> Lookup
-    BNS --> Lookup
-    BNSS --> Lookup
-    BSA --> Lookup
-    Lookup --> Cutoff
-    Cutoff -->|"before"| ApplyOld["Apply legacy provision"]
-    Cutoff -->|"on or after"| ApplyNew["Apply new Sanhita provision"]
-    ApplyOld --> Change
-    ApplyNew --> Change
-    Change --> Result["Return mapped section with NO_CHANGE, MODIFIED or NEW"]
-```
+`ai_core/rag/section_map.py` is backed by a database table populated from `data/section_map.csv`, containing **1,316 verified transitions**. The engine resolves a section in either direction and applies the 1 July 2024 cut-off rule.
 
 For a query such as *"What is Section 302 IPC?"*, the system returns:
 
@@ -399,30 +322,13 @@ For a query such as *"What is Section 302 IPC?"*, the system returns:
 2. The BNS equivalent (**Section 103 BNS**) with substantive changes noted.
 3. The official India Code source link and penalty parameters.
 
+📐 **Mapping engine diagram:** [docs/architecture.md → Section mapping engine](docs/architecture.md#3-section-mapping-engine)
+
 ### 8.3 Corrective RAG (CRAG) and Self-RAG
 
-```mermaid
-flowchart TD
-    Query["User query"] --> Embed["Embed with Gemini 768 dimensions"]
-    Embed --> Retrieve["Retrieve internal candidates"]
-    Retrieve --> Score{"Best similarity at least 0.55?"}
-    Score -->|"yes"| Window["Build evidence window"]
-    Score -->|"no"| Redact["Redact PII from search terms"]
-    Redact --> Web["Bounded web search, maximum 3 attempts"]
-    Web --> HostCheck{"Hostname allowlist check"}
-    HostCheck -->|"gov.in or nic.in"| Tier1["Tier 1 - primary authority"]
-    HostCheck -->|"livelaw, barandbench, indiankanoon"| Tier2["Tier 2 - legal commentary"]
-    HostCheck -->|"anything else"| Drop["Discard result"]
-    Tier1 --> Window
-    Tier2 --> Window
-    Window --> Gw["Multi provider LLM gateway"]
-    Gw --> Raw["Draft legal answer"]
-    Raw --> Self["Self-RAG reflection step"]
-    Self --> Useful["Rate usefulness as high, medium or low"]
-    Self --> Brief{"Is the answer already brief?"}
-    Brief -->|"yes"| Skip["Omit redundant conclusion box"]
-    Brief -->|"no"| Attach["Attach highlighted takeaway"]
-```
+When the best internal similarity score falls below `0.55`, the system does not guess. It redacts PII from the search terms, runs a bounded web search limited to three attempts, and filters results through a strict hostname allowlist — official `.gov.in` and `.nic.in` domains rank as primary authority, established legal portals rank as commentary, and everything else is discarded. A Self-RAG reflection step then rates usefulness and decides whether a bottom-line takeaway box is needed.
+
+📐 **CRAG and Self-RAG diagram:** [docs/architecture.md → Corrective RAG and Self-RAG](docs/architecture.md#4-corrective-rag-and-self-rag)
 
 ---
 
@@ -439,9 +345,9 @@ flowchart TD
     Evidence["Retrieved statutory and case evidence"] --> Judge
 
     Judge --> V1["SUPPORTED"]
-    Judge --> V2["PARTIALLY_SUPPORTED"]
+    Judge --> V2["PARTIALLY SUPPORTED"]
     Judge --> V3["CONTRADICTED"]
-    Judge --> V4["NOT_VERIFIABLE"]
+    Judge --> V4["NOT VERIFIABLE"]
 
     V1 --> Agg{"Aggregate verdicts"}
     V2 --> Agg
@@ -457,8 +363,7 @@ flowchart TD
     Partial --> Cite
     Rewrite --> Cite
     Refuse --> Cite
-    Cite --> Bracket["Remove unverified bracket page citations"]
-    Bracket --> Help["Append official helplines 112, 181, 1930 and 15100"]
+    Cite --> Help["Append official helplines 112, 181, 1930 and 15100"]
     Help --> Pii["Redact Aadhaar, PAN, phone and email"]
     Pii --> Final["Deliver structured response to user"]
 ```
@@ -477,47 +382,14 @@ flowchart TD
 
 ## 10. Document Ingestion Pipeline
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Advocate or citizen
-    participant UI as Frontend
-    participant Route as document_router
-    participant Worker as Background worker
-    participant Gemini as Gemini OCR
-    participant Store as Supabase storage and database
+Uploads never block the user. The request performs a legal-domain gate check, classifies the document, stores the raw file, generates a fast executive brief, and returns `200 OK` immediately — chunking and embedding continue in a background worker while the UI polls progress every three seconds.
 
-    User->>UI: Selects a file up to 50 MB
-    UI->>Route: POST /document/upload as multipart form
-    Route->>Gemini: Extract full text
-    Route->>Route: Legal domain gate check
-    alt Not a legal document
-        Route-->>UI: 422 rejection, only legal documents accepted
-    end
+- Accepted formats: PDF, DOCX, TXT and scanned images, up to 50 MB.
+- Non-legal documents are rejected with `422` before any indexing cost is incurred.
+- Progress is reported as `pages_processed` out of `total_pages`, with status `processing`, `ready` or `failed`.
+- Interrupted runs can be resumed with the retry-indexing endpoint without re-uploading.
 
-    Route->>Route: Classify document type
-    Route->>Store: Upload raw file to cloud storage
-    Route->>Store: Insert case record with status processing
-    Route->>Route: Generate fast executive brief and timeline
-    Route->>Store: Update case with summary
-    Route->>Worker: Dispatch background indexing worker
-    Route-->>UI: 200 OK with case id, filename and summary
-    Note over UI: User starts reading the summary immediately
-
-    loop While status is processing
-        UI->>Route: GET status every 3 seconds
-        Route-->>UI: pages processed out of total pages
-    end
-
-    Worker->>Worker: Chunk document per page with overlap
-    Worker->>Gemini: Generate embeddings in batches
-    Worker->>Store: Bulk insert document chunks
-    Worker->>Store: Update case status to ready
-
-    UI->>Route: GET status
-    Route-->>UI: status ready with full page count
-    Note over UI: Question answering enabled across all pages
-```
+📐 **Ingestion sequence diagram:** [docs/data-and-security.md → Document ingestion pipeline](docs/data-and-security.md#3-document-ingestion-pipeline)
 
 ---
 
@@ -588,116 +460,9 @@ backend/
 
 ## 13. Database Schema and Data Management
 
-PostgreSQL 15+ on Supabase with the `pgvector` extension.
+PostgreSQL 15+ on Supabase with the `pgvector` extension. Core tables: `cases`, `document_chunks` (with a `vector(768)` embedding column), `chat_sessions`, `chat_messages`, `session_documents`, `statute_sections`, `section_map`, `query_log` and `user_game_progress`.
 
-```mermaid
-erDiagram
-    users ||--o{ cases : "owns"
-    users ||--o{ chat_sessions : "creates"
-    users ||--o{ user_game_progress : "tracks"
-    cases ||--o{ document_chunks : "contains"
-    cases ||--o{ session_documents : "links"
-    chat_sessions ||--o{ chat_messages : "contains"
-    chat_sessions ||--o{ session_documents : "attaches"
-
-    cases {
-        uuid id PK
-        uuid user_id FK
-        string filename
-        string status
-        string case_text
-        string summary
-        string timeline
-        string notes
-        int pages_processed
-        int total_pages
-        string rejection_reason
-        string file_url
-        datetime created_at
-    }
-
-    document_chunks {
-        uuid id PK
-        uuid case_id FK
-        int page_number
-        string chunk_text
-        string embedding
-        datetime created_at
-    }
-
-    chat_sessions {
-        uuid id PK
-        uuid user_id FK
-        string title
-        uuid case_id FK
-        string case_filename
-        boolean pinned
-        datetime updated_at
-        datetime created_at
-    }
-
-    chat_messages {
-        uuid id PK
-        uuid session_id FK
-        string role
-        string content
-        string sources
-        datetime created_at
-    }
-
-    session_documents {
-        uuid id PK
-        uuid session_id FK
-        uuid case_id FK
-        string filename
-        datetime created_at
-    }
-
-    statute_sections {
-        uuid id PK
-        string act
-        string act_name
-        string section
-        string heading
-        string text
-        string source_url
-        int page
-    }
-
-    section_map {
-        string new_act PK
-        string new_section
-        string old_act
-        string old_section
-        string new_top
-        string subject
-        string change_type
-        int pdf_page
-    }
-
-    query_log {
-        uuid id PK
-        string query
-        string response
-        boolean verified
-        string model_used
-        string previous_hash
-        string entry_hash
-        datetime created_at
-    }
-
-    user_game_progress {
-        uuid id PK
-        uuid user_id FK
-        int total_points
-        int scenarios_completed
-        int streak
-        int best_streak
-        datetime updated_at
-    }
-```
-
-> **Note on types.** `document_chunks.embedding` is a native `vector(768)` column and `section_map` uses a composite primary key of `new_act`, `new_section` and `old_section`. The diagram above simplifies both, because Mermaid's ER renderer does not model vector types or composite keys.
+📐 **Full entity-relationship diagram:** [docs/data-and-security.md → Database schema](docs/data-and-security.md#1-database-schema)
 
 ### Database RPC Functions
 
@@ -811,6 +576,8 @@ NyayaPramaan/
 │   └── main.py
 ├── data/section_map.csv               # 1,316 statutory mapping rows
 ├── docs/
+│   ├── architecture.md                # AI, RAG and routing deep dive
+│   ├── data-and-security.md           # Schema, auth, ingestion and container diagrams
 │   ├── implementation_plan.md
 │   └── walkthrough.md
 ├── frontend/                          # Next.js 16 application
@@ -904,37 +671,19 @@ Protected endpoints require: `Authorization: Bearer <supabase-jwt-access-token>`
 
 ---
 
-## 17. Authentication and Security Guardrails
+## 17. Authentication and Security
 
-```mermaid
-flowchart TD
-    Req["Incoming API request"] --> HasJwt{"Bearer JWT present?"}
-    HasJwt -->|"no or invalid"| E401["401 Unauthorized"]
-    HasJwt -->|"yes"| Verify["Verify token with Supabase Auth"]
-    Verify --> Whitelist{"Email present in ADMIN_EMAILS?"}
-    Whitelist -->|"yes"| RoleAdmin["Role admin"]
-    Whitelist -->|"no"| Meta["Read user metadata role"]
-    Meta -->|"claims admin"| Demote["Demote to public and block escalation"]
-    Meta -->|"professional"| RolePro["Role professional"]
-    Meta -->|"public or unset"| RolePublic["Role public"]
-    RoleAdmin --> Perm{"Route permitted for this role?"}
-    RolePro --> Perm
-    RolePublic --> Perm
-    Demote --> Perm
-    Perm -->|"no"| E403["403 Forbidden"]
-    Perm -->|"yes"| Bucket{"Within per user rate limit?"}
-    Bucket -->|"no"| E429["429 Too Many Requests with Retry-After"]
-    Bucket -->|"yes"| Guard["Input guardrail scan for jailbreak patterns"]
-    Guard -->|"attack pattern matched"| E400["400 Bad Request, security refusal"]
-    Guard -->|"clean"| Run["Execute router workflow"]
-```
+Every request passes through JWT validation, role resolution, route permission checks, per-user rate limiting and an input guardrail scan before reaching business logic.
+
+📐 **Full request-security flow diagram:** [docs/data-and-security.md → Authentication and security flow](docs/data-and-security.md#2-authentication-and-security-flow)
 
 ### Security and Privacy Controls
 
 1. **Anti-escalation.** Even if a user edits their Supabase `user_metadata` to claim `{"role": "admin"}`, `backend/auth/supabase_auth.py` requires the email to be listed in the `ADMIN_EMAILS` environment variable. Unauthorised attempts are demoted to `public`.
 2. **Deterministic PII redaction.** Before any response reaches the user or the audit ledger, `ai_core/guardrails/output_guard.py` masks Aadhaar numbers, PAN numbers, Indian phone numbers and email addresses.
 3. **CORS hardening.** `backend/main.py` whitelists trusted origins and reads additional ones from `FRONTEND_URL` and `ALLOWED_ORIGINS`.
-4. **No secrets in the repository.** All credentials are supplied through environment variables. `.env` is gitignored and `.env.example` contains placeholders only — never commit real keys, and rotate any key that is accidentally exposed.
+4. **Rate limiting.** A per-user token bucket returns `429` with a `Retry-After` header when the request budget is exceeded.
+5. **No secrets in the repository.** All credentials are supplied through environment variables. `.env` is gitignored and `.env.example` contains placeholders only — never commit real keys, and rotate any key that is accidentally exposed.
 
 ---
 
@@ -1058,16 +807,9 @@ npm run dev
 
 ---
 
-## 21. Docker Container Orchestration
+## 21. Docker and Deployment
 
-```mermaid
-flowchart LR
-    Host(["Host machine"]) -->|"port 3000"| FrontC["Frontend container - node 20 alpine"]
-    Host -->|"port 8000"| BackC["Backend container - python 3.11 slim with Tesseract"]
-    FrontC -->|"REST calls"| BackC
-    BackC --> Supa[("Supabase PostgreSQL and storage")]
-    BackC --> AIAPIs["Google Gemini and Groq APIs"]
-```
+The repository ships a two-container setup: a `node:20-alpine` frontend on port 3000 and a `python:3.11-slim` backend (with Tesseract and Poppler) on port 8000. Both read configuration from the root `.env`.
 
 ```bash
 docker compose up --build     # build and start
@@ -1075,7 +817,7 @@ docker compose up -d          # detached
 docker compose down           # stop everything
 ```
 
-Ensure `.env` exists in the repository root before building.
+📐 **Container topology diagram:** [docs/data-and-security.md → Docker container topology](docs/data-and-security.md#4-docker-container-topology)
 
 ---
 
@@ -1168,12 +910,13 @@ python scripts/bench.py
 
 | Symptom | Likely cause | Fix |
 | :--- | :--- | :--- |
-| Search returns nothing in the UI, but the same query works in the SQL Editor | The browser shows a CORS error because an unhandled backend exception escaped before CORS headers were added. Check the Render logs for the real traceback. | Fix the underlying error. A common one is a search function whose `search_path` omits `extensions`, so the pgvector `<=>` operator cannot resolve. |
+| Search returns nothing in the UI, but the same query works in the SQL Editor | The browser shows a CORS error because an unhandled backend exception escaped before CORS headers were added. Check the deployment logs for the real traceback. | Fix the underlying error. A common one is a search function whose `search_path` omits `extensions`, so the pgvector `<=>` operator cannot resolve. |
 | `operator does not exist: extensions.vector <=> extensions.vector` | The RPC function's `search_path` does not include the schema where pgvector is installed | Re-run `backend/sql/hybrid_search_functions.sql`, which sets `search_path` to `public, extensions, pg_temp` |
 | A newly created or altered RPC is not visible to the API | PostgREST is serving a stale schema cache | Run `NOTIFY pgrst, 'reload schema';` in the Supabase SQL Editor |
 | First request after idle takes 50+ seconds or fails | Free-tier backend instances spin down when idle | Wait for the cold start, keep the service warm with a periodic `/health` ping, or move to a paid instance |
 | Legal news shows stale articles | A day's results are cached in `daily_news`; a cached fallback set can persist for the rest of that day | Clear the cache with `DELETE FROM daily_news WHERE news_date = CURRENT_DATE;` and reload |
 | Exported PDF drops Hindi characters | No Devanagari TrueType font found on the host | Install `NotoSansDevanagari`, `Nirmala.ttf` or `Mangal.ttf`, or ship the font with the project |
+| A Mermaid diagram shows "Unable to render rich display" or "svg element not in render tree" | GitHub renders only a limited number of Mermaid diagrams per page; later ones fail even when the syntax is valid | Keep at most four diagrams per Markdown file — that is why the deep-dive diagrams live in `docs/architecture.md` and `docs/data-and-security.md` |
 
 ---
 
